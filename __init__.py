@@ -9,18 +9,21 @@ import comfy.samplers
 
 prompt_parser = lark.Lark(r"""
 !start: (prompt | /[][():]/+)*
-prompt: (emphasized | scheduled | plain | WHITESPACE)*
+prompt: (emphasized | scheduled | plain | loraspec | WHITESPACE)*
 !emphasized: "(" prompt ")"
         | "(" prompt ":" prompt ")"
         | "[" prompt "]"
-scheduled: "[" [prompt ":"] prompt ":" [WHITESPACE] NUMBER "]"
+scheduled: "[" [prompt ":"] prompt ":" WHITESPACE? NUMBER "]"
+loraspec: "<" plain (":" WHITESPACE? NUMBER)~1..2 ">"
 WHITESPACE: /\s+/
-plain: /([^\\\[\]():]|\\.)+/
+plain: /([^<>\\\[\]():]|\\.)+/
 %import common.SIGNED_NUMBER -> NUMBER
 """)
 
+
+
 def flatten(x):
-    if type(x) == str:
+    if type(x) in [str, tuple]:
         yield x
     else:
         for g in x:
@@ -50,15 +53,27 @@ def parse_prompt_schedules(prompt, steps):
     def at_step(step, tree):
         class AtStep(lark.Transformer):
             def scheduled(self, args):
-                before, after, _, when = args
+                before, after, when = args
                 yield before or () if step <= when else after
 
             def start(self, args):
-                r = ''.join(flatten(args))
-                return r
+                prompt = []
+                loraspecs = []
+                args = flatten(args)
+                for a in args:
+                    if type(a) == str:
+                        prompt.append(a)
+                    else:
+                        loraspecs.append(a)
+                return {"prompt": "".join(prompt), "loras": loraspecs}
 
             def plain(self, args):
                 yield args[0].value
+
+            def loraspec(self, args):
+                name = ''.join(flatten(args[0]))
+                params = [float(p) for p in args[1:]]
+                return name, params
 
             def __default__(self, data, children, meta):
                 for child in children:
@@ -70,36 +85,51 @@ def parse_prompt_schedules(prompt, steps):
     return parsed
 
 
-def encode_prompts(clip, prompts):
-    prev_prompt = None
-    res = []
+def encode_prompts(clip, schedules):
     cache = {}
-    for steps, p in prompts:
-        # Remove duplicates
-        if p != prev_prompt:
-            if p not in cache:
-                cache[p] = [[clip.encode(p), {}]]
-            res.append([steps, cache[p]])
-        prev_prompt = p
-    return res
+    for step, s in schedules:
+        p = s["prompt"]
+        if p not in cache:
+            cache[p] = [[clip.encode(p), {}]]
+        s["cond"] = cache[p]
+    return schedules
 
 
-class KSamplerPromptEditing:
+class EditablePrompt:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required":
+                {"clip": ("CLIP",),
+                 "positive": ("STRING", {"multiline": True}),
+                 "negative": ("STRING", {"multiline": True}),
+                 "steps": ("INT", {"default": 20, "min": 1, "max": 10000}),
+                }
+            }
+    RETURN_TYPES = ("COND_SCHEDULE",)
+    CATEGORY= "nodes"
+    FUNCTION = "parse"
+
+    def parse(self, clip, positive, negative, steps):
+        parsed = parse_prompt_schedules(positive, steps)
+        positive = encode_prompts(clip, parsed)
+        parsed = parse_prompt_schedules(negative, steps)
+        negative = encode_prompts(clip, parsed)
+
+        return ({"steps": steps, "positive": positive, "negative": negative},)
+
+class KSamplerCondSchedule:
     @classmethod
     def INPUT_TYPES(s):
         return {"required":
                     {"model": ("MODEL",),
                     "add_noise": (["enable", "disable"], ),
                     "noise_seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
-                    "steps": ("INT", {"default": 20, "min": 1, "max": 10000}),
                     "cfg": ("FLOAT", {"default": 8.0, "min": 0.0, "max": 100.0}),
                     "sampler_name": (comfy.samplers.KSampler.SAMPLERS, ),
                     "scheduler": (comfy.samplers.KSampler.SCHEDULERS, ),
-                    "positive_prompt": ("STRING", {"multiline": True}),
-                    "negative_prompt": ("STRING", {"multiline": True}),
+                    "cond_schedule": ("COND_SCHEDULE",),
                     "latent_image": ("LATENT", ),
                     "return_with_leftover_noise": (["disable", "enable"], ),
-                    "clip": ("CLIP", ),
                      }
                 }
 
@@ -107,36 +137,45 @@ class KSamplerPromptEditing:
     FUNCTION = "sample"
 
     CATEGORY = "Local/nodes"
-    def sample(self, clip,model, add_noise, noise_seed, steps, cfg, sampler_name, scheduler, positive_prompt, negative_prompt, latent_image, return_with_leftover_noise, denoise=1.0):
+    def sample(self, model, add_noise, noise_seed, cfg, sampler_name, scheduler, cond_schedule, latent_image, return_with_leftover_noise, denoise=1.0):
         force_full_denoise = True
         if return_with_leftover_noise == "enable":
             force_full_denoise = False
         disable_noise = False
         if add_noise == "disable":
             disable_noise = True
+
+        steps = cond_schedule["steps"]
+        positive = cond_schedule["positive"]
+        negative = cond_schedule["negative"]
         
-        prompt_schedules = parse_prompt_schedules(positive_prompt,steps)
-        encoded = encode_prompts(clip, prompt_schedules)
-        print(f"Expanded prompt schedules: {prompt_schedules}")
-        negative = [[clip.encode(negative_prompt), {}]]
         current_step = 0
         out = latent_image
         full_denoise = False
         disable_noise = disable_noise
-        for until, cond in encoded:
-            if current_step >= steps:
-                break
+
+        def for_step(step, schedules):
+            for end, s in schedules:
+                if end > step:
+                    return [end, s]
+            return schedules[-1]
+
+        while current_step < steps:
+            nsteps, neg = for_step(current_step, negative)
+            psteps, pos = for_step(current_step, positive)
+            until = min(nsteps, psteps)
             if until >= steps:
                 full_denoise = force_full_denoise
-            print(f"Sampling for {until - current_step} steps, {full_denoise=}, {disable_noise=}")
-            out, = common_ksampler(model, noise_seed, steps, cfg, sampler_name, scheduler, cond, negative, out, denoise=denoise, disable_noise=disable_noise, start_step=current_step, last_step=min(until, steps), force_full_denoise=full_denoise)
+            print(f"Sampling with {pos['prompt']=} and {neg['prompt']=} for {until - current_step} steps, {full_denoise=}, {disable_noise=}")
+            out, = common_ksampler(model, noise_seed, steps, cfg, sampler_name, scheduler, pos["cond"], neg["cond"], out, denoise=denoise, disable_noise=disable_noise, start_step=current_step, last_step=min(until, steps), force_full_denoise=full_denoise)
             current_step = until
             # Don't add noise multiple times
             disable_noise = True
 
         return (out,)
-        
+
 
 NODE_CLASS_MAPPINGS = {
-    "KSamplerPromptEditing":KSamplerPromptEditing,
+    "KSamplerCondSchedule": KSamplerCondSchedule,
+    "EditablePrompt": EditablePrompt,
 }
