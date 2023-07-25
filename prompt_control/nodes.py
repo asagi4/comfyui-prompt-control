@@ -1,6 +1,7 @@
 from . import utils as utils
 import comfy.sd
 from .utils import Timer
+from .parser import parse_prompt_schedules
 
 log = utils.getlogger()
 
@@ -67,7 +68,7 @@ class LoRAScheduler:
         setattr(model, 'prompt_control_callback', sampler_cb)
 
 
-        schedules = utils.parse_prompt_schedules(text)
+        schedules = parse_prompt_schedules(text)
         loaded_loras = {}
         loaded_loras = utils.load_loras_from_schedule(schedules, loaded_loras)
 
@@ -134,7 +135,7 @@ class EditableCLIPEncode:
         return clip
 
     def parse(self, clip, model, text):
-        parsed = utils.parse_prompt_schedules(text)
+        parsed = parse_prompt_schedules(text)
         self.current_loras = []
         self.loaded_loras = utils.load_loras_from_schedule(parsed, self.loaded_loras)
         self.orig_clip = clip
