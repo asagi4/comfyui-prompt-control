@@ -3,8 +3,8 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "comfy"))
 
-from .nodes import EditableCLIPEncode, LoRAScheduler
-from .utils import getlogger
+from .prompt_control.nodes import EditableCLIPEncode, LoRAScheduler
+from .prompt_control.utils import getlogger
 import comfy.sample
 
 log = getlogger()
