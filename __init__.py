@@ -8,7 +8,7 @@ import logging
 
 log = logging.getLogger('comfyui-prompt-scheduling')
 logging.basicConfig()
-log.setLevel(logging.DEBUG)
+log.setLevel(logging.INFO)
 
 import time
 
@@ -20,7 +20,6 @@ if not getattr(comfy.sample.sample, 'prompt_control_monkeypatch', False):
     print("Monkeypatching comfy.sample.sample to support callbacks")
     orig_sample = comfy.sample.sample
     def sample(*args, **kwargs):
-        print("Called monkeypatched sample")
         model = args[0]
         if hasattr(model, 'prompt_control_callback'):
             args, kwargs = model.prompt_control_callback(*args, **kwargs)
@@ -108,6 +107,14 @@ def parse_prompt_schedules(prompt):
     parsed = [[t, at_step(t, tree)] for t in collect(tree)]
     return parsed
 
+def load_loras_from_schedule(schedules, loaded_loras):
+    lora_specs = []
+    for step, sched in schedules:
+        if sched["loras"]:
+            lora_specs.extend(sched["loras"])
+    loaded_loras = load_loras(lora_specs)
+    return loaded_loras
+
 class LoRAScheduler:
     @classmethod
     def INPUT_TYPES(s):
@@ -154,24 +161,15 @@ class LoRAScheduler:
 
 
         schedules = parse_prompt_schedules(text)
-        lora_specs = []
-        for step, sched in schedules:
-            if sched["loras"]:
-                lora_specs.extend(sched["loras"])
-        loaded_loras = load_loras(lora_specs)
-        log.info("Schedules: %s", schedules)
+        loaded_loras = {}
+        loaded_loras = load_loras_from_schedule(schedules, loaded_loras)
 
         def unet_wrapper(model_fn, params):
             s = model.prompt_control_state
-            lora_spec = schedules[-1][1]["loras"]
-            for end_pct, sched in schedules:
-                until = int(round(end_pct * s['steps']))
-                if until >= s['current_step']:
-                    lora_spec = sorted(sched['loras'])
-                    break
+            sched = schedule_for_step(s['steps'], s['current_step'], schedules)
+            lora_spec = sorted(sched[1]['loras'])
                 
             if s['applied_loras'] != lora_spec:
-                log.debug("LoRA mismatch: applied: %s, spec: %s", s['applied_loras'], lora_spec)
                 apply_loras(s, lora_spec, loaded_loras)
                 s['applied_loras'] = lora_spec
             s['current_step'] += 1
@@ -196,6 +194,7 @@ class EditableCLIPEncode:
     def INPUT_TYPES(s):
         return {"required":
                 {"clip": ("CLIP",),
+                 "model": ("MODEL",),
                  "text": ("STRING", {"multiline": True}),
                 }
                }
@@ -203,13 +202,40 @@ class EditableCLIPEncode:
     CATEGORY = 'nodes'
     FUNCTION = 'parse'
 
-    def parse(self, clip, text):
+    def __init__(self):
+        self.loaded_loras = {}
+        self.current_loras = []
+        self.orig_clip = None
+
+    def load_clip_lora(self, clip, model, loraspec):
+        if not loraspec:
+            return clip
+        key_map = comfy.sd.model_lora_keys_unet(model.model)
+        key_map = comfy.sd.model_lora_keys_clip(clip.cond_stage_model, key_map)
+        if self.current_loras != loraspec:
+            clip = clip.clone()
+            for l in loraspec:
+                name, w = l
+                w = w + [w[0]]
+                if name not in self.loaded_loras:
+                    log.warn("%s not loaded, skipping", name)
+                    continue
+                loaded = comfy.sd.load_lora(self.loaded_loras[name], key_map)
+                clip.add_patches(loaded, w[1])
+                log.info("CLIP LoRA loaded: %s:%s", name, w[1])
+        return clip
+
+    def parse(self, clip, model, text):
         parsed = parse_prompt_schedules(text)
+        self.current_loras = []
+        self.loaded_loras = load_loras_from_schedule(parsed, self.loaded_loras)
+        self.orig_clip = clip
         start_pct = 0.0
         conds = []
         for end_pct, c in parsed:
-            if c["loras"]
-            # TODO: LoRA
+            if c["loras"] != self.current_loras:
+                clip = self.load_clip_lora(clip, model, c["loras"])
+                self.current_loras = c["loras"]
             conds.append([clip.encode(c["prompt"]), {"start_percent": 1.0 - start_pct, "end_percent": 1.0 - end_pct}])
             start_pct = end_pct
         return (conds,)
@@ -225,11 +251,19 @@ class Timer(object):
         elapsed = time.time() - self.start
         log.debug(f"Executed {self.name} in {elapsed} seconds")
 
-def load_loras(lora_specs):
-    loaded_loras = {}
+def schedule_for_step(total_steps, step, schedules):
+    for end, s in schedules:
+        if end*total_steps > step:
+            return [end, s]
+    return schedules[-1]
+
+def load_loras(lora_specs, loaded_loras=None):
+    loaded_loras = loaded_loras or {}
     filenames = [Path(f) for f in folder_paths.get_filename_list("loras")]
     names = set(name for name, _ in lora_specs)
     for name in names:
+        if name in loaded_loras:
+            continue
         found = False
         for f in filenames:
             if f.stem == name:
@@ -257,7 +291,7 @@ def apply_loras(s, lora_specs, loaded_loras):
         loaded = comfy.sd.load_lora(loaded_loras[name], key_map)
         model = model.clone()
         model.add_patches(loaded, weights[0])
-        log.info("Loaded %s:%s", name, weights)
+        log.info("Loaded LoRA %s:%s", name, weights[0])
 
     with Timer("Repatch model"):
         model.patch_model()
