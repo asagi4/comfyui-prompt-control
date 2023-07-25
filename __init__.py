@@ -39,7 +39,7 @@ def flatten(x):
         for g in x:
             yield from flatten(g)
 
-def parse_prompt_schedules_alt(prompt):
+def parse_prompt_schedules(prompt):
     try:
         tree = prompt_parser.parse(prompt)
     except lark.exceptions.LarkError as e:
@@ -92,88 +92,6 @@ def parse_prompt_schedules_alt(prompt):
     return parsed
 
 
-# Mostly lifted from A1111
-def parse_prompt_schedules(prompt, steps):
-    try:
-        tree = prompt_parser.parse(prompt)
-    except lark.exceptions.LarkError as e:
-        log.error("Prompt editing parse error: %s", e)
-        return [[steps, prompt]]
-
-    def collect(steps, tree):
-        res = [steps]
-        class CollectSteps(lark.Visitor):
-            def scheduled(self, tree):
-                # Last element in []
-                tree.children[-1] = float(tree.children[-1])
-                if tree.children[-1] < 1:
-                    tree.children[-1] = round(tree.children[-1]*steps)
-                res.append(int(tree.children[-1]))
-
-        CollectSteps().visit(tree)
-        return sorted(set(res))
-
-    def at_step(step, tree):
-        class AtStep(lark.Transformer):
-            def scheduled(self, args):
-                before, after, when = args
-                yield before or () if step <= when else after
-
-            def start(self, args):
-                prompt = []
-                loraspecs = []
-                args = flatten(args)
-                for a in args:
-                    if type(a) == str:
-                        prompt.append(a)
-                    elif a:
-                        loraspecs.append(a)
-                return {"prompt": "".join(prompt), "loras": loraspecs}
-
-            def plain(self, args):
-                yield args[0].value
-
-            def loraspec(self, args):
-                name = ''.join(flatten(args[0]))
-                params = [float(p) for p in args[1:]]
-                return name, params
-
-            def __default__(self, data, children, meta):
-                for child in children:
-                    yield child
-
-        return AtStep().transform(tree)
-
-    parsed = [[t, at_step(t, tree)] for t in collect(steps, tree)]
-    return parsed
-
-
-def encode_prompts(clip, schedules):
-    cache = {}
-    for step, s in schedules:
-        p = s["prompt"]
-        if p not in cache:
-            cache[p] = [[clip.encode(p), {}]]
-        s["cond"] = cache[p]
-    return schedules
-
-class CondDebug:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {"required":
-                {"conditioning": ("CONDITIONING",)}
-               }
-    RETURN_TYPES = ('CONDITIONING',)
-    CATEGORY = 'nodes'
-    FUNCTION = 'doit'
-
-    def doit(self, conditioning):
-        print("Got conditioning:", conditioning)
-
-        return (conditioning,)
-
-
-
 class EditableCLIPEncode:
     @classmethod
     def INPUT_TYPES(s):
@@ -187,38 +105,15 @@ class EditableCLIPEncode:
     FUNCTION = 'parse'
 
     def parse(self, clip, text):
-        parsed = parse_prompt_schedules_alt(text)
+        parsed = parse_prompt_schedules(text)
         start_pct = 0.0
         conds = []
-        print("Parsed conds:", parsed)
         for end_pct, c in parsed:
             # TODO: LoRA
             conds.append([clip.encode(c["prompt"]), {"start_percent": 1.0 - start_pct, "end_percent": 1.0 - end_pct}])
             start_pct = end_pct
-        print("Results:", conds)
         return (conds,)
 
-class EditablePrompt:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {"required":
-                {"clip": ("CLIP",),
-                 "positive": ("STRING", {"multiline": True}),
-                 "negative": ("STRING", {"multiline": True}),
-                 "steps": ("INT", {"default": 20, "min": 1, "max": 10000}),
-                }
-            }
-    RETURN_TYPES = ("COND_SCHEDULE",)
-    CATEGORY= "nodes"
-    FUNCTION = "parse"
-
-    def parse(self, clip, positive, negative, steps):
-        parsed = parse_prompt_schedules(positive, steps)
-        positive = encode_prompts(clip, parsed)
-        parsed = parse_prompt_schedules(negative, steps)
-        negative = encode_prompts(clip, parsed)
-
-        return ({"steps": steps, "positive": positive, "negative": negative},)
 
 class Timer(object):
     def __init__(self, name):
@@ -363,8 +258,5 @@ class KSamplerCondSchedule:
 
 
 NODE_CLASS_MAPPINGS = {
-    "KSamplerCondSchedule": KSamplerCondSchedule,
-    "EditablePrompt": EditablePrompt,
     "EditableCLIPEncode": EditableCLIPEncode,
-    "CondDebug": CondDebug,
 }
