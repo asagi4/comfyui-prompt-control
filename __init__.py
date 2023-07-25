@@ -7,10 +7,27 @@ from pathlib import Path
 import logging
 
 log = logging.getLogger('comfyui-prompt-scheduling')
+logging.basicConfig()
+log.setLevel(logging.DEBUG)
 
 import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "comfy"))
+
+import comfy.sample
+
+if not getattr(comfy.sample.sample, 'prompt_control_monkeypatch', False):
+    print("Monkeypatching comfy.sample.sample to support callbacks")
+    orig_sample = comfy.sample.sample
+    def sample(*args, **kwargs):
+        print("Called monkeypatched sample")
+        model = args[0]
+        if hasattr(model, 'prompt_control_callback'):
+            args, kwargs = model.prompt_control_callback(*args, **kwargs)
+        return orig_sample(*args, **kwargs)
+    setattr(sample, 'prompt_control_monkeypatch', True)
+    comfy.sample.sample = sample
+
 
 import comfy.samplers
 import comfy.utils
@@ -91,6 +108,88 @@ def parse_prompt_schedules(prompt):
     parsed = [[t, at_step(t, tree)] for t in collect(tree)]
     return parsed
 
+class LoRAScheduler:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required":
+                {"model": ("MODEL",),
+                 "clip": ("CLIP",),
+                 "text": ("STRING", {"multiline": True}),
+                }
+               }
+    RETURN_TYPES = ('MODEL',)
+    CATEGORY = 'nodes'
+    FUNCTION = 'apply'
+
+    def __init__(self):
+        self.orig_model = None
+        self.orig_text = None
+
+    def apply(self, model, clip, text):
+        model = model.clone()
+        def sampler_cb(*args, **kwargs):
+            state = {}
+            # Store the original in case we need to reset
+            # We need this for LoRA keys
+            state['clip'] = clip
+            state['orig_model'] = args[0]
+            state['model'] = args[0]
+            state['steps'] = args[2] # steps
+            state['current_step'] = kwargs['start_step'] or 1
+            state['last_step'] = min(state['steps'], kwargs['last_step'] or state['steps'])
+            if not 'applied_loras' in state:
+                state['applied_loras'] = []
+
+            setattr(model, 'prompt_control_state', state)
+            
+            return (args, kwargs)
+
+        setattr(model, 'prompt_control_callback', sampler_cb)
+
+
+        def noop(model_fn, params):
+            return model_fn(params['input'], params['timestep'], **params['c'])
+        orig_model_fn = model.model_options.get('model_function_wrapper', noop)
+
+
+
+        schedules = parse_prompt_schedules(text)
+        lora_specs = []
+        for step, sched in schedules:
+            if sched["loras"]:
+                lora_specs.extend(sched["loras"])
+        loaded_loras = load_loras(lora_specs)
+        log.info("Schedules: %s", schedules)
+
+        def unet_wrapper(model_fn, params):
+            s = model.prompt_control_state
+            lora_spec = schedules[-1][1]["loras"]
+            for end_pct, sched in schedules:
+                until = int(round(end_pct * s['steps']))
+                if until >= s['current_step']:
+                    lora_spec = sorted(sched['loras'])
+                    break
+                
+            if s['applied_loras'] != lora_spec:
+                log.debug("LoRA mismatch: applied: %s, spec: %s", s['applied_loras'], lora_spec)
+                apply_loras(s, lora_spec, loaded_loras)
+                s['applied_loras'] = lora_spec
+            s['current_step'] += 1
+
+            if not orig_model_fn:
+                r = model_fn(params['input'], params['timestep'], **params['c'])
+            else:
+                r = orig_model_fn(model_fn, params)
+
+            if s['current_step'] > s['last_step']:
+                if s["applied_loras"]:
+                    log.info("sampling done, unpatching model")
+                    s["model"].unpatch_model()
+            return r
+
+        model.set_model_unet_function_wrapper(unet_wrapper)
+
+        return (model,)
 
 class EditableCLIPEncode:
     @classmethod
@@ -109,6 +208,7 @@ class EditableCLIPEncode:
         start_pct = 0.0
         conds = []
         for end_pct, c in parsed:
+            if c["loras"]
             # TODO: LoRA
             conds.append([clip.encode(c["prompt"]), {"start_percent": 1.0 - start_pct, "end_percent": 1.0 - end_pct}])
             start_pct = end_pct
@@ -124,6 +224,46 @@ class Timer(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         elapsed = time.time() - self.start
         log.debug(f"Executed {self.name} in {elapsed} seconds")
+
+def load_loras(lora_specs):
+    loaded_loras = {}
+    filenames = [Path(f) for f in folder_paths.get_filename_list("loras")]
+    names = set(name for name, _ in lora_specs)
+    for name in names:
+        found = False
+        for f in filenames:
+            if f.stem == name:
+                full_path = folder_paths.get_full_path("loras", str(f))
+                loaded_loras[name] = comfy.utils.load_torch_file(full_path, safe_load=True)
+                found = True
+                break
+        if not found:
+            log.warning("Lora %s not found", name)
+    return loaded_loras
+
+def apply_loras(s, lora_specs, loaded_loras):
+    model = s['model']
+    clip = s['clip']
+    key_map = comfy.sd.model_lora_keys_unet(model.model)
+    key_map = comfy.sd.model_lora_keys_clip(clip.cond_stage_model, key_map)
+
+    with Timer("Unpatch model"):
+        model.unpatch_model()
+        model = s['orig_model'].clone()
+
+    for name, weights in lora_specs:
+        if name not in loaded_loras:
+            continue
+        loaded = comfy.sd.load_lora(loaded_loras[name], key_map)
+        model = model.clone()
+        model.add_patches(loaded, weights[0])
+        log.info("Loaded %s:%s", name, weights)
+
+    with Timer("Repatch model"):
+        model.patch_model()
+    s['applied_loras'] = sorted(lora_specs)
+    s['model'] = model
+
 
 class KSamplerCondSchedule:
     @classmethod
@@ -155,53 +295,7 @@ class KSamplerCondSchedule:
         self.current_model = None
         self.current_clip = None
 
-    def load_loras(self, lora_specs):
-        # TODO: unload loras
-        filenames = [Path(f) for f in folder_paths.get_filename_list("loras")]
-        names = set(name for name, _ in lora_specs)
-        for name in names:
-            found = False
-            for f in filenames:
-                if f.stem == name:
-                    full_path = folder_paths.get_full_path("loras", str(f))
-                    self.loaded_loras[name] = comfy.utils.load_torch_file(full_path, safe_load=True)
-                    found = True
-                    break
-            if not found:
-                log.warning("Lora %s not found", name)
 
-    def apply_loras(self, lora_specs):
-        need_reload = False
-        if len(lora_specs) != len(self.applied_loras):
-            need_reload = True
-        for spec in lora_specs:
-            name, args = spec
-            if name not in  self.loaded_loras:
-                continue
-            # Ensure it has at least 2 items
-            args += args[:1]
-            unetw, clipw = args[:2]
-            # TODO: model changing
-            if not (name, unetw, clipw) in self.applied_loras:
-                need_reload = True
-                break
-        if need_reload:
-            self.applied_loras = []
-            with Timer("unpatch models"):
-                self.current_model.unpatch_model()
-                self.current_clip.unpatch_model()
-            with Timer("clone models"):
-                self.current_model = self.model.clone()
-                self.current_clip = self.clip.clone()
-            for spec in lora_specs:
-                name, args = spec
-                # Ensure it has at least 2 items
-                args += args[:1]
-                unetw, clipw = args[:2]
-                self.current_model, self.current_clip = comfy.sd.load_lora_for_models(self.current_model, self.current_clip, self.loaded_loras[name], unetw, clipw)
-                self.applied_loras += [(name, unetw, clipw)]
-            with Timer("patch_models"):
-                self.current_model.patch_model()
 
 
     def sample(self, model, clip, add_noise, noise_seed, cfg, sampler_name, scheduler, cond_schedule, latent_image, return_with_leftover_noise, denoise=1.0):
@@ -259,4 +353,5 @@ class KSamplerCondSchedule:
 
 NODE_CLASS_MAPPINGS = {
     "EditableCLIPEncode": EditableCLIPEncode,
+    "LoRAScheduler": LoRAScheduler,
 }
