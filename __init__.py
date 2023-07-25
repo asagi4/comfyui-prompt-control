@@ -40,7 +40,7 @@ prompt: (emphasized | scheduled | plain | loraspec | WHITESPACE)*
         | "(" prompt ":" prompt ")"
         | "[" prompt "]"
 scheduled: "[" [prompt ":"] prompt ":" WHITESPACE? NUMBER "]"
-loraspec: "<" plain (":" WHITESPACE? NUMBER)~1..2 ">"
+loraspec: "<lora:" plain (":" WHITESPACE? NUMBER)~1..2 ">"
 WHITESPACE: /\s+/
 plain: /([^<>\\\[\]():]|\\.)+/
 %import common.SIGNED_NUMBER -> NUMBER
@@ -125,7 +125,7 @@ class LoRAScheduler:
                 }
                }
     RETURN_TYPES = ('MODEL',)
-    CATEGORY = 'nodes'
+    CATEGORY = 'promptcontrol'
     FUNCTION = 'apply'
 
     def __init__(self):
@@ -199,7 +199,7 @@ class EditableCLIPEncode:
                 }
                }
     RETURN_TYPES = ('CONDITIONING',)
-    CATEGORY = 'nodes'
+    CATEGORY = 'promptcontrol'
     FUNCTION = 'parse'
 
     def __init__(self):
