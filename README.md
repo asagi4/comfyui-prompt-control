@@ -11,6 +11,7 @@ LoRAs work too, composable-lora -style
 ```
 a [large::0.1] [cat:dog:0.5] [<lora:somelora:0.5:0.6>::0.5]
 ```
+The `example.json` contains a simple workflow to play around with.
 
 ## Schedulable LoRAs
 The `LoRAScheduler` node patches a model such that when sampling, it'll switch LoRAs between steps. You can apply the LoRA's effect separately to CLIP conditioning and the unet (model)
