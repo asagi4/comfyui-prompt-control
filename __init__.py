@@ -39,6 +39,59 @@ def flatten(x):
         for g in x:
             yield from flatten(g)
 
+def parse_prompt_schedules_alt(prompt):
+    try:
+        tree = prompt_parser.parse(prompt)
+    except lark.exceptions.LarkError as e:
+        log.error("Prompt editing parse error: %s", e)
+        return [[1.0, {"prompt": prompt, "loras": []}]]
+
+    def collect(tree):
+        res = [1.0]
+        class CollectSteps(lark.Visitor):
+            def scheduled(self, tree):
+                # Last element in []
+                tree.children[-1] = max(min(1.0, float(tree.children[-1])), 0.0)
+                res.append(tree.children[-1])
+
+        CollectSteps().visit(tree)
+        return sorted(set(res))
+
+    def at_step(step, tree):
+        class AtStep(lark.Transformer):
+            def scheduled(self, args):
+                before, after, when = args
+                yield before or () if step <= when else after
+
+            def start(self, args):
+                prompt = []
+                loraspecs = []
+                args = flatten(args)
+                for a in args:
+                    if type(a) == str:
+                        prompt.append(a)
+                    elif a:
+                        loraspecs.append(a)
+                return {"prompt": "".join(prompt), "loras": loraspecs}
+
+            def plain(self, args):
+                yield args[0].value
+
+            def loraspec(self, args):
+                name = ''.join(flatten(args[0]))
+                params = [float(p) for p in args[1:]]
+                return name, params
+
+            def __default__(self, data, children, meta):
+                for child in children:
+                    yield child
+
+        return AtStep().transform(tree)
+
+    parsed = [[t, at_step(t, tree)] for t in collect(tree)]
+    return parsed
+
+
 # Mostly lifted from A1111
 def parse_prompt_schedules(prompt, steps):
     try:
@@ -104,6 +157,46 @@ def encode_prompts(clip, schedules):
         s["cond"] = cache[p]
     return schedules
 
+class CondDebug:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required":
+                {"conditioning": ("CONDITIONING",)}
+               }
+    RETURN_TYPES = ('CONDITIONING',)
+    CATEGORY = 'nodes'
+    FUNCTION = 'doit'
+
+    def doit(self, conditioning):
+        print("Got conditioning:", conditioning)
+
+        return (conditioning,)
+
+
+
+class EditableCLIPEncode:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required":
+                {"clip": ("CLIP",),
+                 "text": ("STRING", {"multiline": True}),
+                }
+               }
+    RETURN_TYPES = ('CONDITIONING',)
+    CATEGORY = 'nodes'
+    FUNCTION = 'parse'
+
+    def parse(self, clip, text):
+        parsed = parse_prompt_schedules_alt(text)
+        start_pct = 0.0
+        conds = []
+        print("Parsed conds:", parsed)
+        for end_pct, c in parsed:
+            # TODO: LoRA
+            conds.append([clip.encode(c["prompt"]), {"start_percent": 1.0 - start_pct, "end_percent": 1.0 - end_pct}])
+            start_pct = end_pct
+        print("Results:", conds)
+        return (conds,)
 
 class EditablePrompt:
     @classmethod
@@ -180,7 +273,7 @@ class KSamplerCondSchedule:
                     found = True
                     break
             if not found:
-                log.warning(f"Lora %s not found", name)
+                log.warning("Lora %s not found", name)
 
     def apply_loras(self, lora_specs):
         need_reload = False
@@ -272,4 +365,6 @@ class KSamplerCondSchedule:
 NODE_CLASS_MAPPINGS = {
     "KSamplerCondSchedule": KSamplerCondSchedule,
     "EditablePrompt": EditablePrompt,
+    "EditableCLIPEncode": EditableCLIPEncode,
+    "CondDebug": CondDebug,
 }
