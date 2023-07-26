@@ -25,8 +25,7 @@ The basics seem to work; without prompt editing, the loaders can reproduce the o
 
 More advanced workflows might explode horribly.
 
-- There seem to be minor differences in output when using schedulable LoRAs compared to a graph with multiple samplers.
 - only batch size 1 works for whatever reason
-- better syntax. A1111 is familiar, but not very good
+- Needs better syntax. A1111 is familiar, but not very good
 - alternating
 - convenient prompt editing for multiple sampling passes (HR fix etc)

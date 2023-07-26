@@ -124,7 +124,6 @@ class EditableCLIPEncode:
         key_map = comfy.sd.model_lora_keys_unet(model.model)
         key_map = comfy.sd.model_lora_keys_clip(clip.cond_stage_model, key_map)
         if self.current_loras != loraspec:
-            clip = clip.clone()
             for l in loraspec:
                 name, w = l
                 w = w + [w[0]]
@@ -146,7 +145,7 @@ class EditableCLIPEncode:
         conds = []
         for end_pct, c in parsed:
             if c["loras"] != self.current_loras:
-                clip = self.load_clip_lora(clip, model, c["loras"])
+                clip = self.load_clip_lora(self.orig_clip.clone(), model, c["loras"])
                 self.current_loras = c["loras"]
             tokens = clip.tokenize(c["prompt"])
             cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
