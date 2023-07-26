@@ -1,10 +1,14 @@
 from pathlib import Path
 
 import logging
+from os import environ
 
-log = logging.getLogger('comfyui-prompt-scheduling')
+log = logging.getLogger('prompt-control')
 logging.basicConfig()
-log.setLevel(logging.INFO)
+if environ.get('COMFY_PC_DEBUG', False):
+    log.setLevel(logging.DEBUG)
+else:
+    log.setLevel(logging.INFO)
 
 import time
 

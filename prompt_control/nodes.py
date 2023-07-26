@@ -69,6 +69,7 @@ class LoRAScheduler:
 
 
         schedules = parse_prompt_schedules(text)
+        log.debug("LoRAScheduler: %s", schedules)
         loaded_loras = {}
         loaded_loras = utils.load_loras_from_schedule(schedules, loaded_loras)
 
@@ -79,6 +80,7 @@ class LoRAScheduler:
             lora_spec = sorted(sched[1]['loras'])
                 
             if s['applied_loras'] != lora_spec:
+                log.debug("At step %s, applying lora_spec %s", s['current_step'], lora_spec)
                 apply_loras_to_model(s, lora_spec, loaded_loras)
                 s['applied_loras'] = lora_spec
             s['current_step'] += 1
@@ -136,6 +138,7 @@ class EditableCLIPEncode:
 
     def parse(self, clip, model, text):
         parsed = parse_prompt_schedules(text)
+        log.debug("EditableCLIPEncode schedules: %s", parsed)
         self.current_loras = []
         self.loaded_loras = utils.load_loras_from_schedule(parsed, self.loaded_loras)
         self.orig_clip = clip
