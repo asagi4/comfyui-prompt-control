@@ -25,6 +25,7 @@ The basics seem to work; without prompt editing, the loaders can reproduce the o
 
 More advanced workflows might explode horribly.
 
+- Re-add sampler node with scheduling support and see if it produces different results to using an array of conds
 - better syntax. A1111 is familiar, but not very good
 - alternating
 - convenient prompt editing for multiple sampling passes (HR fix etc)
