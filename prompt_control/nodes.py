@@ -148,7 +148,9 @@ class EditableCLIPEncode:
             if c["loras"] != self.current_loras:
                 clip = self.load_clip_lora(clip, model, c["loras"])
                 self.current_loras = c["loras"]
-            conds.append([clip.encode(c["prompt"]), {"start_percent": 1.0 - start_pct, "end_percent": 1.0 - end_pct}])
+            tokens = clip.tokenize(c["prompt"])
+            cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
+            conds.append([cond, {"pooled_output": pooled, "start_percent": 1.0 - start_pct, "end_percent": 1.0 - end_pct}])
             start_pct = end_pct
         return (conds,)
 
