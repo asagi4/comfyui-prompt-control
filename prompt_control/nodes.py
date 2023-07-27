@@ -60,9 +60,9 @@ def load_lora(model, lora, weight, key_map):
     return model
 
 
-def apply_loras_to_model(model, orig_model, clip, lora_specs, loaded_loras):
+def apply_loras_to_model(model, orig_model, clip, lora_specs, loaded_loras, patch=True):
     keymap = get_lora_keymap(model, clip)
-    with Timer("Unpatch model"):
+    if patch:
         unpatch_model(model)
         model = clone_model(model)
 
@@ -72,7 +72,7 @@ def apply_loras_to_model(model, orig_model, clip, lora_specs, loaded_loras):
         model = load_lora(model, loaded_loras[name], weights[0], keymap)
         log.info("Loaded LoRA %s:%s", name, weights[0])
 
-    with Timer("Repatch model"):
+    if patch:
         patch_model(model)
 
     return model
@@ -111,14 +111,16 @@ class LoRAScheduler:
 
             orig_cb = kwargs["callback"]
 
-            def apply_lora_for_step(step):
+            def apply_lora_for_step(step, patch=False):
                 # zero-indexed steps, 0 = first step, but schedules are 1-indexed
                 sched = utils.schedule_for_step(steps, step + 1, schedules)
                 lora_spec = sorted(sched[1]["loras"])
 
                 if state["applied_loras"] != lora_spec:
                     log.debug("At step %s, applying lora_spec %s", step, lora_spec)
-                    state["model"] = apply_loras_to_model(state["model"], orig_model, clip, lora_spec, loaded_loras)
+                    state["model"] = apply_loras_to_model(
+                        state["model"], orig_model, clip, lora_spec, loaded_loras, patch
+                    )
                     state["applied_loras"] = lora_spec
 
             def step_callback(*args, **kwargs):
@@ -130,7 +132,10 @@ class LoRAScheduler:
 
             kwargs["callback"] = step_callback
 
-            apply_lora_for_step(start_step)
+            # First step of sampler applies patch
+            apply_lora_for_step(start_step, patch=False)
+            args = list(args)
+            args[0] = state["model"]
             s = orig_sampler(*args, **kwargs)
 
             if state["applied_loras"]:

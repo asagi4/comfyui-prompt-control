@@ -18,6 +18,11 @@ The `LoRAScheduler` node patches a model such that when sampling, it'll switch L
 
 For me this seems to be quite slow without the --highvram switch because ComfyUI will shuffle things between the CPU and GPU. YMMV. When things stay on the GPU, it's quite fast.
 
+## AITemplate support
+LoRA scheduling supports AITemplate. 
+
+Due to sampler patching, your AITemplate nodes must be cloned to a directory called `AIT` under `custom_nodes` or the hijack won't find it.
+
 
 # TODO & BUGS
 
@@ -25,7 +30,6 @@ The basics seem to work; without prompt editing, the loaders can reproduce the o
 
 More advanced workflows might explode horribly.
 
-- only batch size 1 works for whatever reason
 - Needs better syntax. A1111 is familiar, but not very good
 - alternating
 - convenient prompt editing for multiple sampling passes (HR fix etc)
