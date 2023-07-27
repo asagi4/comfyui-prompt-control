@@ -2,28 +2,83 @@ from . import utils as utils
 import comfy.sd
 from .utils import Timer
 from .parser import parse_prompt_schedules
+from .hijack import do_hijack
 
 log = utils.getlogger()
 
+# AITemplate support
+def set_callback(model, cb):
+    print("Set_callback", model)
+    if isinstance(model, tuple):
+        setattr(model[0], 'prompt_control_callback', cb)
+    else:
+        setattr(model, 'prompt_control_callback', cb)
+
+
+def get_lora_keymap(model, clip):
+    if isinstance(model, tuple):
+        m = model[0].model
+    else:
+        m = model.model
+    key_map = comfy.sd.model_lora_keys_unet(m)
+    return comfy.sd.model_lora_keys_clip(clip.cond_stage_model, key_map)
+
+def unpatch_model(model):
+    if isinstance(model, tuple):
+        model[0].unpatch_model()
+    else:
+        model.unpatch_model()
+
+def clone_model(model):
+    if isinstance(model, tuple):
+        return (model[0].clone(), model[1])
+    else:
+        return model.clone()
+
+def add_patches(model, patches, weight):
+    if isinstance(model, tuple):
+        model = model[0]
+    model.add_patches(patches, weight)
+
+def patch_model(model):
+    if isinstance(model, tuple):
+        m = model[0]
+        m.patch_model()
+        # This module hierarchy is a bit silly
+        from custom_nodes.AIT.AITemplate.AITemplate import AITemplate, current_loaded_model
+        l = AITemplate.loader
+        if hasattr(l, 'pc_applied_module'):
+            log.info("Applying AITemplate unet")
+            l.apply_unet(aitemplate_module=l.pc_applied_module,
+                         unet=l.compvis_unet(m.model.state_dict()),
+                         in_channels=m.model.diffusion_model.in_channels,
+                         conv_in_key="conv_in_weight")
+            current_loaded_model = model
+    else:
+        model.patch_model()
+
+
+def load_lora(model, lora, weight, key_map):
+        loaded = comfy.sd.load_lora(lora, key_map)
+        model = clone_model(model)
+        add_patches(model, loaded, weight)
+        return model
 
 def apply_loras_to_model(model, orig_model, clip, lora_specs, loaded_loras):
-    key_map = comfy.sd.model_lora_keys_unet(model.model)
-    key_map = comfy.sd.model_lora_keys_clip(clip.cond_stage_model, key_map)
-
+    keymap = get_lora_keymap(model, clip)
     with Timer("Unpatch model"):
-        model.unpatch_model()
-        model = orig_model.clone()
+        unpatch_model(model)
+        model = clone_model(model)
 
     for name, weights in lora_specs:
         if name not in loaded_loras:
             continue
-        loaded = comfy.sd.load_lora(loaded_loras[name], key_map)
-        model = model.clone()
-        model.add_patches(loaded, weights[0])
+        model = load_lora(model, loaded_loras[name], weights[0], keymap)
         log.info("Loaded LoRA %s:%s", name, weights[0])
 
     with Timer("Repatch model"):
-        model.patch_model()
+        patch_model(model)
+
     return model
 
 
@@ -43,7 +98,8 @@ class LoRAScheduler:
     FUNCTION = "apply"
 
     def apply(self, model, clip, text):
-        orig_model = model.clone()
+        do_hijack()
+        orig_model = clone_model(model)
         schedules = parse_prompt_schedules(text)
         log.debug("LoRAScheduler: %s", schedules)
         loaded_loras = {}
@@ -84,11 +140,12 @@ class LoRAScheduler:
             if state["applied_loras"]:
                 log.info("Sampling done with leftover LoRAs, unpatching")
                 # state may have been modified
-                state["model"].unpatch_model()
+                unpatch_model(state["model"])
 
             return s
 
-        setattr(orig_model, "prompt_control_callback", sampler_cb)
+        set_callback(orig_model, sampler_cb)
+
         return (orig_model,)
 
 
@@ -115,8 +172,7 @@ class EditableCLIPEncode:
     def load_clip_lora(self, clip, model, loraspec):
         if not loraspec:
             return clip
-        key_map = comfy.sd.model_lora_keys_unet(model.model)
-        key_map = comfy.sd.model_lora_keys_clip(clip.cond_stage_model, key_map)
+        key_map = get_lora_keymap(model, clip)
         if self.current_loras != loraspec:
             for l in loraspec:
                 name, w = l
