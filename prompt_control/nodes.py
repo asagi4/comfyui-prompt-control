@@ -1,6 +1,6 @@
 from . import utils as utils
 import comfy.sd
-from .utils import Timer
+from .utils import Timer, untuple
 from .parser import parse_prompt_schedules
 from .hijack import do_hijack, get_aitemplate_module
 
@@ -8,26 +8,17 @@ log = utils.getlogger()
 
 # AITemplate support
 def set_callback(model, cb):
-    print("Set_callback", model)
-    if isinstance(model, tuple):
-        setattr(model[0], 'prompt_control_callback', cb)
-    else:
-        setattr(model, 'prompt_control_callback', cb)
+    model = untuple(model)
+    setattr(model, 'prompt_control_callback', cb)
 
 
 def get_lora_keymap(model, clip):
-    if isinstance(model, tuple):
-        m = model[0].model
-    else:
-        m = model.model
-    key_map = comfy.sd.model_lora_keys_unet(m)
+    model = untuple(model)
+    key_map = comfy.sd.model_lora_keys_unet(model.model)
     return comfy.sd.model_lora_keys_clip(clip.cond_stage_model, key_map)
 
 def unpatch_model(model):
-    if isinstance(model, tuple):
-        model[0].unpatch_model()
-    else:
-        model.unpatch_model()
+    untuple(model).unpatch_model()
 
 def clone_model(model):
     if isinstance(model, tuple):
@@ -36,9 +27,7 @@ def clone_model(model):
         return model.clone()
 
 def add_patches(model, patches, weight):
-    if isinstance(model, tuple):
-        model = model[0]
-    model.add_patches(patches, weight)
+    untuple(model).add_patches(patches, weight)
 
 def patch_model(model):
     if isinstance(model, tuple):
