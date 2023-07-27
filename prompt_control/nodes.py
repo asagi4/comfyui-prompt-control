@@ -5,15 +5,13 @@ from .parser import parse_prompt_schedules
 
 log = utils.getlogger()
 
-def apply_loras_to_model(s, lora_specs, loaded_loras):
-    model = s['model']
-    clip = s['clip']
+def apply_loras_to_model(model, orig_model, clip, lora_specs, loaded_loras):
     key_map = comfy.sd.model_lora_keys_unet(model.model)
     key_map = comfy.sd.model_lora_keys_clip(clip.cond_stage_model, key_map)
 
     with Timer("Unpatch model"):
         model.unpatch_model()
-        model = s['orig_model'].clone()
+        model = orig_model.clone()
 
     for name, weights in lora_specs:
         if name not in loaded_loras:
@@ -25,8 +23,7 @@ def apply_loras_to_model(s, lora_specs, loaded_loras):
 
     with Timer("Repatch model"):
         model.patch_model()
-    s['applied_loras'] = sorted(lora_specs)
-    s['model'] = model
+    return model
 
 class LoRAScheduler:
     @classmethod
@@ -41,67 +38,53 @@ class LoRAScheduler:
     CATEGORY = 'promptcontrol'
     FUNCTION = 'apply'
 
-    def __init__(self):
-        self.orig_model = None
-        self.orig_text = None
-
     def apply(self, model, clip, text):
-        model = model.clone()
+        orig_model = model.clone()
+        schedules = parse_prompt_schedules(text)
+        log.debug("LoRAScheduler: %s", schedules)
+        loaded_loras = {}
+        loaded_loras = utils.load_loras_from_schedule(schedules, loaded_loras)
 
         def sampler_cb(orig_sampler, *args, **kwargs):
             state = {}
-            # Store the original in case we need to reset
-            # We need this for LoRA keys
-            state['clip'] = clip
-            state['orig_model'] = args[0]
+            steps = args[2]
+            start_step = kwargs['start_step'] or 0
+            # The model patcher may change if LoRAs are applied
             state['model'] = args[0]
-            state['steps'] = args[2] # steps
-            state['current_step'] = kwargs['start_step'] or 1
-            state['last_step'] = min(state['steps'], kwargs['last_step'] or state['steps'])
-            if not 'applied_loras' in state:
-                state['applied_loras'] = []
+            state['applied_loras'] = []
 
-            setattr(model, 'prompt_control_state', state)
-            
+            orig_cb = kwargs['callback']
+            def apply_lora_for_step(step):
+                # zero-indexed steps, 0 = first step, but schedules are 1-indexed
+                sched = utils.schedule_for_step(steps, step+1, schedules)
+                lora_spec = sorted(sched[1]['loras'])
+                    
+                if state['applied_loras'] != lora_spec:
+                    log.debug("At step %s, applying lora_spec %s", step, lora_spec)
+                    state['model'] = apply_loras_to_model(state['model'], orig_model, clip, lora_spec, loaded_loras)
+                    state['applied_loras'] = lora_spec
+
+            def step_callback(*args, **kwargs):
+                current_step = args[0] + start_step
+                # Callbacks are called *after* the step so apply for next step
+                apply_lora_for_step(current_step+1)
+                if orig_cb:
+                    return orig_cb(*args, **kwargs)
+
+            kwargs['callback'] = step_callback
+
+            apply_lora_for_step(start_step)
             s = orig_sampler(*args, **kwargs)
 
-            if model.prompt_control_state['applied_loras']:
+            if state['applied_loras']:
                 log.info("Sampling done with leftover LoRAs, unpatching")
                 # state may have been modified
                 state['model'].unpatch_model()
 
             return s
 
-        setattr(model, 'prompt_control_callback', sampler_cb)
-
-
-        schedules = parse_prompt_schedules(text)
-        log.debug("LoRAScheduler: %s", schedules)
-        loaded_loras = {}
-        loaded_loras = utils.load_loras_from_schedule(schedules, loaded_loras)
-
-        orig_model_fn = model.model_options.get('model_function_wrapper')
-        def unet_wrapper(model_fn, params):
-            s = model.prompt_control_state
-            sched = utils.schedule_for_step(s['steps'], s['current_step'], schedules)
-            lora_spec = sorted(sched[1]['loras'])
-                
-            if s['applied_loras'] != lora_spec:
-                log.debug("At step %s, applying lora_spec %s", s['current_step'], lora_spec)
-                apply_loras_to_model(s, lora_spec, loaded_loras)
-                s['applied_loras'] = lora_spec
-            s['current_step'] += 1
-
-            if not orig_model_fn:
-                r = model_fn(params['input'], params['timestep'], **params['c'])
-            else:
-                r = orig_model_fn(model_fn, params)
-
-            return r
-
-        model.set_model_unet_function_wrapper(unet_wrapper)
-
-        return (model,)
+        setattr(orig_model, 'prompt_control_callback', sampler_cb)
+        return (orig_model,)
 
 class EditableCLIPEncode:
     @classmethod
