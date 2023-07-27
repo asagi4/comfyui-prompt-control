@@ -48,7 +48,7 @@ class LoRAScheduler:
     def apply(self, model, clip, text):
         model = model.clone()
 
-        def sampler_cb(*args, **kwargs):
+        def sampler_cb(orig_sampler, *args, **kwargs):
             state = {}
             # Store the original in case we need to reset
             # We need this for LoRA keys
@@ -63,7 +63,14 @@ class LoRAScheduler:
 
             setattr(model, 'prompt_control_state', state)
             
-            return (args, kwargs)
+            s = orig_sampler(*args, **kwargs)
+
+            if model.prompt_control_state['applied_loras']:
+                log.info("Sampling done with leftover LoRAs, unpatching")
+                # state may have been modified
+                state['model'].unpatch_model()
+
+            return s
 
         setattr(model, 'prompt_control_callback', sampler_cb)
 
@@ -90,10 +97,6 @@ class LoRAScheduler:
             else:
                 r = orig_model_fn(model_fn, params)
 
-            if s['current_step'] > s['last_step']:
-                if s["applied_loras"]:
-                    log.info("sampling done, unpatching model")
-                    s["model"].unpatch_model()
             return r
 
         model.set_model_unet_function_wrapper(unet_wrapper)

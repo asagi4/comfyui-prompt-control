@@ -11,12 +11,13 @@ log = getlogger()
 
 if not getattr(comfy.sample.sample, 'prompt_control_monkeypatch', False):
     log.info("Monkeypatching comfy.sample.sample...")
-    orig_sample = comfy.sample.sample
+    orig_sampler = comfy.sample.sample
     def sample(*args, **kwargs):
         model = args[0]
         if hasattr(model, 'prompt_control_callback'):
-            args, kwargs = model.prompt_control_callback(*args, **kwargs)
-        return orig_sample(*args, **kwargs)
+            return model.prompt_control_callback(orig_sampler, *args, **kwargs)
+        else:
+            return orig_sampler(*args, **kwargs)
     setattr(sample, 'prompt_control_monkeypatch', True)
     comfy.sample.sample = sample
 
