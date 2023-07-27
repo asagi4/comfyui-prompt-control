@@ -3,7 +3,8 @@ from .utils import getlogger
 
 log = getlogger()
 
-prompt_parser = lark.Lark(r"""
+prompt_parser = lark.Lark(
+    r"""
 !start: (prompt | /[][():]/+)*
 prompt: (emphasized | scheduled | plain | loraspec | WHITESPACE)*
 !emphasized: "(" prompt ")"
@@ -14,7 +15,8 @@ loraspec: "<lora:" plain (":" WHITESPACE? NUMBER)~1..2 ">"
 WHITESPACE: /\s+/
 plain: /([^<>\\\[\]():]|\\.)+/
 %import common.SIGNED_NUMBER -> NUMBER
-""")
+"""
+)
 
 
 def flatten(x):
@@ -23,6 +25,7 @@ def flatten(x):
     else:
         for g in x:
             yield from flatten(g)
+
 
 def parse_prompt_schedules(prompt):
     try:
@@ -34,6 +37,7 @@ def parse_prompt_schedules(prompt):
     # TODO: There's probably a better way to do this
     def collect(tree):
         res = [1.0]
+
         class CollectSteps(lark.Visitor):
             def scheduled(self, tree):
                 # Last element in []
@@ -64,7 +68,7 @@ def parse_prompt_schedules(prompt):
                 return args[0].value
 
             def loraspec(self, args):
-                name = ''.join(flatten(args[0]))
+                name = "".join(flatten(args[0]))
                 params = [float(p) for p in args[1:]]
                 return name, params
 

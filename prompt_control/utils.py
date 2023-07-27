@@ -3,9 +3,9 @@ from pathlib import Path
 import logging
 from os import environ
 
-log = logging.getLogger('prompt-control')
+log = logging.getLogger("prompt-control")
 logging.basicConfig()
-if environ.get('COMFY_PC_DEBUG', False):
+if environ.get("COMFY_PC_DEBUG", False):
     log.setLevel(logging.DEBUG)
 else:
     log.setLevel(logging.INFO)
@@ -17,6 +17,7 @@ import comfy.samplers
 import comfy.utils
 import comfy.sd
 import folder_paths
+
 
 def getlogger():
     return log
@@ -37,15 +38,18 @@ class Timer(object):
 
     def __enter__(self):
         self.start = time.time()
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         elapsed = time.time() - self.start
         log.debug(f"Executed {self.name} in {elapsed} seconds")
 
+
 def schedule_for_step(total_steps, step, schedules):
     for end, s in schedules:
-        if end*total_steps > step:
+        if end * total_steps > step:
             return [end, s]
     return schedules[-1]
+
 
 def load_loras(lora_specs, loaded_loras=None):
     loaded_loras = loaded_loras or {}
