@@ -22,6 +22,7 @@ import folder_paths
 def getlogger():
     return log
 
+
 def untuple(model):
     if isinstance(model, tuple):
         return model[0]

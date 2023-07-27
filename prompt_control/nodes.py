@@ -6,10 +6,11 @@ from .hijack import do_hijack, get_aitemplate_module
 
 log = utils.getlogger()
 
+
 # AITemplate support
 def set_callback(model, cb):
     model = untuple(model)
-    setattr(model, 'prompt_control_callback', cb)
+    setattr(model, "prompt_control_callback", cb)
 
 
 def get_lora_keymap(model, clip):
@@ -17,8 +18,10 @@ def get_lora_keymap(model, clip):
     key_map = comfy.sd.model_lora_keys_unet(model.model)
     return comfy.sd.model_lora_keys_clip(clip.cond_stage_model, key_map)
 
+
 def unpatch_model(model):
     untuple(model).unpatch_model()
+
 
 def clone_model(model):
     if isinstance(model, tuple):
@@ -26,8 +29,10 @@ def clone_model(model):
     else:
         return model.clone()
 
+
 def add_patches(model, patches, weight):
     untuple(model).add_patches(patches, weight)
+
 
 def patch_model(model):
     if isinstance(model, tuple):
@@ -35,22 +40,25 @@ def patch_model(model):
         m.patch_model()
         mod = get_aitemplate_module()
         l = mod.AITemplate.loader
-        if hasattr(l, 'pc_applied_module'):
+        if hasattr(l, "pc_applied_module"):
             log.info("Applying AITemplate unet")
-            l.apply_unet(aitemplate_module=l.pc_applied_module,
-                         unet=l.compvis_unet(m.model.state_dict()),
-                         in_channels=m.model.diffusion_model.in_channels,
-                         conv_in_key="conv_in_weight")
+            l.apply_unet(
+                aitemplate_module=l.pc_applied_module,
+                unet=l.compvis_unet(m.model.state_dict()),
+                in_channels=m.model.diffusion_model.in_channels,
+                conv_in_key="conv_in_weight",
+            )
             current_loaded_model = model
     else:
         model.patch_model()
 
 
 def load_lora(model, lora, weight, key_map):
-        loaded = comfy.sd.load_lora(lora, key_map)
-        model = clone_model(model)
-        add_patches(model, loaded, weight)
-        return model
+    loaded = comfy.sd.load_lora(lora, key_map)
+    model = clone_model(model)
+    add_patches(model, loaded, weight)
+    return model
+
 
 def apply_loras_to_model(model, orig_model, clip, lora_specs, loaded_loras):
     keymap = get_lora_keymap(model, clip)
