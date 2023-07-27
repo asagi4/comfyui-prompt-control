@@ -22,6 +22,12 @@ import folder_paths
 def getlogger():
     return log
 
+def untuple(model):
+    if isinstance(model, tuple):
+        return model[0]
+    else:
+        return model
+
 
 def load_loras_from_schedule(schedules, loaded_loras):
     lora_specs = []

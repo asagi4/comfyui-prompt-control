@@ -2,7 +2,7 @@ from . import utils as utils
 import comfy.sd
 from .utils import Timer
 from .parser import parse_prompt_schedules
-from .hijack import do_hijack
+from .hijack import do_hijack, get_aitemplate_module
 
 log = utils.getlogger()
 
@@ -44,9 +44,8 @@ def patch_model(model):
     if isinstance(model, tuple):
         m = model[0]
         m.patch_model()
-        # This module hierarchy is a bit silly
-        from custom_nodes.AIT.AITemplate.AITemplate import AITemplate, current_loaded_model
-        l = AITemplate.loader
+        mod = get_aitemplate_module()
+        l = mod.AITemplate.loader
         if hasattr(l, 'pc_applied_module'):
             log.info("Applying AITemplate unet")
             l.apply_unet(aitemplate_module=l.pc_applied_module,
