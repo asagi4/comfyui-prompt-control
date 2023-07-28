@@ -200,13 +200,55 @@ class EditableCLIPEncode:
             tokens = clip.tokenize(c["prompt"])
             cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
             conds.append(
-                [cond, {"pooled_output": pooled, "start_percent": 1.0 - start_pct, "end_percent": 1.0 - end_pct}]
+                [
+                    cond,
+                    {
+                        "pooled_output": pooled,
+                        "start_percent": 1.0 - start_pct,
+                        "end_percent": 1.0 - end_pct,
+                        "prompt": c["prompt"],
+                    },
+                ]
             )
             start_pct = end_pct
         return (conds,)
 
 
+class ConditioningCutoff:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "conds": ("CONDITIONING",),
+                "cutoff": ("FLOAT", {"min": 0.00, "max": 1.00, "default": 0.0, "step": 0.01}),
+            }
+        }
+
+    RETURN_TYPES = ("CONDITIONING",)
+    CATEGORY = "promptcontrol"
+    FUNCTION = "apply"
+
+    def apply(self, conds, cutoff):
+        res = []
+        new_start = 1.0
+        for c in conds:
+            start = c[1].get("start_percent", 1.0)
+            end = c[1].get("end_percent", 0.0)
+            if 1.0 - end < cutoff:
+                log.debug("Chose to remove prompt '%s'", c[1].get("prompt", "N/A"))
+                continue
+            c = [c[0].clone(), c[1].copy()]
+            c[1]["start_percent"] = new_start
+            c[1]["end_percent"] = end
+            new_start = end
+            res.append(c)
+
+        log.debug("Conds after filter: %s", [(c[1]["prompt"], c[1]["start_percent"], c[1]["end_percent"]) for c in res])
+        return (res,)
+
+
 NODE_CLASS_MAPPINGS = {
     "EditableCLIPEncode": EditableCLIPEncode,
     "LoRAScheduler": LoRAScheduler,
+    "ConditioningCutoff": ConditioningCutoff,
 }
