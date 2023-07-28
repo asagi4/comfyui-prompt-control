@@ -4,12 +4,14 @@ Nodes for convenient prompt editing. The aim is to make basic generations in Com
 
 *very* experimental, but things seem to work okay.
 
-Syntax is like A1111 for now, but only fractions are supported for steps:
-
 LoRAs work too, composable-lora -style
+Syntax is like A1111 for now, but only fractions are supported for steps.
+
+Alternating syntax is `[a|b:pct_steps]`, causing the prompt to alternate every `pct_steps`. `pct_steps` defaults to 0.1 if not specified.
 
 ```
-a [large::0.1] [cat:dog:0.5] [<lora:somelora:0.5:0.6>::0.5]
+a [large::0.1] [cat|dog:0.05] [<lora:somelora:0.5:0.6>::0.5]
+[in a park:in space:0.4]
 ```
 The `example.json` contains a simple workflow to play around with.
 
@@ -30,6 +32,7 @@ The basics seem to work; without prompt editing, the loaders can reproduce the o
 
 More advanced workflows might explode horribly.
 
+- Alternating does not work with LoRAs
+- If execution is interrupted and LoRA scheduling is used, your models might be left in an undefined state until you restart ComfyUI
 - Needs better syntax. A1111 is familiar, but not very good
-- alternating
 - convenient prompt editing for multiple sampling passes (HR fix etc)
