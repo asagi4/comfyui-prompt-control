@@ -54,7 +54,8 @@ def patch_model(model):
                 conv_in_key="conv_in_weight",
             )
     else:
-        model.patch_model()
+        model.patch_model(model.load_device)
+        model.model.to(model.load_device)
 
 
 class NoOut(object):
