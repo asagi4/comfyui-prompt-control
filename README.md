@@ -32,6 +32,7 @@ The basics seem to work; without prompt editing, the loaders can reproduce the o
 
 More advanced workflows might explode horribly.
 
+- There are still some slight differences in LoRA output for some reason.
 - Alternating does not work with LoRAs
 - If execution is interrupted and LoRA scheduling is used, your models might be left in an undefined state until you restart ComfyUI
 - Needs better syntax. A1111 is familiar, but not very good
