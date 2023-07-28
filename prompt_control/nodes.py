@@ -3,6 +3,7 @@ import comfy.sd
 from .utils import untuple
 from .parser import parse_prompt_schedules
 from .hijack import do_hijack, get_aitemplate_module
+import sys
 
 log = utils.getlogger()
 
@@ -13,10 +14,14 @@ def set_callback(model, cb):
     setattr(model, "prompt_control_callback", cb)
 
 
-def get_lora_keymap(model, clip):
-    model = untuple(model)
-    key_map = comfy.sd.model_lora_keys_unet(model.model)
-    return comfy.sd.model_lora_keys_clip(clip.cond_stage_model, key_map)
+def get_lora_keymap(model=None, clip=None):
+    key_map = {}
+    if model:
+        model = untuple(model)
+        key_map = comfy.sd.model_lora_keys_unet(model.model)
+    if clip:
+        key_map = comfy.sd.model_lora_keys_clip(clip.cond_stage_model, key_map)
+    return key_map
 
 
 def unpatch_model(model):
@@ -52,18 +57,33 @@ def patch_model(model):
         model.patch_model()
 
 
-def load_lora(model, lora, weight, key_map):
+class NoOut(object):
+    def write(*args):
+        pass
+
+    def flush(*args):
+        pass
+
+
+def load_lora(model, lora, weight, key_map, clone=True):
+    # Hack to temporarily override printing to stdout to stop log spam
+    def noop(*args):
+        pass
+    p = print
+    __builtins__['print'] = noop
     loaded = comfy.sd.load_lora(lora, key_map)
-    model = clone_model(model)
+    __builtins__['print'] = p
+    if clone:
+        model = clone_model(model)
     add_patches(model, loaded, weight)
     return model
 
 
-def apply_loras_to_model(model, orig_model, clip, lora_specs, loaded_loras, patch=True):
-    keymap = get_lora_keymap(model, clip)
+def apply_loras_to_model(model, orig_model, lora_specs, loaded_loras, patch=True):
+    keymap = get_lora_keymap(model=model)
     if patch:
         unpatch_model(model)
-        model = clone_model(model)
+        model = clone_model(orig_model)
 
     for name, weights in lora_specs:
         if name not in loaded_loras:
@@ -83,7 +103,6 @@ class LoRAScheduler:
         return {
             "required": {
                 "model": ("MODEL",),
-                "clip": ("CLIP",),
                 "text": ("STRING", {"multiline": True}),
             }
         }
@@ -92,7 +111,7 @@ class LoRAScheduler:
     CATEGORY = "promptcontrol"
     FUNCTION = "apply"
 
-    def apply(self, model, clip, text):
+    def apply(self, model, text):
         do_hijack()
         orig_model = clone_model(model)
         schedules = parse_prompt_schedules(text)
@@ -110,16 +129,14 @@ class LoRAScheduler:
 
             orig_cb = kwargs["callback"]
 
-            def apply_lora_for_step(step, patch=False):
+            def apply_lora_for_step(step, patch=True):
                 # zero-indexed steps, 0 = first step, but schedules are 1-indexed
                 sched = utils.schedule_for_step(steps, step + 1, schedules)
                 lora_spec = sorted(sched[1]["loras"])
 
                 if state["applied_loras"] != lora_spec:
                     log.debug("At step %s, applying lora_spec %s", step, lora_spec)
-                    state["model"] = apply_loras_to_model(
-                        state["model"], orig_model, clip, lora_spec, loaded_loras, patch
-                    )
+                    state["model"] = apply_loras_to_model(state["model"], orig_model, lora_spec, loaded_loras, patch)
                     state["applied_loras"] = lora_spec
 
             def step_callback(*args, **kwargs):
@@ -155,7 +172,6 @@ class EditableCLIPEncode:
         return {
             "required": {
                 "clip": ("CLIP",),
-                "model": ("MODEL",),
                 "text": ("STRING", {"multiline": True}),
             }
         }
@@ -169,10 +185,10 @@ class EditableCLIPEncode:
         self.current_loras = []
         self.orig_clip = None
 
-    def load_clip_lora(self, clip, model, loraspec):
+    def load_clip_lora(self, clip, loraspec):
         if not loraspec:
             return clip
-        key_map = get_lora_keymap(model, clip)
+        key_map = get_lora_keymap(clip=clip)
         if self.current_loras != loraspec:
             for l in loraspec:
                 name, w = l
@@ -180,12 +196,11 @@ class EditableCLIPEncode:
                 if name not in self.loaded_loras:
                     log.warn("%s not loaded, skipping", name)
                     continue
-                loaded = comfy.sd.load_lora(self.loaded_loras[name], key_map)
-                clip.add_patches(loaded, w[1])
+                clip = load_lora(clip, self.loaded_loras[name], w[1], key_map, clone=False)
                 log.info("CLIP LoRA loaded: %s:%s", name, w[1])
         return clip
 
-    def parse(self, clip, model, text):
+    def parse(self, clip, text):
         parsed = parse_prompt_schedules(text)
         log.debug("EditableCLIPEncode schedules: %s", parsed)
         self.current_loras = []
@@ -195,7 +210,7 @@ class EditableCLIPEncode:
         conds = []
         for end_pct, c in parsed:
             if c["loras"] != self.current_loras:
-                clip = self.load_clip_lora(self.orig_clip.clone(), model, c["loras"])
+                clip = self.load_clip_lora(self.orig_clip.clone(), c["loras"])
                 self.current_loras = c["loras"]
             tokens = clip.tokenize(c["prompt"])
             cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
