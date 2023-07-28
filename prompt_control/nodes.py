@@ -1,6 +1,6 @@
 from . import utils as utils
 import comfy.sd
-from .utils import Timer, untuple
+from .utils import untuple
 from .parser import parse_prompt_schedules
 from .hijack import do_hijack, get_aitemplate_module
 
@@ -48,7 +48,6 @@ def patch_model(model):
                 in_channels=m.model.diffusion_model.in_channels,
                 conv_in_key="conv_in_weight",
             )
-            current_loaded_model = model
     else:
         model.patch_model()
 
