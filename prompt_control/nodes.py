@@ -105,6 +105,9 @@ class LoRAScheduler:
             "required": {
                 "model": ("MODEL",),
                 "text": ("STRING", {"multiline": True}),
+            },
+            "optional": {
+                "cutoff": ("FLOAT", {"min": 0.00, "max": 1.00, "default": 0.0, "step": 0.01}),
             }
         }
 
@@ -112,11 +115,11 @@ class LoRAScheduler:
     CATEGORY = "promptcontrol"
     FUNCTION = "apply"
 
-    def apply(self, model, text):
+    def apply(self, model, text, cutoff=0.0):
         do_hijack()
         orig_model = clone_model(model)
         schedules = parse_prompt_schedules(text)
-        log.debug("LoRAScheduler: %s", schedules)
+        schedules = [(t, s) for t, s in schedules if t >= cutoff]
         loaded_loras = {}
         loaded_loras = utils.load_loras_from_schedule(schedules, loaded_loras)
 
