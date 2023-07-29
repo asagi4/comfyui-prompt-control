@@ -3,7 +3,8 @@ import comfy.sd
 from .utils import untuple
 from .parser import parse_prompt_schedules
 from .hijack import do_hijack, get_aitemplate_module
-import sys
+
+from nodes import NODE_CLASS_MAPPINGS as COMFY_NODES
 
 log = utils.getlogger()
 
@@ -205,6 +206,61 @@ class EditableCLIPEncode:
                 log.info("CLIP LoRA loaded: %s:%s", name, w[1])
         return clip
 
+    def do_encode(self, clip, text):
+        def fallback():
+            tokens = clip.tokenize(text)
+            cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
+            return [[cond, {"pooled_output": pooled}]]
+
+        # Super hacky way to call other nodes
+        # <f.Nodename(param=a,param2=b)>
+        if text.startswith("<f."):
+            encodernode, text = text[3:].split(">", 1)
+            encoderparams = {}
+            paramstart = encodernode.find('(')
+            paramend = encodernode.find(')')
+            if paramstart > 0 and paramend > paramstart:
+                ps=encodernode[paramstart+1:paramend]
+                encodernode=encodernode[:paramstart]
+                for p in ps.split(","):
+                    k, v = p.split("=", 1)
+                    encoderparams[k.strip().lower()] = v.strip()
+
+            node = COMFY_NODES.get(encodernode)
+            if not node or "CONDITIONING" not in node.RETURN_TYPES:
+                log.error("Invalid encoder node: %s, ignoring", encodernode)
+                return fallback()
+            ret_index = node.RETURN_TYPES.index("CONDITIONING")
+            log.info("Attempting to use %s", encodernode)
+            input_types = node.INPUT_TYPES()
+            r = input_types["required"]
+            params = {}
+            for k in r:
+                t = r[k][0]
+                if t == "STRING":
+                    params[k] = text
+                    log.info("Set %s=%s", k, params[k])
+                elif t == "CLIP":
+                    params[k] = clip
+                    log.info("Set %s to the CLIP model", k)
+                elif t in ("INT", "FLOAT"):
+                    f = __builtins__[t.lower()]
+                    if k in encoderparams:
+                        params[k] = f(encoderparams[k])
+                    else:
+                        params[k] = r[k][1]["default"]
+                    log.info("Set %s=%s", k, params[k])
+                elif isinstance(t, list):
+                    if k in encoderparams and k in t:
+                        params[k] = encoderparams[k]
+                    else:
+                        params[k] = t[0]
+                    log.info("Set %s=%s", k, params[k])
+                nodefunc = getattr(node, node.FUNCTION)
+            res = nodefunc(self, **params)[ret_index]
+            return res
+        return fallback()
+
     def parse(self, clip, text):
         parsed = parse_prompt_schedules(text)
         log.debug("EditableCLIPEncode schedules: %s", parsed)
@@ -227,29 +283,23 @@ class EditableCLIPEncode:
             prompt = c["prompt"]
             loras = c["loras"]
             cachekey = c_str(c)
-            cond, pooled = cond_cache.get(cachekey, (None, None))
+            cond = cond_cache.get(cachekey)
             if cond is None:
-                if c["loras"] != self.current_loras:
-                    clip = self.load_clip_lora(self.orig_clip.clone(), c["loras"])
-                    self.current_loras = c["loras"]
+                if loras != self.current_loras:
+                    clip = self.load_clip_lora(self.orig_clip.clone(), loras)
+                    self.current_loras = loras
 
-                tokens = clip.tokenize(c["prompt"])
-                cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
-                cond_cache[cachekey] = (cond, pooled)
+                cond = self.do_encode(clip, prompt)
+                cond_cache[cachekey] = cond
             else:
                 pass
-
-            conds.append(
-                [
-                    cond,
-                    {
-                        "pooled_output": pooled,
-                        "start_percent": 1.0 - start_pct,
-                        "end_percent": 1.0 - end_pct,
-                        "prompt": c["prompt"],
-                    },
-                ]
-            )
+            # Node functions return lists of cond
+            for n in cond:
+                n = [n[0], n[1].copy()]
+                n[1]["start_percent"] = 1.0 - start_pct
+                n[1]["end_percent"] = 1.0 - end_pct
+                n[1]["prompt"] = prompt
+                conds.append(n)
             start_pct = end_pct
         return (conds,)
 
@@ -272,7 +322,6 @@ class ConditioningCutoff:
         res = []
         new_start = 1.0
         for c in conds:
-            start = c[1].get("start_percent", 1.0)
             end = c[1].get("end_percent", 0.0)
             if 1.0 - end < cutoff:
                 log.debug("Chose to remove prompt '%s'", c[1].get("prompt", "N/A"))

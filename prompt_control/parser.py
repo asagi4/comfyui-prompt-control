@@ -1,5 +1,28 @@
 import lark
 
+try:
+    from jinja2 import Template
+
+    def expand_template(string):
+        for x in ["<%", "<=", "<#", "#>", "=>", "%>"]:
+            if x in string:
+                return Template(
+                    string,
+                    block_start_string="<%",
+                    block_end_string="%>",
+                    variable_start_string="<=",
+                    variable_end_string="=>",
+                    comment_start_string="<#",
+                    comment_end_string="#>",
+                ).render()
+        return string
+
+except ImportError:
+    print("Failed to import jinja2")
+
+    def expand_template(string):
+        return string
+
 
 import logging
 
@@ -90,7 +113,8 @@ def parse_prompt_schedules(prompt):
                         prompt.append(a)
                     elif a:
                         loraspecs.append(a)
-                return {"prompt": "".join(prompt), "loras": loraspecs}
+                p = "".join(prompt)
+                return {"prompt": p, "loras": loraspecs}
 
             def plain(self, args):
                 return args[0].value
