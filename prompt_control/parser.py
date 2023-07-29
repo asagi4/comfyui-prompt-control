@@ -1,26 +1,26 @@
 import lark
 
-try:
-    from .utils import getlogger
 
-    log = getlogger()
-except ImportError:
-    pass
+import logging
+
+logging.basicConfig()
+log = logging.getLogger("comfyui-prompt-control")
 
 prompt_parser = lark.Lark(
     r"""
 !start: (prompt | /[][():]/+)*
-prompt: (emphasized | scheduled | alternate | plain | loraspec | WHITESPACE)*
-!emphasized: "(" prompt ")"
+prompt: (emphasized | scheduled | alternate | loraspec | PLAIN | /</ | />/ | WHITESPACE)+
+!emphasized: "(" prompt? ")"
         | "(" prompt ":" prompt ")"
         | "[" prompt "]"
 scheduled: "[" [prompt ":"] prompt ":" WHITESPACE? NUMBER "]"
 alternate: "[" prompt ("|" prompt)+ [":" NUMBER] "]"
-loraspec: "<lora:" plain (":" WHITESPACE? NUMBER)~1..2 ">"
+loraspec: "<lora:" PLAIN (":" WHITESPACE? NUMBER)~1..2 ">"
 WHITESPACE: /\s+/
-plain: /([^<>\\\[\]():|]|\\.)+/
+PLAIN: /([^<>\\\[\]():|]|\\.)+/
 %import common.SIGNED_NUMBER -> NUMBER
-"""
+""",
+    lexer="dynamic",
 )
 
 
@@ -38,6 +38,10 @@ def clamp(a, b, c):
 
 
 def parse_prompt_schedules(prompt):
+    prompt = expand_template(prompt)
+    prompt = prompt.strip()
+    log.debug("Parsing: %s", prompt)
+
     try:
         tree = prompt_parser.parse(prompt)
     except lark.exceptions.LarkError as e:
