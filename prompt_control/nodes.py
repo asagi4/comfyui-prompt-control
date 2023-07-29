@@ -70,10 +70,11 @@ def load_lora(model, lora, weight, key_map, clone=True):
     # Hack to temporarily override printing to stdout to stop log spam
     def noop(*args):
         pass
+
     p = print
-    __builtins__['print'] = noop
+    __builtins__["print"] = noop
     loaded = comfy.sd.load_lora(lora, key_map)
-    __builtins__['print'] = p
+    __builtins__["print"] = p
     if clone:
         model = clone_model(model)
     add_patches(model, loaded, weight)
@@ -108,7 +109,7 @@ class LoRAScheduler:
             },
             "optional": {
                 "cutoff": ("FLOAT", {"min": 0.00, "max": 1.00, "default": 0.0, "step": 0.01}),
-            }
+            },
         }
 
     RETURN_TYPES = ("MODEL",)
@@ -212,12 +213,32 @@ class EditableCLIPEncode:
         self.orig_clip = clip
         start_pct = 0.0
         conds = []
+        cond_cache = {}
+
+        def c_str(c):
+            r = [c["prompt"]]
+            for l in sorted(c["loras"]):
+                name, weights = l
+                r.append(name)
+                r.extend(weights)
+            return "".join(str(i) for i in r)
+
         for end_pct, c in parsed:
-            if c["loras"] != self.current_loras:
-                clip = self.load_clip_lora(self.orig_clip.clone(), c["loras"])
-                self.current_loras = c["loras"]
-            tokens = clip.tokenize(c["prompt"])
-            cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
+            prompt = c["prompt"]
+            loras = c["loras"]
+            cachekey = c_str(c)
+            cond, pooled = cond_cache.get(cachekey, (None, None))
+            if cond is None:
+                if c["loras"] != self.current_loras:
+                    clip = self.load_clip_lora(self.orig_clip.clone(), c["loras"])
+                    self.current_loras = c["loras"]
+
+                tokens = clip.tokenize(c["prompt"])
+                cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
+                cond_cache[cachekey] = (cond, pooled)
+            else:
+                pass
+
             conds.append(
                 [
                     cond,
