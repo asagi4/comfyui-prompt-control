@@ -18,7 +18,7 @@ class LoRAScheduler:
             },
             "optional": {
                 "cutoff": ("FLOAT", {"min": 0.00, "max": 1.00, "default": 0.0, "step": 0.01}),
-                "filter_tag": ("STRING", {"default": ""})
+                "filter_tags": ("STRING", {"default": ""})
             },
         }
 
@@ -26,10 +26,10 @@ class LoRAScheduler:
     CATEGORY = "promptcontrol"
     FUNCTION = "apply"
 
-    def apply(self, model, text, cutoff=0.0, filter_tag=""):
+    def apply(self, model, text, cutoff=0.0, filter_tags=""):
         do_hijack()
         orig_model = clone_model(model)
-        schedules = parse_prompt_schedules(text, filter_tag.strip().upper())
+        schedules = parse_prompt_schedules(text, filter_tags)
         schedules = [(t, s) for t, s in schedules if t >= cutoff]
         loaded_loras = {}
         loaded_loras = utils.load_loras_from_schedule(schedules, loaded_loras)

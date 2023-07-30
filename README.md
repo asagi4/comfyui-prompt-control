@@ -26,9 +26,15 @@ Instead of step percentages, you can use a *tag* to select part of an input:
 ```
 a large [dog:cat<lora:catlora:0.5>:SECOND_PASS]
 ```
-then specify the `filter_tag` parameter in `LoRAScheduler` or `EditableCLIPEncoding` to filter the prompt. If the tag matches `filter_tag`, the second option is returned (`cat`, in this case, with the LoRA). Otherwise, the first option is chosen (`dog`, without LoRA).
+then specify the `filter_tags` parameter in `LoRAScheduler` or `EditableCLIPEncoding` to filter the prompt. If the tag matches any tag `filter_tags` (comma-separated), the second option is returned (`cat`, in this case, with the LoRA). Otherwise, the first option is chosen (`dog`, without LoRA).
 
-The tags **must** be uppercase A-Z and underscores only, or they won't be recognized. That is, `[dog:cat:hr]` will not work.
+the values in `filter_tags` are case-insensitive, but the tags in the input **must** be uppercase A-Z and underscores only, or they won't be recognized. That is, `[dog:cat:hr]` will not work.
+
+For example, a prompt
+```
+a [black:blue:X] [cat:dog:Y] [walking:running:Z] in space
+```
+with `filter_tags` `x,z` would result in the prompt `a blue cat running in space`
 
 ## Nodes
 

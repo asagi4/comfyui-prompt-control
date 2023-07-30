@@ -62,7 +62,8 @@ def clamp(a, b, c):
     return min(max(a, b), c)
 
 
-def parse_prompt_schedules(prompt, select_tag=''):
+def parse_prompt_schedules(prompt, filter_tags=''):
+    filters = [x.upper().strip() for x in filter_tags.split(',')]
     prompt = expand_template(prompt)
     prompt = prompt.strip()
     log.debug("Parsing: %s", prompt)
@@ -102,7 +103,7 @@ def parse_prompt_schedules(prompt, select_tag=''):
             def scheduled(self, args):
                 before, after, when = args
                 if isinstance(when, str):
-                    return before or () if when != select_tag else after
+                    return before or () if when not in filters else after
 
                 return before or () if step <= when else after
 
