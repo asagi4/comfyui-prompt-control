@@ -118,8 +118,8 @@ def parse_prompt_schedules(prompt):
                         w, w_clip = a[1][0], a[1][1 % len(a[1])]
                         e = loraspecs.get(n, {})
                         loraspecs[n] = {
-                            "weight": e.get("weight", 0.0) + w,
-                            "weight_clip": e.get("weight_clip", 0.0) + w_clip,
+                            "weight": round(e.get("weight", 0.0) + w, 2),
+                            "weight_clip": round(e.get("weight_clip", 0.0) + w_clip, 2),
                         }
                 p = "".join(prompt)
                 return {"prompt": p, "loras": loraspecs}
