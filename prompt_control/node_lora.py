@@ -88,11 +88,11 @@ def apply_loras_to_model(model, orig_model, lora_specs, loaded_loras, patch=True
         unpatch_model(model)
         model = clone_model(orig_model)
 
-    for name, weights in lora_specs:
+    for name, params in lora_specs.items():
         if name not in loaded_loras:
             continue
-        model = load_lora(model, loaded_loras[name], weights[0], keymap)
-        log.info("Loaded LoRA %s:%s", name, weights[0])
+        model = load_lora(model, loaded_loras[name], params['weight'], keymap)
+        log.info("Loaded LoRA %s:%s", name, params['weight'])
 
     if patch:
         patch_model(model)

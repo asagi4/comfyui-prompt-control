@@ -1,19 +1,10 @@
-from .utils import untuple
+from .utils import get_callback
 import comfy.sample
 import sys
 
 import logging
 
 log = logging.getLogger("comfyui-prompt-control")
-
-
-# AITemplate support
-def get_aitemplate_module():
-    return sys.modules["AIT.AITemplate.AITemplate"]
-
-
-def get_callback(model):
-    return getattr(untuple(model), "prompt_control_callback", None)
 
 
 def do_hijack():

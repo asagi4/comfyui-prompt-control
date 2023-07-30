@@ -1,5 +1,4 @@
 from pathlib import Path
-from os import environ
 import time
 
 import comfy.sample
@@ -9,6 +8,7 @@ import comfy.sd
 import folder_paths
 
 import logging
+import sys
 
 log = logging.getLogger("comfyui-prompt-control")
 
@@ -19,15 +19,8 @@ def untuple(model):
     else:
         return model
 
-
-def get_lora_keymap(model=None, clip=None):
-    key_map = {}
-    if model:
-        model = untuple(model)
-        key_map = comfy.sd.model_lora_keys_unet(model.model)
-    if clip:
-        key_map = comfy.sd.model_lora_keys_clip(clip.cond_stage_model, key_map)
-    return key_map
+def get_aitemplate_module():
+    return sys.modules["AIT.AITemplate.AITemplate"]
 
 
 def unpatch_model(model):
@@ -64,6 +57,22 @@ def patch_model(model):
         model.model.to(model.load_device)
 
 
+def get_callback(model):
+    return getattr(untuple(model), "prompt_control_callback", None)
+
+
+def get_lora_keymap(model=None, clip=None):
+    key_map = {}
+    if model:
+        model = untuple(model)
+        key_map = comfy.sd.model_lora_keys_unet(model.model)
+    if clip:
+        key_map = comfy.sd.model_lora_keys_clip(clip.cond_stage_model, key_map)
+    return key_map
+
+
+
+
 class NoOut(object):
     def write(*args):
         pass
@@ -93,11 +102,11 @@ def apply_loras_to_model(model, orig_model, lora_specs, loaded_loras, patch=True
         unpatch_model(model)
         model = clone_model(orig_model)
 
-    for name, weights in lora_specs:
+    for name, params in lora_specs.items():
         if name not in loaded_loras:
             continue
-        model = load_lora(model, loaded_loras[name], weights[0], keymap)
-        log.info("Loaded LoRA %s:%s", name, weights[0])
+        model = load_lora(model, loaded_loras[name], params['weight'], keymap)
+        log.info("Loaded LoRA %s:%s", name, params['weight'])
 
     if patch:
         patch_model(model)
@@ -109,7 +118,7 @@ def load_loras_from_schedule(schedules, loaded_loras):
     lora_specs = []
     for step, sched in schedules:
         if sched["loras"]:
-            lora_specs.extend(sched["loras"])
+            lora_specs.update(sched["loras"])
     loaded_loras = load_loras(lora_specs)
     return loaded_loras
 
@@ -136,8 +145,7 @@ def schedule_for_step(total_steps, step, schedules):
 def load_loras(lora_specs, loaded_loras=None):
     loaded_loras = loaded_loras or {}
     filenames = [Path(f) for f in folder_paths.get_filename_list("loras")]
-    names = set(name for name, _ in lora_specs)
-    for name in names:
+    for name in lora_specs.keys():
         if name in loaded_loras:
             continue
         found = False

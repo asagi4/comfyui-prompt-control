@@ -69,7 +69,7 @@ def parse_prompt_schedules(prompt):
         tree = prompt_parser.parse(prompt)
     except lark.exceptions.LarkError as e:
         log.error("Prompt editing parse error: %s", e)
-        return [[1.0, {"prompt": prompt, "loras": []}]]
+        return [[1.0, {"prompt": prompt, "loras": {}}]]
 
     # TODO: There's probably a better way to do this
     # Use 100 instead of floats here to make math easier
@@ -106,13 +106,21 @@ def parse_prompt_schedules(prompt):
 
             def start(self, args):
                 prompt = []
-                loraspecs = []
+                loraspecs = {}
                 args = flatten(args)
                 for a in args:
                     if type(a) == str:
                         prompt.append(a)
                     elif a:
-                        loraspecs.append(a)
+                        # sum identical specs together
+                        n = a[0]
+                        # if clip weight is not provided, use unet weight
+                        w, w_clip = a[1][0], a[1][1 % len(a[1])]
+                        e = loraspecs.get(n, {})
+                        loraspecs[n] = {
+                            "weight": e.get("weight", 0.0) + w,
+                            "weight_clip": e.get("weight_clip", 0.0) + w_clip,
+                        }
                 p = "".join(prompt)
                 return {"prompt": p, "loras": loraspecs}
 
