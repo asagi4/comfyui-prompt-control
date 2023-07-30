@@ -1,20 +1,31 @@
 import lark
 
 try:
-    from jinja2 import Template
+    from jinja2 import Template, Environment
+    import math
+
+    jenv = Environment(
+        block_start_string="<%",
+        block_end_string="%>",
+        variable_start_string="<=",
+        variable_end_string="=>",
+        comment_start_string="<#",
+        comment_end_string="#>",
+    )
+
+    def steps(start, end=None, step=0.1):
+        if end is None:
+            end = start
+            start = step
+        while start <= end:
+            yield start
+            start += step
+            start = round(start, 2)
 
     def expand_template(string):
         for x in ["<%", "<=", "<#", "#>", "=>", "%>"]:
             if x in string:
-                return Template(
-                    string,
-                    block_start_string="<%",
-                    block_end_string="%>",
-                    variable_start_string="<=",
-                    variable_end_string="=>",
-                    comment_start_string="<#",
-                    comment_end_string="#>",
-                ).render()
+                return jenv.from_string(string, globals=dict(m=math, steps=steps)).render()
         return string
 
 except ImportError:
@@ -32,12 +43,13 @@ log = logging.getLogger("comfyui-prompt-control")
 prompt_parser = lark.Lark(
     r"""
 !start: (prompt | /[][():]/+)*
-prompt: (emphasized | scheduled | alternate | loraspec | PLAIN | /</ | />/ | WHITESPACE)+
+prompt: (emphasized | scheduled | alternate | sequence | loraspec | PLAIN | /</ | />/ | WHITESPACE)+
 !emphasized: "(" prompt? ")"
         | "(" prompt ":" prompt ")"
         | "[" prompt "]"
 scheduled: "[" [prompt ":"] prompt ":" WHITESPACE? NUMBER "]"
         | "[" [prompt ":"] prompt ":" WHITESPACE? TAG "]"
+sequence:  "[SEQ" ":" prompt ":" NUMBER (":" prompt ":" NUMBER)+ "]"
 alternate: "[" prompt ("|" prompt)+ [":" NUMBER] "]"
 loraspec: "<lora:" PLAIN (":" WHITESPACE? NUMBER)~1..2 ">"
 WHITESPACE: /\s+/
@@ -62,8 +74,8 @@ def clamp(a, b, c):
     return min(max(a, b), c)
 
 
-def parse_prompt_schedules(prompt, filter_tags=''):
-    filters = [x.upper().strip() for x in filter_tags.split(',')]
+def parse_prompt_schedules(prompt, filter_tags=""):
+    filters = [x.upper().strip() for x in filter_tags.split(",")]
     prompt = expand_template(prompt)
     prompt = prompt.strip()
     log.debug("Parsing: %s", prompt)
@@ -77,6 +89,7 @@ def parse_prompt_schedules(prompt, filter_tags=''):
     # TODO: There's probably a better way to do this
     # Use 100 instead of floats here to make math easier
     # Convert to percentages later
+
     def collect(tree):
         res = [100]
 
@@ -88,6 +101,13 @@ def parse_prompt_schedules(prompt, filter_tags=''):
                 w = float(tree.children[-1]) * 100
                 tree.children[-1] = clamp(0, w, 100)
                 res.append(w)
+
+            def sequence(self, tree):
+                steps = tree.children[1::2]
+                for i, steps in enumerate(steps):
+                    w = float(tree.children[i * 2 + 1]) * 100
+                    tree.children[i * 2 + 1] = clamp(0, w, 100)
+                    res.append(w)
 
             def alternate(self, tree):
                 step_size = int(round(float(tree.children[-1] or 0.1), 2) * 100)
@@ -106,6 +126,18 @@ def parse_prompt_schedules(prompt, filter_tags=''):
                     return before or () if when not in filters else after
 
                 return before or () if step <= when else after
+
+            def sequence(self, args):
+                previous_step = 0.0
+                prompts = args[::2]
+                steps = args[1::2]
+                for s, p in zip(steps, prompts):
+                    if s >= step and step >= previous_step:
+                        previous_step = step
+                        return p
+                    else:
+                        previous_step = s
+                return ()
 
             def alternate(self, args):
                 step_size = args[-1]
@@ -129,7 +161,7 @@ def parse_prompt_schedules(prompt, filter_tags=''):
                             "weight": round(e.get("weight", 0.0) + w, 2),
                             "weight_clip": round(e.get("weight_clip", 0.0) + w_clip, 2),
                         }
-                        if loraspecs[n]['weight'] == 0 and loraspecs[n]['weight_clip'] == 0:
+                        if loraspecs[n]["weight"] == 0 and loraspecs[n]["weight_clip"] == 0:
                             del loraspecs[n]
                 p = "".join(prompt)
                 return {"prompt": p, "loras": loraspecs}

@@ -21,6 +21,17 @@ a [large::0.1] [cat|dog:0.05] [<lora:somelora:0.5:0.6>::0.5]
 Alternating syntax is `[a|b:pct_steps]`, causing the prompt to alternate every `pct_steps`. `pct_steps` defaults to 0.1 if not specified.
 The `example.json` contains a simple workflow to play around with.
 
+### Sequences
+
+The syntax `[SEQ:a:N1:b:N2:c:N3]` is shorthand for `[a:[b:[c::N3]:N2]:N1]` ie. it switches from `a` to `b` to `c` to nothing at the specified points in sequence.
+
+Might be useful with Jinja templating (see Experiments below for details). For example:
+```
+[SEQ<% for x in steps(0.1, 0.9, 0.1) %>:<lora:test:<= m.sin(x*m.pi) + 0.1 =>>:<= x =><% endfor %>]
+```
+
+generates a LoRA schedule based on a sinewave
+
 ### Tag selection
 Instead of step percentages, you can use a *tag* to select part of an input:
 ```
@@ -65,6 +76,24 @@ Due to sampler patching, your AITemplate nodes must be cloned to a directory cal
 
 Note that feeding too large conditionings to AITemplate seems to break it. This can happen when using alternating syntax with too small a step.
 
+# Experiments
+
+If you have the `jinja2` package installed in your Python environment, your prompts will be evaluated as a Jinja2 template prior to parsing. Note, however, that because ComfyUI's frontend uses `{}` for syntax, There are the following modifications to Jinja syntax:
+
+- `{% %}` is `<% %>`
+- `{{ }}` is `<= =>`
+- `{# #}` is `<# #>`
+
+Jinja stuff is experimental. I might make it its own node at some point instead of stuffing everything in the same parser.
+
+The Python `math` module is available to jinja as the variable `m`. See `import math; help(math)` in a Python interpreter.
+
+There's also a handy `steps` function that'll generate a list of steps for iterating.
+
+You can call it either as `steps(end)`, `steps(end, step=0.1)` or `steps(start, end, step)`. `step` is an optional parameter that defaults to `0.1`. It'll return steps *inclusive* of start and end as long as step doesn't go past the end.
+
+the second form is equivalent to `steps(step, end, step)`. i.e. it starts at the first step.
+
 # TODO & BUGS
 
 The loaders can mostly reproduce the output from using `LoraLoader`.
@@ -75,3 +104,4 @@ More advanced workflows might explode horribly.
 
 - If execution is interrupted and LoRA scheduling is used, your models might be left in an undefined state until you restart ComfyUI
 - Needs better syntax. A1111 is familiar, but not very good
+- More advanced LoRA weight scheduling
