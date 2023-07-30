@@ -4,7 +4,9 @@ from .parser import parse_prompt_schedules
 from nodes import NODE_CLASS_MAPPINGS as COMFY_NODES
 
 import logging
-log = logging.getLogger('comfyui-prompt-control')
+
+log = logging.getLogger("comfyui-prompt-control")
+
 
 class EditableCLIPEncode:
     @classmethod
@@ -51,11 +53,11 @@ class EditableCLIPEncode:
         if text.startswith("<f."):
             encodernode, text = text[3:].split(">", 1)
             encoderparams = {}
-            paramstart = encodernode.find('(')
-            paramend = encodernode.find(')')
+            paramstart = encodernode.find("(")
+            paramend = encodernode.find(")")
             if paramstart > 0 and paramend > paramstart:
-                ps=encodernode[paramstart+1:paramend]
-                encodernode=encodernode[:paramstart]
+                ps = encodernode[paramstart + 1 : paramend]
+                encodernode = encodernode[:paramstart]
                 for p in ps.split(","):
                     k, v = p.split("=", 1)
                     encoderparams[k.strip().lower()] = v.strip()
@@ -136,4 +138,3 @@ class EditableCLIPEncode:
                 conds.append(n)
             start_pct = end_pct
         return (conds,)
-

@@ -5,7 +5,8 @@ from .parser import parse_prompt_schedules
 from .hijack import do_hijack, get_aitemplate_module
 
 import logging
-log = logging.getLogger('comfyui-prompt-control')
+
+log = logging.getLogger("comfyui-prompt-control")
 
 
 # AITemplate support

@@ -3,7 +3,8 @@ import comfy.sample
 import sys
 
 import logging
-log = logging.getLogger('comfyui-prompt-control')
+
+log = logging.getLogger("comfyui-prompt-control")
 
 
 # AITemplate support

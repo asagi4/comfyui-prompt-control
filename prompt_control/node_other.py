@@ -1,5 +1,7 @@
 import logging
-log = logging.getLogger('comfyui-prompt-control')
+
+log = logging.getLogger("comfyui-prompt-control")
+
 
 class ConditioningCutoff:
     @classmethod
