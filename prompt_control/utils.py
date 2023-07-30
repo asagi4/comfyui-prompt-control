@@ -1,15 +1,5 @@
 from pathlib import Path
-
-import logging
 from os import environ
-
-log = logging.getLogger("prompt-control")
-logging.basicConfig()
-if environ.get("COMFY_PC_DEBUG", False):
-    log.setLevel(logging.DEBUG)
-else:
-    log.setLevel(logging.INFO)
-
 import time
 
 import comfy.sample
@@ -18,9 +8,9 @@ import comfy.utils
 import comfy.sd
 import folder_paths
 
+import logging
 
-def getlogger():
-    return log
+log = logging.getLogger("comfyui-prompt-control")
 
 
 def untuple(model):
@@ -28,6 +18,91 @@ def untuple(model):
         return model[0]
     else:
         return model
+
+
+def get_lora_keymap(model=None, clip=None):
+    key_map = {}
+    if model:
+        model = untuple(model)
+        key_map = comfy.sd.model_lora_keys_unet(model.model)
+    if clip:
+        key_map = comfy.sd.model_lora_keys_clip(clip.cond_stage_model, key_map)
+    return key_map
+
+
+def unpatch_model(model):
+    untuple(model).unpatch_model()
+
+
+def clone_model(model):
+    if isinstance(model, tuple):
+        return (model[0].clone(), model[1])
+    else:
+        return model.clone()
+
+
+def add_patches(model, patches, weight):
+    untuple(model).add_patches(patches, weight)
+
+
+def patch_model(model):
+    if isinstance(model, tuple):
+        m = model[0]
+        m.patch_model()
+        mod = get_aitemplate_module()
+        l = mod.AITemplate.loader
+        if hasattr(l, "pc_applied_module"):
+            log.info("Applying AITemplate unet")
+            l.apply_unet(
+                aitemplate_module=l.pc_applied_module,
+                unet=l.compvis_unet(m.model.state_dict()),
+                in_channels=m.model.diffusion_model.in_channels,
+                conv_in_key="conv_in_weight",
+            )
+    else:
+        model.patch_model(model.load_device)
+        model.model.to(model.load_device)
+
+
+class NoOut(object):
+    def write(*args):
+        pass
+
+    def flush(*args):
+        pass
+
+
+def load_lora(model, lora, weight, key_map, clone=True):
+    # Hack to temporarily override printing to stdout to stop log spam
+    def noop(*args):
+        pass
+
+    p = print
+    __builtins__["print"] = noop
+    loaded = comfy.sd.load_lora(lora, key_map)
+    __builtins__["print"] = p
+    if clone:
+        model = clone_model(model)
+    add_patches(model, loaded, weight)
+    return model
+
+
+def apply_loras_to_model(model, orig_model, lora_specs, loaded_loras, patch=True):
+    keymap = get_lora_keymap(model=model)
+    if patch:
+        unpatch_model(model)
+        model = clone_model(orig_model)
+
+    for name, weights in lora_specs:
+        if name not in loaded_loras:
+            continue
+        model = load_lora(model, loaded_loras[name], weights[0], keymap)
+        log.info("Loaded LoRA %s:%s", name, weights[0])
+
+    if patch:
+        patch_model(model)
+
+    return model
 
 
 def load_loras_from_schedule(schedules, loaded_loras):

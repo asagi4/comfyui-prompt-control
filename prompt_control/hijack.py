@@ -1,8 +1,9 @@
-from .utils import getlogger, untuple
+from .utils import untuple
 import comfy.sample
 import sys
 
-log = getlogger()
+import logging
+log = logging.getLogger('comfyui-prompt-control')
 
 
 # AITemplate support
