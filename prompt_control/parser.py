@@ -121,6 +121,8 @@ def parse_prompt_schedules(prompt):
                             "weight": round(e.get("weight", 0.0) + w, 2),
                             "weight_clip": round(e.get("weight_clip", 0.0) + w_clip, 2),
                         }
+                        if loraspecs[n]['weight'] == 0 and loraspecs[n]['weight_clip'] == 0:
+                            del loraspecs[n]
                 p = "".join(prompt)
                 return {"prompt": p, "loras": loraspecs}
 
