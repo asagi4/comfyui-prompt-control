@@ -35,6 +35,8 @@ class EditableCLIPEncode:
             if name not in self.loaded_loras:
                 log.warn("%s not loaded, skipping", name)
                 continue
+            if params['weight_clip'] == 0:
+                continue
             clip = utils.load_lora(clip, self.loaded_loras[name], params['weight_clip'], key_map, clone=False)
             log.info("CLIP LoRA loaded: %s:%s", name, params['weight_clip'])
         return clip

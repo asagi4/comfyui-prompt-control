@@ -107,7 +107,7 @@ def apply_loras_to_model(model, orig_model, lora_specs, loaded_loras, patch=True
         model = clone_model(orig_model)
 
     for name, params in lora_specs.items():
-        if name not in loaded_loras:
+        if name not in loaded_loras or params['weight'] == 0:
             continue
         model = load_lora(model, loaded_loras[name], params['weight'], keymap)
         log.info("Loaded LoRA %s:%s", name, params['weight'])
