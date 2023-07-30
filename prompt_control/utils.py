@@ -39,8 +39,8 @@ def add_patches(model, patches, weight):
 
 
 def patch_model(model):
-    if isinstance(model, tuple):
-        m = model[0]
+    if isinstance(model, tuple) or 'aitemplate_keep_loaded' in model.model_options:
+        m = untuple(model)
         m.patch_model()
         mod = get_aitemplate_module()
         l = mod.AITemplate.loader
