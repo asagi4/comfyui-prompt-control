@@ -60,6 +60,9 @@ def patch_model(model):
 def get_callback(model):
     return getattr(untuple(model), "prompt_control_callback", None)
 
+def set_callback(model, cb):
+    return setattr(untuple(model), "prompt_control_callback", cb)
+
 
 def get_lora_keymap(model=None, clip=None):
     key_map = {}
@@ -97,6 +100,7 @@ def load_lora(model, lora, weight, key_map, clone=True):
 
 
 def apply_loras_to_model(model, orig_model, lora_specs, loaded_loras, patch=True):
+    print("apply_loras", lora_specs)
     keymap = get_lora_keymap(model=model)
     if patch:
         unpatch_model(model)
@@ -115,7 +119,7 @@ def apply_loras_to_model(model, orig_model, lora_specs, loaded_loras, patch=True
 
 
 def load_loras_from_schedule(schedules, loaded_loras):
-    lora_specs = []
+    lora_specs = {}
     for step, sched in schedules:
         if sched["loras"]:
             lora_specs.update(sched["loras"])

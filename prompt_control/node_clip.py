@@ -24,22 +24,19 @@ class EditableCLIPEncode:
 
     def __init__(self):
         self.loaded_loras = {}
-        self.current_loras = []
+        self.current_loras = {}
         self.orig_clip = None
 
     def load_clip_lora(self, clip, loraspec):
         if not loraspec:
             return clip
         key_map = utils.get_lora_keymap(clip=clip)
-        if self.current_loras != loraspec:
-            for l in loraspec:
-                name, w = l
-                w = w + [w[0]]
-                if name not in self.loaded_loras:
-                    log.warn("%s not loaded, skipping", name)
-                    continue
-                clip = utils.load_lora(clip, self.loaded_loras[name], w[1], key_map, clone=False)
-                log.info("CLIP LoRA loaded: %s:%s", name, w[1])
+        for name, params in loraspec.items():
+            if name not in self.loaded_loras:
+                log.warn("%s not loaded, skipping", name)
+                continue
+            clip = utils.load_lora(clip, self.loaded_loras[name], params['weight_clip'], key_map, clone=False)
+            log.info("CLIP LoRA loaded: %s:%s", name, params['weight_clip'])
         return clip
 
     def do_encode(self, clip, text):
@@ -100,19 +97,19 @@ class EditableCLIPEncode:
     def parse(self, clip, text):
         parsed = parse_prompt_schedules(text)
         log.debug("EditableCLIPEncode schedules: %s", parsed)
-        self.current_loras = []
+        self.current_loras = {}
         self.loaded_loras = utils.load_loras_from_schedule(parsed, self.loaded_loras)
-        self.orig_clip = clip
+        self.orig_clip = clip.clone()
         start_pct = 0.0
         conds = []
         cond_cache = {}
 
         def c_str(c):
             r = [c["prompt"]]
-            for l in sorted(c["loras"]):
-                name, weights = l
-                r.append(name)
-                r.extend(weights)
+            loras = c['loras']
+            for k in sorted(loras.keys()):
+                r.append(k)
+                r.append(loras[k]['weight_clip'])
             return "".join(str(i) for i in r)
 
         for end_pct, c in parsed:
