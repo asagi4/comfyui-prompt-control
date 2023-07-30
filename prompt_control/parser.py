@@ -37,10 +37,12 @@ prompt: (emphasized | scheduled | alternate | loraspec | PLAIN | /</ | />/ | WHI
         | "(" prompt ":" prompt ")"
         | "[" prompt "]"
 scheduled: "[" [prompt ":"] prompt ":" WHITESPACE? NUMBER "]"
+        | "[" prompt ":" prompt ":" WHITESPACE? TAG "]"
 alternate: "[" prompt ("|" prompt)+ [":" NUMBER] "]"
 loraspec: "<lora:" PLAIN (":" WHITESPACE? NUMBER)~1..2 ">"
 WHITESPACE: /\s+/
 PLAIN: /([^<>\\\[\]():|]|\\.)+/
+TAG: /[A-Za-z]+/
 %import common.SIGNED_NUMBER -> NUMBER
 """,
     lexer="dynamic",
@@ -60,7 +62,7 @@ def clamp(a, b, c):
     return min(max(a, b), c)
 
 
-def parse_prompt_schedules(prompt):
+def parse_prompt_schedules(prompt, select_tag=''):
     prompt = expand_template(prompt)
     prompt = prompt.strip()
     log.debug("Parsing: %s", prompt)
@@ -79,7 +81,9 @@ def parse_prompt_schedules(prompt):
 
         class CollectSteps(lark.Visitor):
             def scheduled(self, tree):
-                # Last element in []
+                i = tree.children[-1]
+                if i.type == "TAG":
+                    return
                 w = float(tree.children[-1]) * 100
                 tree.children[-1] = clamp(0, w, 100)
                 res.append(w)
@@ -97,6 +101,9 @@ def parse_prompt_schedules(prompt):
         class AtStep(lark.Transformer):
             def scheduled(self, args):
                 before, after, when = args
+                if isinstance(when, str):
+                    return before or () if when != select_tag else after
+
                 return before or () if step <= when else after
 
             def alternate(self, args):
@@ -141,4 +148,13 @@ def parse_prompt_schedules(prompt):
         return AtStep().transform(tree)
 
     parsed = [[round(t / 100, 2), at_step(t, tree)] for t in collect(tree)]
-    return parsed
+    # Tag filtering may return redundant prompts, so filter them out here
+    res = []
+    prev_p = None
+    for t, p in reversed(parsed):
+        if p == prev_p:
+            continue
+        res.append([t, p])
+        prev_p = p
+    res = list(reversed(res))
+    return res
