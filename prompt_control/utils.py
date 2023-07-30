@@ -100,7 +100,6 @@ def load_lora(model, lora, weight, key_map, clone=True):
 
 
 def apply_loras_to_model(model, orig_model, lora_specs, loaded_loras, patch=True):
-    print("apply_loras", lora_specs)
     keymap = get_lora_keymap(model=model)
     if patch:
         unpatch_model(model)

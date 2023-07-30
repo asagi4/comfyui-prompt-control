@@ -49,12 +49,12 @@ Note that feeding too large conditionings to AITemplate seems to break it. This 
 
 # TODO & BUGS
 
-The basics seem to work; without prompt editing, the loaders can reproduce the output from using `LoraLoader`
+The loaders can mostly reproduce the output from using `LoraLoader`.
+
+There are some very minor differences compared to using multiple sampling passes when LoRA scheduling is in use. Changing this would require changing the implementation to call sampling multiple times. I may do this at some point, but it's good enough for now.
 
 More advanced workflows might explode horribly.
 
-- In some cases there are still some slight differences in LoRA output for some reason.
-- Alternating does not work with LoRAs
 - If execution is interrupted and LoRA scheduling is used, your models might be left in an undefined state until you restart ComfyUI
 - Needs better syntax. A1111 is familiar, but not very good
 - Needs convenient prompt editing for multiple sampling passes (HR fix etc)

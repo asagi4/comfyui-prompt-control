@@ -55,8 +55,7 @@ class LoRAScheduler:
 
             def step_callback(*args, **kwargs):
                 current_step = args[0] + start_step
-                # Callbacks are called *after* the step so apply for next step
-                apply_lora_for_step(current_step + 1)
+                apply_lora_for_step(current_step)
                 if orig_cb:
                     return orig_cb(*args, **kwargs)
 
