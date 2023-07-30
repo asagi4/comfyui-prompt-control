@@ -58,10 +58,10 @@ def patch_model(model):
 
 
 def get_callback(model):
-    return getattr(untuple(model), "prompt_control_callback", None)
+    return untuple(model).model_options.get("prompt_control_callback")
 
 def set_callback(model, cb):
-    return setattr(untuple(model), "prompt_control_callback", cb)
+    untuple(model).model_options["prompt_control_callback"] = cb
 
 
 def get_lora_keymap(model=None, clip=None):
