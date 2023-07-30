@@ -37,12 +37,12 @@ prompt: (emphasized | scheduled | alternate | loraspec | PLAIN | /</ | />/ | WHI
         | "(" prompt ":" prompt ")"
         | "[" prompt "]"
 scheduled: "[" [prompt ":"] prompt ":" WHITESPACE? NUMBER "]"
-        | "[" prompt ":" prompt ":" WHITESPACE? TAG "]"
+        | "[" [prompt ":"] prompt ":" WHITESPACE? TAG "]"
 alternate: "[" prompt ("|" prompt)+ [":" NUMBER] "]"
 loraspec: "<lora:" PLAIN (":" WHITESPACE? NUMBER)~1..2 ">"
 WHITESPACE: /\s+/
 PLAIN: /([^<>\\\[\]():|]|\\.)+/
-TAG: /[A-Za-z]+/
+TAG: /[A-Z_]+/
 %import common.SIGNED_NUMBER -> NUMBER
 """,
     lexer="dynamic",

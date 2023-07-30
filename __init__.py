@@ -2,9 +2,9 @@ import os
 import sys
 import logging
 
-log = logging.getLogger('comfyui-prompt-control')
+log = logging.getLogger("comfyui-prompt-control")
 logging.basicConfig()
-if os.environ.get('COMFYUI_PC_DEBUG'):
+if os.environ.get("COMFYUI_PC_DEBUG"):
     log.setLevel(logging.DEBUG)
 else:
     log.setLevel(logging.INFO)

@@ -8,15 +8,27 @@ You need to have `lark` installed in your Python envinronment for parsing to wor
 
 LoRAs work too, composable-lora -style
 
-Syntax is like A1111 for now, but only fractions are supported for steps.
+## Syntax
 
-Alternating syntax is `[a|b:pct_steps]`, causing the prompt to alternate every `pct_steps`. `pct_steps` defaults to 0.1 if not specified.
+Syntax is like A1111 for now, but only fractions are supported for steps.
 
 ```
 a [large::0.1] [cat|dog:0.05] [<lora:somelora:0.5:0.6>::0.5]
 [in a park:in space:0.4]
 ```
+### Alternating
+
+Alternating syntax is `[a|b:pct_steps]`, causing the prompt to alternate every `pct_steps`. `pct_steps` defaults to 0.1 if not specified.
 The `example.json` contains a simple workflow to play around with.
+
+### Tag selection
+Instead of step percentages, you can use a *tag* to select part of an input:
+```
+a large [dog:cat<lora:catlora:0.5>:SECOND_PASS]
+```
+then specify the `filter_tag` parameter in `LoRAScheduler` or `EditableCLIPEncoding` to filter the prompt. If the tag matches `filter_tag`, the second option is returned (`cat`, in this case, with the LoRA). Otherwise, the first option is chosen (`dog`, without LoRA).
+
+The tags **must** be uppercase A-Z and underscores only, or they won't be recognized. That is, `[dog:cat:hr]` will not work.
 
 ## Nodes
 
@@ -57,4 +69,3 @@ More advanced workflows might explode horribly.
 
 - If execution is interrupted and LoRA scheduling is used, your models might be left in an undefined state until you restart ComfyUI
 - Needs better syntax. A1111 is familiar, but not very good
-- Needs convenient prompt editing for multiple sampling passes (HR fix etc)

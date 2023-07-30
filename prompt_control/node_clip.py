@@ -15,7 +15,10 @@ class EditableCLIPEncode:
             "required": {
                 "clip": ("CLIP",),
                 "text": ("STRING", {"multiline": True}),
-            }
+            },
+            "optional": {
+                "filter_tag": ("STRING", {"default": ""})
+            },
         }
 
     RETURN_TYPES = ("CONDITIONING",)
@@ -96,8 +99,8 @@ class EditableCLIPEncode:
             return res
         return fallback()
 
-    def parse(self, clip, text):
-        parsed = parse_prompt_schedules(text)
+    def parse(self, clip, text, filter_tag=""):
+        parsed = parse_prompt_schedules(text, filter_tag.strip().upper())
         log.debug("EditableCLIPEncode schedules: %s", parsed)
         self.current_loras = {}
         self.loaded_loras = utils.load_loras_from_schedule(parsed, self.loaded_loras)
