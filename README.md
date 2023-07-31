@@ -37,7 +37,7 @@ Instead of step percentages, you can use a *tag* to select part of an input:
 ```
 a large [dog:cat<lora:catlora:0.5>:SECOND_PASS]
 ```
-then specify the `filter_tags` parameter in `LoRAScheduler` or `EditableCLIPEncoding` to filter the prompt. If the tag matches any tag `filter_tags` (comma-separated), the second option is returned (`cat`, in this case, with the LoRA). Otherwise, the first option is chosen (`dog`, without LoRA).
+then specify the `filter_tags` parameter in `PromptToSchedule` to filter the prompt. If the tag matches any tag `filter_tags` (comma-separated), the second option is returned (`cat`, in this case, with the LoRA). Otherwise, the first option is chosen (`dog`, without LoRA).
 
 the values in `filter_tags` are case-insensitive, but the tags in the input **must** be uppercase A-Z and underscores only, or they won't be recognized. That is, `[dog:cat:hr]` will not work.
 
@@ -47,46 +47,62 @@ a [black:blue:X] [cat:dog:Y] [walking:running:Z] in space
 ```
 with `filter_tags` `x,z` would result in the prompt `a blue cat running in space`
 
-## Nodes
-
-### EditableCLIPEncode
-Parses a prompt and produces a combined conditioning for the appropriate timesteps. Also applies LoRAs to the CLIP model according to the prompt.
-
-You need a recent enough version of ComfyUI to support timestep ranges.
-
-### LoRAScheduler
-Parses a prompt and produces a model that'll cause the sampler to reapply LoRAs at specific steps.
-
-This depends on a callback handled by a monkeypatch of the ComfyUI sampler function, so it might not work with custom samplers, but it shouldn't interfere with them either.
-
-`cutoff` works like `ConditioningCutoff` below.
-
-### ConditioningCutoff
-Removes conditionings from the input whose timestep range ends before the cutoff and extends the remaining conds to cover the missing part. For example, set the cutoff to 1.0 to only leave the last prompt. This can be useful for HR passes.
-
 ## Schedulable LoRAs
-The `LoRAScheduler` node patches a model such that when sampling, it'll switch LoRAs between steps. You can apply the LoRA's effect separately to CLIP conditioning and the unet (model)
+The `ScheduleToModel` node patches a model such that when sampling, it'll switch LoRAs between steps. You can apply the LoRA's effect separately to CLIP conditioning and the unet (model)
 
 For me this seems to be quite slow without the --highvram switch because ComfyUI will shuffle things between the CPU and GPU. YMMV. When things stay on the GPU, it's quite fast.
 
 ## AITemplate support
-LoRA scheduling supports AITemplate. 
+LoRA scheduling supports AITemplate.
 
 Due to sampler patching, your AITemplate nodes must be cloned to a directory called `AIT` under `custom_nodes` or the hijack won't find it.
 
 Note that feeding too large conditionings to AITemplate seems to break it. This can happen when using alternating syntax with too small a step.
 
+## Nodes
+
+### PromptToSchedule
+Parses a schedule from a text prompt
+
+### ScheduleToCond
+Produces a combined conditioning for the appropriate timesteps. From a schedule. Also applies LoRAs to the CLIP model according to the schedule.
+
+### ScheduleToModel
+Produces a model that'll cause the sampler to reapply LoRAs at specific steps according to the schedule.
+
+This depends on a callback handled by a monkeypatch of the ComfyUI sampler function, so it might not work with custom samplers, but it shouldn't interfere with them either.
+
+### JinjaRender
+Renders a String with Jinja2. See below for details
+
+## Older nodes
+
+- `EditableCLIPEncode`: A combination of `PromptToSchedule` and `ScheduleToCond`
+- `LoRAScheduler`: A combination of `PromptToSchedule` and `ScheduleToModel`
+
+## Utility nodes
+### StringConcat
+Concatenates the input strings into one string. All inputs default to the empty string if not specified
+
+### ConditioningCutoff
+Removes conditionings from the input whose timestep range ends before the cutoff and extends the remaining conds to cover the missing part. For example, set the cutoff to 1.0 to only leave the last prompt. This can be useful for HR passes.
+
 # Experiments
 
-If you have the `jinja2` package installed in your Python environment, your prompts will be evaluated as a Jinja2 template prior to parsing. Note, however, that because ComfyUI's frontend uses `{}` for syntax, There are the following modifications to Jinja syntax:
+## Jinja2
+You can use the `JinjaRender` node to evaluate a string as a Jinja2 template. Note, however, that because ComfyUI's frontend uses `{}` for syntax, There are the following modifications to Jinja syntax:
 
-- `{% %}` is `<% %>`
-- `{{ }}` is `<= =>`
-- `{# #}` is `<# #>`
+- `{% %}` becomes `<% %>`
+- `{{ }}` becomes `<= =>`
+- `{# #}` becomes `<# #>`
 
 Jinja stuff is experimental. I might make it its own node at some point instead of stuffing everything in the same parser.
 
+### Functions in Jinja templates
+
 The Python `math` module is available to jinja as the variable `m`. See `import math; help(math)` in a Python interpreter.
+
+The `min`, `max`, and `abs` functions are also available
 
 There's also a handy `steps` function that'll generate a list of steps for iterating.
 
