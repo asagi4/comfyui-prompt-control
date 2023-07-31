@@ -62,7 +62,10 @@ Note that feeding too large conditionings to AITemplate seems to break it. This 
 ## Nodes
 
 ### PromptToSchedule
-Parses a schedule from a text prompt
+Parses a schedule from a text prompt. A schedule is essentially an array of `(valid_until, prompt)` pairs that the other nodes can use.
+
+### FilterSchedule
+Removes parts of a prompt schedule according to its inputs. Always returns at least the last prompt in the schedule if everything would otherwise be filtered.
 
 ### ScheduleToCond
 Produces a combined conditioning for the appropriate timesteps. From a schedule. Also applies LoRAs to the CLIP model according to the schedule.
@@ -78,7 +81,7 @@ Renders a String with Jinja2. See below for details
 ## Older nodes
 
 - `EditableCLIPEncode`: A combination of `PromptToSchedule` and `ScheduleToCond`
-- `LoRAScheduler`: A combination of `PromptToSchedule` and `ScheduleToModel`
+- `LoRAScheduler`: A combination of `PromptToSchedule`, `FilterSchedule` and `ScheduleToModel`
 
 ## Utility nodes
 ### StringConcat

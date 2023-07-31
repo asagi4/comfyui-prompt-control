@@ -87,7 +87,6 @@ class LoRAScheduler:
                 "text": ("STRING", {"multiline": True}),
             },
             "optional": {
-                "cutoff": ("FLOAT", {"min": 0.00, "max": 1.00, "default": 0.0, "step": 0.01}),
                 "filter_tags": ("STRING", {"default": ""}),
             },
         }

@@ -36,8 +36,42 @@ class StringConcat:
         return string1 + string2 + string3 + string4
 
 
-def filter_schedules(cutoff, schedules):
-    return [(t, i) for t, i in schedules if t >= cutoff]
+def filter_schedule(schedule, remove_before, remove_after):
+    r = []
+    for t, s in schedule:
+        if t < remove_before:
+            continue
+        elif t <= remove_after:
+            r.append((t, s))
+        elif t >= remove_after:
+            break
+    if len(r) == 0:
+        # Take the last item if nothing would be returned
+        r = [(1.0, schedule[-1][1])]
+    # Extend the last item to the end of the prompt
+    r[-1] = (1.0, r[-1][1])
+    return r
+
+
+class FilterSchedule:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {"prompt_schedule": ("PROMPT_SCHEDULE",)},
+            "optional": {
+                "remove_ending_before": ("FLOAT", {"min": 0.00, "max": 1.00, "default": 0.0, "step": 0.01}),
+                "remove_starting_after": ("FLOAT", {"min": 0.00, "max": 1.00, "default": 1.0, "step": 0.01}),
+            },
+        }
+
+    RETURN_TYPES = ("PROMPT_SCHEDULE",)
+    CATEGORY = "promptcontrol/tools"
+    FUNCTION = "apply"
+
+    def apply(self, prompt_schedule, remove_ending_before=0.0, remove_starting_after=1.0):
+        s = filter_schedule(prompt_schedule, remove_ending_before, remove_starting_after)
+        log.debug("Filtered %s (%s,%s), received %s", prompt_schedule, remove_ending_before, remove_starting_after, s)
+        return (s,)
 
 
 class PromptToSchedule:
@@ -48,7 +82,6 @@ class PromptToSchedule:
                 "text": ("STRING", {"multiline": True}),
             },
             "optional": {
-                "cutoff": ("FLOAT", {"min": 0.00, "max": 1.00, "default": 0.0, "step": 0.01}),
                 "filter_tags": ("STRING", {"default": ""}),
             },
         }
@@ -57,8 +90,8 @@ class PromptToSchedule:
     CATEGORY = "promptcontrol"
     FUNCTION = "parse"
 
-    def parse(self, text, cutoff=0.0, filter_tags=""):
-        schedules = filter_schedules(cutoff, parse_prompt_schedules(text, filter_tags))
+    def parse(self, text, filter_tags=""):
+        schedules = parse_prompt_schedules(text, filter_tags)
         return (schedules,)
 
 
@@ -86,7 +119,8 @@ class JinjaRender:
         )
 
         funcs = dict(m=math, steps=steps, min=min, max=max, abs=abs)
-        return jenv.from_string(text, globals=funcs).render()
+        s = jenv.from_string(text, globals=funcs).render()
+        return (s,)
 
 
 class ConditioningCutoff:
