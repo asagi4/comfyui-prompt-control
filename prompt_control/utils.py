@@ -19,6 +19,7 @@ def untuple(model):
     else:
         return model
 
+
 def get_aitemplate_module():
     return sys.modules["AIT.AITemplate.AITemplate"]
 
@@ -39,7 +40,7 @@ def add_patches(model, patches, weight):
 
 
 def patch_model(model):
-    if isinstance(model, tuple) or 'aitemplate_keep_loaded' in model.model_options:
+    if isinstance(model, tuple) or "aitemplate_keep_loaded" in model.model_options:
         m = untuple(model)
         m.patch_model()
         mod = get_aitemplate_module()
@@ -60,6 +61,7 @@ def patch_model(model):
 def get_callback(model):
     return untuple(model).model_options.get("prompt_control_callback")
 
+
 def set_callback(model, cb):
     untuple(model).model_options["prompt_control_callback"] = cb
 
@@ -72,8 +74,6 @@ def get_lora_keymap(model=None, clip=None):
     if clip:
         key_map = comfy.sd.model_lora_keys_clip(clip.cond_stage_model, key_map)
     return key_map
-
-
 
 
 class NoOut(object):
@@ -106,10 +106,10 @@ def apply_loras_to_model(model, orig_model, lora_specs, loaded_loras, patch=True
         model = clone_model(orig_model)
 
     for name, params in lora_specs.items():
-        if name not in loaded_loras or params['weight'] == 0:
+        if name not in loaded_loras or params["weight"] == 0:
             continue
-        model = load_lora(model, loaded_loras[name], params['weight'], keymap)
-        log.info("Loaded LoRA %s:%s", name, params['weight'])
+        model = load_lora(model, loaded_loras[name], params["weight"], keymap)
+        log.info("Loaded LoRA %s:%s", name, params["weight"])
 
     if patch:
         patch_model(model)

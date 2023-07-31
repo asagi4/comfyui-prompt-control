@@ -11,11 +11,16 @@ else:
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "comfy"))
 
-from .prompt_control.node_clip import EditableCLIPEncode
-from .prompt_control.node_lora import LoRAScheduler
-from .prompt_control.node_other import ConditioningCutoff
+from .prompt_control.node_clip import EditableCLIPEncode, ScheduleToCond
+from .prompt_control.node_lora import LoRAScheduler, ScheduleToModel
+from .prompt_control.node_other import ConditioningCutoff, JinjaRender, PromptToSchedule, StringConcat
 
 NODE_CLASS_MAPPINGS = {
+    "PromptToSchedule": PromptToSchedule,
+    "ScheduleToCond": ScheduleToCond,
+    "ScheduleToModel": ScheduleToModel,
+    "JinjaRender": JinjaRender,
+    "StringConcat": StringConcat,
     "EditableCLIPEncode": EditableCLIPEncode,
     "LoRAScheduler": LoRAScheduler,
     "ConditioningCutoff": ConditioningCutoff,

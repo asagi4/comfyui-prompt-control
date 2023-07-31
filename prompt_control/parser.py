@@ -1,40 +1,4 @@
 import lark
-
-try:
-    from jinja2 import Template, Environment
-    import math
-
-    jenv = Environment(
-        block_start_string="<%",
-        block_end_string="%>",
-        variable_start_string="<=",
-        variable_end_string="=>",
-        comment_start_string="<#",
-        comment_end_string="#>",
-    )
-
-    def steps(start, end=None, step=0.1):
-        if end is None:
-            end = start
-            start = step
-        while start <= end:
-            yield start
-            start += step
-            start = round(start, 2)
-
-    def expand_template(string):
-        for x in ["<%", "<=", "<#", "#>", "=>", "%>"]:
-            if x in string:
-                return jenv.from_string(string, globals=dict(m=math, steps=steps)).render()
-        return string
-
-except ImportError:
-    print("Failed to import jinja2")
-
-    def expand_template(string):
-        return string
-
-
 import logging
 
 logging.basicConfig()
@@ -76,7 +40,6 @@ def clamp(a, b, c):
 
 def parse_prompt_schedules(prompt, filter_tags=""):
     filters = [x.upper().strip() for x in filter_tags.split(",")]
-    prompt = expand_template(prompt)
     prompt = prompt.strip()
     log.debug("Parsing: %s", prompt)
 
