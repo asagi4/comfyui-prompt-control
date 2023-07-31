@@ -76,14 +76,6 @@ def get_lora_keymap(model=None, clip=None):
     return key_map
 
 
-class NoOut(object):
-    def write(*args):
-        pass
-
-    def flush(*args):
-        pass
-
-
 def load_lora(model, lora, weight, key_map, clone=True):
     # Hack to temporarily override printing to stdout to stop log spam
     def noop(*args):
