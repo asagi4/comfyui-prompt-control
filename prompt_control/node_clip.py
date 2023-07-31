@@ -11,14 +11,14 @@ log = logging.getLogger("comfyui-prompt-control")
 class ScheduleToCond:
     @classmethod
     def INPUT_TYPES(s):
-        return {"required": {"clip": ("CLIP",), "control_prompt": ("PROMPT_SCHEDULE",)}}
+        return {"required": {"clip": ("CLIP",), "prompt_schedule": ("PROMPT_SCHEDULE",)}}
 
     RETURN_TYPES = ("CONDITIONING",)
     CATEGORY = "promptcontrol"
     FUNCTION = "apply"
 
-    def apply(self, clip, control_prompt):
-        return control_to_clip_common(self, clip, control_prompt)
+    def apply(self, clip, prompt_schedule):
+        return control_to_clip_common(self, clip, prompt_schedule)
 
 
 class EditableCLIPEncode:

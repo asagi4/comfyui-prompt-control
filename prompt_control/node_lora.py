@@ -66,7 +66,7 @@ class ScheduleToModel:
         return {
             "required": {
                 "model": ("MODEL",),
-                "control_prompt": ("PROMPT_SCHEDULE",),
+                "prompt_schedule": ("PROMPT_SCHEDULE",),
             }
         }
 
@@ -74,8 +74,8 @@ class ScheduleToModel:
     CATEGORY = "promptcontrol"
     FUNCTION = "apply"
 
-    def apply(self, model, control_prompt):
-        return schedule_lora_common(model, control_prompt)
+    def apply(self, model, prompt_schedule):
+        return schedule_lora_common(model, prompt_schedule)
 
 
 class LoRAScheduler:
