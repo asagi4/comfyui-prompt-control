@@ -1,4 +1,4 @@
-from .utils import get_callback
+from .utils import get_callback, unpatch_model
 import comfy.sample
 import sys
 
@@ -16,7 +16,12 @@ def do_hijack():
         model = args[0]
         cb = get_callback(model)
         if cb:
-            return cb(orig_sampler, *args, **kwargs)
+            try:
+                return cb(orig_sampler, *args, **kwargs)
+            except Exception:
+                log.info("Exception occurred during callback, unpatching model...")
+                unpatch_model(model)
+                raise
         else:
             return orig_sampler(*args, **kwargs)
 
