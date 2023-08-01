@@ -1,8 +1,20 @@
 import logging
 from .parser import parse_prompt_schedules
+import math
 
 log = logging.getLogger("comfyui-prompt-control")
 
+
+def template(template, sequence, *funcs):
+    funcs = [lambda x: x] + list(*funcs)
+    res = []
+    for item in sequence:
+        x = template
+        for i, f in enumerate(funcs):
+            x = x.replace(f"${i}", str(f(i)))
+        res.append(x)
+
+    return "".join(res)
 
 def steps(start, end=None, step=0.1):
     if end is None:
@@ -94,6 +106,24 @@ class PromptToSchedule:
         schedules = parse_prompt_schedules(text, filter_tags)
         return (schedules,)
 
+def clamp(a, b, c):
+    return max(a, min(b, c))
+
+JINJA_ENV = {'pi': math.pi, 
+             'floor': math.floor, 
+             'ceil': math.ceil,
+             'min': min,
+             'max': max,
+             'abs': abs,
+             'clamp': clamp,
+             'round': round,
+             'template': template,
+             'steps': steps,
+            }
+
+for fname in ['sqrt', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan']:
+    f = getattr(math, f)
+    JINJA_ENV[fname] = lambda x: round(f(x), 2)
 
 class JinjaRender:
     @classmethod
@@ -107,7 +137,6 @@ class JinjaRender:
 
     def render(self, text):
         from jinja2 import Environment
-        import math
 
         jenv = Environment(
             block_start_string="<%",
@@ -118,8 +147,7 @@ class JinjaRender:
             comment_end_string="#>",
         )
 
-        funcs = dict(m=math, steps=steps, min=min, max=max, abs=abs)
-        s = jenv.from_string(text, globals=funcs).render()
+        s = jenv.from_string(text, globals=JINJA_ENV).render()
         return (s,)
 
 

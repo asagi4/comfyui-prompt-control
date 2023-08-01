@@ -103,15 +103,21 @@ Jinja stuff is experimental. I might make it its own node at some point instead 
 
 ### Functions in Jinja templates
 
-The Python `math` module is available to jinja as the variable `m`. See `import math; help(math)` in a Python interpreter.
+The following functions and constants are available:
 
-The `min`, `max`, and `abs` functions are also available
+- `pi`
+- `min`, `max`, `clamp(minimum, value, maximum)`,
+- `abs`, `round`, `ceil`, `floor`
+- `sqrt` `sin`, `cos`, `tan`, `asin`, `acos`, `atan`. These functions are rounded to two decimals
 
-There's also a handy `steps` function that'll generate a list of steps for iterating.
 
-You can call it either as `steps(end)`, `steps(end, step=0.1)` or `steps(start, end, step)`. `step` is an optional parameter that defaults to `0.1`. It'll return steps *inclusive* of start and end as long as step doesn't go past the end.
+In addition, a special `steps` function exists.
 
-the second form is equivalent to `steps(step, end, step)`. i.e. it starts at the first step.
+The `steps` function will generate a list of steps for iterating. 
+
+You can call it either as `steps(end)`, `steps(end, step=0.1)` or `steps(start, end, step)`. `step` is an optional parameter that defaults to `0.1`. It'll return steps *inclusive* of start and end as long as step doesn't go past the end. 
+
+The second form is equivalent to `steps(step, end, step)`. i.e. it starts at the first step.
 
 # TODO & BUGS
 
