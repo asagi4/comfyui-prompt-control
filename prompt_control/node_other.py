@@ -122,7 +122,7 @@ JINJA_ENV = {'pi': math.pi,
             }
 
 for fname in ['sqrt', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan']:
-    f = getattr(math, f)
+    f = getattr(math, fname)
     JINJA_ENV[fname] = lambda x: round(f(x), 2)
 
 class JinjaRender:
