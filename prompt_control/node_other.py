@@ -16,6 +16,7 @@ def template(template, sequence, *funcs):
 
     return "".join(res)
 
+
 def steps(start, end=None, step=0.1):
     if end is None:
         end = start
@@ -106,24 +107,28 @@ class PromptToSchedule:
         schedules = parse_prompt_schedules(text, filter_tags)
         return (schedules,)
 
+
 def clamp(a, b, c):
     return max(a, min(b, c))
 
-JINJA_ENV = {'pi': math.pi, 
-             'floor': math.floor, 
-             'ceil': math.ceil,
-             'min': min,
-             'max': max,
-             'abs': abs,
-             'clamp': clamp,
-             'round': round,
-             'template': template,
-             'steps': steps,
-            }
 
-for fname in ['sqrt', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan']:
+JINJA_ENV = {
+    "pi": math.pi,
+    "floor": math.floor,
+    "ceil": math.ceil,
+    "min": min,
+    "max": max,
+    "abs": abs,
+    "clamp": clamp,
+    "round": round,
+    "template": template,
+    "steps": steps,
+}
+
+for fname in ["sqrt", "sin", "cos", "tan", "asin", "acos", "atan"]:
     f = getattr(math, fname)
     JINJA_ENV[fname] = lambda x: round(f(x), 2)
+
 
 class JinjaRender:
     @classmethod
