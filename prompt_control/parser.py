@@ -1,6 +1,13 @@
 import lark
 import logging
-from .utils import load_loras_from_schedule
+
+# Don't care about this import when testing parser
+try:
+    from .utils import load_loras_from_schedule
+except ImportError:
+    if __name__ != "__main__":
+        raise
+
 
 logging.basicConfig()
 log = logging.getLogger("comfyui-prompt-control")
@@ -12,8 +19,8 @@ prompt: (emphasized | scheduled | alternate | sequence | loraspec | PLAIN | /</ 
 !emphasized: "(" prompt? ")"
         | "(" prompt ":" prompt ")"
         | "[" prompt "]"
-scheduled: "[" [prompt ":"] prompt ":" WHITESPACE? NUMBER "]"
-        | "[" [prompt ":"] prompt ":" WHITESPACE? TAG "]"
+scheduled: "[" [prompt ":"] [prompt] ":" WHITESPACE? NUMBER "]"
+        | "[" [prompt ":"] [prompt] ":" WHITESPACE? TAG "]"
 sequence:  "[SEQ" ":" prompt ":" NUMBER (":" prompt ":" NUMBER)+ "]"
 alternate: "[" prompt ("|" prompt)+ [":" NUMBER] "]"
 loraspec: "<lora:" PLAIN (":" WHITESPACE? NUMBER)~1..2 ">"
@@ -73,9 +80,9 @@ def at_step(step, filters, tree):
         def scheduled(self, args):
             before, after, when = args
             if isinstance(when, str):
-                return before or () if when not in filters else after
+                return before or () if when not in filters else after or ()
 
-            return before or () if step <= when else after
+            return before or () if step <= when else after or ()
 
         def sequence(self, args):
             previous_step = 0.0
