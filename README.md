@@ -4,9 +4,7 @@ Nodes for convenient prompt editing. The aim is to make basic generations in Com
 
 You need to have `lark` installed in your Python envinronment for parsing to work (If you reuse A1111's venv, it'll already be there)
 
-*very* experimental, but things seem to work okay.
-
-LoRAs work too, composable-lora -style
+The basic nodes should now be stable, though I won't make interface guarantees quite yet.
 
 ## Syntax
 
