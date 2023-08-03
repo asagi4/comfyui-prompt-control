@@ -200,7 +200,9 @@ class PromptSchedule(object):
                 return x
         return self.parsed_prompt[-1]
 
-    def load_loras(self):
+    def load_loras(self, lora_cache=None):
+        if lora_cache is not None:
+            self.loaded_loras = lora_cache
         self.loaded_loras = load_loras_from_schedule(self.parsed_prompt, self.loaded_loras)
         return self.loaded_loras
 

@@ -7,10 +7,10 @@ import logging
 log = logging.getLogger("comfyui-prompt-control")
 
 
-def schedule_lora_common(model, schedules):
+def schedule_lora_common(model, schedules, lora_cache=None):
     do_hijack()
     orig_model = clone_model(model)
-    loaded_loras = schedules.load_loras()
+    loaded_loras = schedules.load_loras(lora_cache)
 
     def sampler_cb(orig_sampler, *args, **kwargs):
         state = {}
@@ -55,7 +55,7 @@ def schedule_lora_common(model, schedules):
 
     set_callback(orig_model, sampler_cb)
 
-    return (orig_model,)
+    return orig_model
 
 
 class ScheduleToModel:
@@ -73,7 +73,7 @@ class ScheduleToModel:
     FUNCTION = "apply"
 
     def apply(self, model, prompt_schedule):
-        return schedule_lora_common(model, prompt_schedule)
+        return (schedule_lora_common(model, prompt_schedule),)
 
 
 class LoRAScheduler:
@@ -87,9 +87,9 @@ class LoRAScheduler:
         }
 
     RETURN_TYPES = ("MODEL",)
-    CATEGORY = "promptcontrol/combined"
+    CATEGORY = "promptcontrol/old"
     FUNCTION = "apply"
 
     def apply(self, model, text):
         schedules = parse_prompt_schedules(text)
-        return schedule_lora_common(model, schedules)
+        return (schedule_lora_common(model, schedules),)

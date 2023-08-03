@@ -18,7 +18,7 @@ class ScheduleToCond:
     FUNCTION = "apply"
 
     def apply(self, clip, prompt_schedule):
-        return control_to_clip_common(self, clip, prompt_schedule)
+        return (control_to_clip_common(self, clip, prompt_schedule),)
 
 
 class EditableCLIPEncode:
@@ -33,12 +33,12 @@ class EditableCLIPEncode:
         }
 
     RETURN_TYPES = ("CONDITIONING",)
-    CATEGORY = "promptcontrol/combined"
+    CATEGORY = "promptcontrol/old"
     FUNCTION = "parse"
 
     def parse(self, clip, text, filter_tags=""):
         parsed = parse_prompt_schedules(text).with_filters(filter_tags)
-        return control_to_clip_common(self, clip, parsed)
+        return (control_to_clip_common(self, clip, parsed),)
 
 
 def do_encode(that, clip, text):
@@ -97,10 +97,10 @@ def do_encode(that, clip, text):
     return fallback()
 
 
-def control_to_clip_common(self, clip, schedules):
+def control_to_clip_common(self, clip, schedules, lora_cache=None):
     orig_clip = clip.clone()
     current_loras = {}
-    loaded_loras = schedules.load_loras()
+    loaded_loras = schedules.load_loras(lora_cache)
     start_pct = 0.0
     conds = []
     cond_cache = {}
@@ -149,4 +149,4 @@ def control_to_clip_common(self, clip, schedules):
             n[1]["prompt"] = prompt
             conds.append(n)
         start_pct = end_pct
-    return (conds,)
+    return conds

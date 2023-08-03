@@ -110,6 +110,21 @@ for fname in ["sqrt", "sin", "cos", "tan", "asin", "acos", "atan"]:
     JINJA_ENV[fname] = lambda x: round(f(x), 2)
 
 
+def render_jinja(text):
+    from jinja2 import Environment
+
+    jenv = Environment(
+        block_start_string="<%",
+        block_end_string="%>",
+        variable_start_string="<=",
+        variable_end_string="=>",
+        comment_start_string="<#",
+        comment_end_string="#>",
+    )
+
+    return jenv.from_string(text, globals=JINJA_ENV).render()
+
+
 class JinjaRender:
     @classmethod
     def INPUT_TYPES(s):
@@ -121,19 +136,7 @@ class JinjaRender:
     FUNCTION = "render"
 
     def render(self, text):
-        from jinja2 import Environment
-
-        jenv = Environment(
-            block_start_string="<%",
-            block_end_string="%>",
-            variable_start_string="<=",
-            variable_end_string="=>",
-            comment_start_string="<#",
-            comment_end_string="#>",
-        )
-
-        s = jenv.from_string(text, globals=JINJA_ENV).render()
-        return (s,)
+        return (render_jinja(text),)
 
 
 class ConditioningCutoff:
