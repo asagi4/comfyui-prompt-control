@@ -55,9 +55,9 @@ class FilterSchedule:
         return {
             "required": {"prompt_schedule": ("PROMPT_SCHEDULE",)},
             "optional": {
-                "filter_tags": ("STRING", {"default": ""}),
-                "remove_ending_before": ("FLOAT", {"min": 0.00, "max": 1.00, "default": 0.0, "step": 0.01}),
-                "remove_starting_after": ("FLOAT", {"min": 0.00, "max": 1.00, "default": 1.0, "step": 0.01}),
+                "tags": ("STRING", {"default": ""}),
+                "start": ("FLOAT", {"min": 0.00, "max": 1.00, "default": 0.0, "step": 0.01}),
+                "end": ("FLOAT", {"min": 0.00, "max": 1.00, "default": 1.0, "step": 0.01}),
             },
         }
 
@@ -65,8 +65,8 @@ class FilterSchedule:
     CATEGORY = "promptcontrol/tools"
     FUNCTION = "apply"
 
-    def apply(self, prompt_schedule, filter_tags="", remove_ending_before=0.0, remove_starting_after=1.0):
-        p = prompt_schedule.with_filters(filter_tags, start=remove_ending_before, end=remove_starting_after)
+    def apply(self, prompt_schedule, tags="", start=0.0, end=1.0):
+        p = prompt_schedule.with_filters(tags, start=start, end=end)
         return (p,)
 
 

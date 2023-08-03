@@ -37,15 +37,15 @@ Instead of step percentages, you can use a *tag* to select part of an input:
 ```
 a large [dog:cat<lora:catlora:0.5>:SECOND_PASS]
 ```
-You can then use the `filter_tags` parameter in the `FilterSchedule` node to filter the prompt. If the tag matches any tag `filter_tags` (comma-separated), the second option is returned (`cat`, in this case, with the LoRA). Otherwise, the first option is chosen (`dog`, without LoRA).
+You can then use the `tags` parameter in the `FilterSchedule` node to filter the prompt. If the tag matches any tag `tags` (comma-separated), the second option is returned (`cat`, in this case, with the LoRA). Otherwise, the first option is chosen (`dog`, without LoRA).
 
-the values in `filter_tags` are case-insensitive, but the tags in the input **must** be uppercase A-Z and underscores only, or they won't be recognized. That is, `[dog:cat:hr]` will not work.
+the values in `tags` are case-insensitive, but the tags in the input **must** be uppercase A-Z and underscores only, or they won't be recognized. That is, `[dog:cat:hr]` will not work.
 
 For example, a prompt
 ```
 a [black:blue:X] [cat:dog:Y] [walking:running:Z] in space
 ```
-with `filter_tags` `x,z` would result in the prompt `a blue cat running in space`
+with `tags` `x,z` would result in the prompt `a blue cat running in space`
 
 ## Schedulable LoRAs
 The `ScheduleToModel` node patches a model such that when sampling, it'll switch LoRAs between steps. You can apply the LoRA's effect separately to CLIP conditioning and the unet (model)
@@ -65,7 +65,7 @@ Note that feeding too large conditionings to AITemplate seems to break it. This 
 Parses a schedule from a text prompt. A schedule is essentially an array of `(valid_until, prompt)` pairs that the other nodes can use.
 
 ### FilterSchedule
-Removes parts of a prompt schedule according to its inputs. Always returns at least the last prompt in the schedule if everything would otherwise be filtered.
+Filters a schedule according to its parameters, removing any parts that do not fit within `(start, end)` as well as doing tag filtering. Always returns at least the last prompt in the schedule if everything would otherwise be filtered.
 
 ### ScheduleToCond
 Produces a combined conditioning for the appropriate timesteps. From a schedule. Also applies LoRAs to the CLIP model according to the schedule.
