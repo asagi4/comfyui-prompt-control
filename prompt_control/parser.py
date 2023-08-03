@@ -1,10 +1,12 @@
 import lark
 import logging
+from math import ceil
 
 # Don't care about this import when testing parser
 try:
     from .utils import load_loras_from_schedule
 except ImportError:
+    logging.basicConfig(level=logging.DEBUG)
     if __name__ != "__main__":
         raise
 
@@ -21,8 +23,8 @@ prompt: (emphasized | scheduled | alternate | sequence | loraspec | PLAIN | /</ 
         | "[" prompt "]"
 scheduled: "[" [prompt ":"] [prompt] ":" WHITESPACE? NUMBER "]"
         | "[" [prompt ":"] [prompt] ":" WHITESPACE? TAG "]"
-sequence:  "[SEQ" ":" prompt ":" NUMBER (":" prompt ":" NUMBER)+ "]"
-alternate: "[" prompt ("|" prompt)+ [":" NUMBER] "]"
+sequence:  "[SEQ" ":" [prompt] ":" NUMBER (":" [prompt] ":" NUMBER)+ "]"
+alternate: "[" [prompt] ("|" [prompt])+ [":" NUMBER] "]"
 loraspec: "<lora:" PLAIN (":" WHITESPACE? NUMBER)~1..2 ">"
 WHITESPACE: /\s+/
 PLAIN: /([^<>\\\[\]():|]|\\.)+/
@@ -91,15 +93,15 @@ def at_step(step, filters, tree):
             for s, p in zip(steps, prompts):
                 if s >= step and step >= previous_step:
                     previous_step = step
-                    return p
+                    return p or ()
                 else:
                     previous_step = s
             return ()
 
         def alternate(self, args):
             step_size = args[-1]
-            idx = int(step / step_size)
-            return args[(idx - 1) % (len(args) - 1)]
+            idx = ceil(step / step_size)
+            return args[(idx - 1) % (len(args) - 1)] or ()
 
         def start(self, args):
             prompt = []
