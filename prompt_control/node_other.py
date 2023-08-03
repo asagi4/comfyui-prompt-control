@@ -62,7 +62,7 @@ class FilterSchedule:
         }
 
     RETURN_TYPES = ("PROMPT_SCHEDULE",)
-    CATEGORY = "promptcontrol/tools"
+    CATEGORY = "promptcontrol"
     FUNCTION = "apply"
 
     def apply(self, prompt_schedule, tags="", start=0.0, end=1.0):
