@@ -6,6 +6,8 @@ You need to have `lark` installed in your Python envinronment for parsing to wor
 
 The basic nodes should now be stable, though I won't make interface guarantees quite yet.
 
+The `example.json` workflow in the `workflows` folder implements a two-pass workflow illustrating most features.
+
 ## Syntax
 
 Syntax is like A1111 for now, but only fractions are supported for steps.
@@ -17,7 +19,6 @@ a [large::0.1] [cat|dog:0.05] [<lora:somelora:0.5:0.6>::0.5]
 ### Alternating
 
 Alternating syntax is `[a|b:pct_steps]`, causing the prompt to alternate every `pct_steps`. `pct_steps` defaults to 0.1 if not specified. You can also have more than two options.
-The `example.json` contains a simple workflow to play around with.
 
 ### Sequences
 
