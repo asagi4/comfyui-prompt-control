@@ -165,18 +165,22 @@ class PromptSchedule(object):
         log.debug("Parse result for %s: %s", self.prompt, parsed)
         res = []
         prev_p = None
-        for t, p in reversed(parsed):
+        prev_end = 0.0
+        idx = 0
+        for end_at, p in parsed:
             if p == prev_p:
+                res[idx][0] = end_at
                 continue
-            if t < self.start:
+            if end_at <= self.start:
                 continue
-            elif t <= self.end:
-                res.append([t, p])
-            elif t >= self.end:
+            elif end_at <= self.end:
+                res.append([end_at, p])
+                prev_end = end_at
+                idx += 1
+            elif end_at > self.end and prev_end < self.end:
+                res.append([end_at, p])
                 break
             prev_p = p
-
-        res = list(reversed(res))
 
         # Always use the last prompt if everything was filtered
         if len(res) == 0:
