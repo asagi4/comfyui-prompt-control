@@ -6,7 +6,7 @@ You need to have `lark` installed in your Python envinronment for parsing to wor
 
 The basic nodes should now be stable, though I won't make interface guarantees quite yet.
 
-The `example.json` workflow in the `workflows` folder implements a two-pass workflow illustrating most features.
+[This example workflow](workflows/example.json) implements a two-pass workflow illustrating most features.
 
 ## Syntax
 
