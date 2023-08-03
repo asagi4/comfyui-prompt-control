@@ -130,13 +130,6 @@ class Timer(object):
         log.debug(f"Executed {self.name} in {elapsed} seconds")
 
 
-def schedule_for_step(total_steps, step, schedules):
-    for end, s in schedules:
-        if end * total_steps > step:
-            return [end, s]
-    return schedules[-1]
-
-
 def load_loras(lora_specs, loaded_loras=None):
     loaded_loras = loaded_loras or {}
     filenames = [Path(f) for f in folder_paths.get_filename_list("loras")]

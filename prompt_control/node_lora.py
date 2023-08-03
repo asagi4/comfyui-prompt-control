@@ -1,4 +1,3 @@
-from . import utils as utils
 from .utils import unpatch_model, clone_model, set_callback, apply_loras_to_model
 from .parser import parse_prompt_schedules
 from .hijack import do_hijack
@@ -11,8 +10,7 @@ log = logging.getLogger("comfyui-prompt-control")
 def schedule_lora_common(model, schedules):
     do_hijack()
     orig_model = clone_model(model)
-    loaded_loras = {}
-    loaded_loras = utils.load_loras_from_schedule(schedules, loaded_loras)
+    loaded_loras = schedules.load_loras()
 
     def sampler_cb(orig_sampler, *args, **kwargs):
         state = {}
@@ -26,7 +24,7 @@ def schedule_lora_common(model, schedules):
 
         def apply_lora_for_step(step, patch=True):
             # zero-indexed steps, 0 = first step, but schedules are 1-indexed
-            sched = utils.schedule_for_step(steps, step + 1, schedules)
+            sched = schedules.at_step(steps, step + 1)
             lora_spec = sched[1]["loras"]
 
             if state["applied_loras"] != lora_spec:
@@ -86,16 +84,12 @@ class LoRAScheduler:
                 "model": ("MODEL",),
                 "text": ("STRING", {"multiline": True}),
             },
-            "optional": {
-                "filter_tags": ("STRING", {"default": ""}),
-            },
         }
 
     RETURN_TYPES = ("MODEL",)
     CATEGORY = "promptcontrol/combined"
     FUNCTION = "apply"
 
-    def apply(self, model, text, cutoff=0.0, filter_tags=""):
-        schedules = parse_prompt_schedules(text, filter_tags)
-        schedules = [(t, s) for t, s in schedules if t >= cutoff]
+    def apply(self, model, text):
+        schedules = parse_prompt_schedules(text)
         return schedule_lora_common(model, schedules)

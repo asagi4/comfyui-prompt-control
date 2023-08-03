@@ -49,29 +49,13 @@ class StringConcat:
         return string1 + string2 + string3 + string4
 
 
-def filter_schedule(schedule, remove_before, remove_after):
-    r = []
-    for t, s in schedule:
-        if t < remove_before:
-            continue
-        elif t <= remove_after:
-            r.append((t, s))
-        elif t >= remove_after:
-            break
-    if len(r) == 0:
-        # Take the last item if nothing would be returned
-        r = [(1.0, schedule[-1][1])]
-    # Extend the last item to the end of the prompt
-    r[-1] = (1.0, r[-1][1])
-    return r
-
-
 class FilterSchedule:
     @classmethod
     def INPUT_TYPES(s):
         return {
             "required": {"prompt_schedule": ("PROMPT_SCHEDULE",)},
             "optional": {
+                "filter_tags": ("STRING", {"default": ""}),
                 "remove_ending_before": ("FLOAT", {"min": 0.00, "max": 1.00, "default": 0.0, "step": 0.01}),
                 "remove_starting_after": ("FLOAT", {"min": 0.00, "max": 1.00, "default": 1.0, "step": 0.01}),
             },
@@ -81,10 +65,9 @@ class FilterSchedule:
     CATEGORY = "promptcontrol/tools"
     FUNCTION = "apply"
 
-    def apply(self, prompt_schedule, remove_ending_before=0.0, remove_starting_after=1.0):
-        s = filter_schedule(prompt_schedule, remove_ending_before, remove_starting_after)
-        log.debug("Filtered %s (%s,%s), received %s", prompt_schedule, remove_ending_before, remove_starting_after, s)
-        return (s,)
+    def apply(self, prompt_schedule, filter_tags="", remove_ending_before=0.0, remove_starting_after=1.0):
+        p = prompt_schedule.with_filters(filter_tags, start=remove_ending_before, end=remove_starting_after)
+        return (p,)
 
 
 class PromptToSchedule:
@@ -94,9 +77,6 @@ class PromptToSchedule:
             "required": {
                 "text": ("STRING", {"multiline": True}),
             },
-            "optional": {
-                "filter_tags": ("STRING", {"default": ""}),
-            },
         }
 
     RETURN_TYPES = ("PROMPT_SCHEDULE",)
@@ -104,7 +84,7 @@ class PromptToSchedule:
     FUNCTION = "parse"
 
     def parse(self, text, filter_tags=""):
-        schedules = parse_prompt_schedules(text, filter_tags)
+        schedules = parse_prompt_schedules(text)
         return (schedules,)
 
 

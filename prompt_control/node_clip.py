@@ -37,7 +37,7 @@ class EditableCLIPEncode:
     FUNCTION = "parse"
 
     def parse(self, clip, text, filter_tags=""):
-        parsed = parse_prompt_schedules(text, filter_tags)
+        parsed = parse_prompt_schedules(text).with_filters(filter_tags)
         return control_to_clip_common(self, clip, parsed)
 
 
@@ -100,8 +100,7 @@ def do_encode(that, clip, text):
 def control_to_clip_common(self, clip, schedules):
     orig_clip = clip.clone()
     current_loras = {}
-    loaded_loras = {}
-    loaded_loras = utils.load_loras_from_schedule(schedules, loaded_loras)
+    loaded_loras = schedules.load_loras()
     start_pct = 0.0
     conds = []
     cond_cache = {}
