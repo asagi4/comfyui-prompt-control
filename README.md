@@ -18,7 +18,7 @@ a [large::0.1] [cat|dog:0.05] [<lora:somelora:0.5:0.6>::0.5]
 ```
 ### Alternating
 
-Alternating syntax is `[a|b:pct_steps]`, causing the prompt to alternate every `pct_steps`. `pct_steps` defaults to 0.1 if not specified.
+Alternating syntax is `[a|b:pct_steps]`, causing the prompt to alternate every `pct_steps`. `pct_steps` defaults to 0.1 if not specified. You can also have more than two options.
 The `example.json` contains a simple workflow to play around with.
 
 ### Sequences
@@ -27,7 +27,7 @@ The syntax `[SEQ:a:N1:b:N2:c:N3]` is shorthand for `[a:[b:[c::N3]:N2]:N1]` ie. i
 
 Might be useful with Jinja templating (see Experiments below for details). For example:
 ```
-[SEQ<% for x in steps(0.1, 0.9, 0.1) %>:<lora:test:<= m.sin(x*m.pi) + 0.1 =>>:<= x =><% endfor %>]
+[SEQ<% for x in steps(0.1, 0.9, 0.1) %>:<lora:test:<= sin(x*pi) + 0.1 =>>:<= x =><% endfor %>]
 ```
 
 generates a LoRA schedule based on a sinewave
@@ -37,7 +37,7 @@ Instead of step percentages, you can use a *tag* to select part of an input:
 ```
 a large [dog:cat<lora:catlora:0.5>:SECOND_PASS]
 ```
-then specify the `filter_tags` parameter in `PromptToSchedule` to filter the prompt. If the tag matches any tag `filter_tags` (comma-separated), the second option is returned (`cat`, in this case, with the LoRA). Otherwise, the first option is chosen (`dog`, without LoRA).
+You can then use the `filter_tags` parameter in the `FilterSchedule` node to filter the prompt. If the tag matches any tag `filter_tags` (comma-separated), the second option is returned (`cat`, in this case, with the LoRA). Otherwise, the first option is chosen (`dog`, without LoRA).
 
 the values in `filter_tags` are case-insensitive, but the tags in the input **must** be uppercase A-Z and underscores only, or they won't be recognized. That is, `[dog:cat:hr]` will not work.
 
@@ -99,7 +99,7 @@ You can use the `JinjaRender` node to evaluate a string as a Jinja2 template. No
 - `{{ }}` becomes `<= =>`
 - `{# #}` becomes `<# #>`
 
-Jinja stuff is experimental. I might make it its own node at some point instead of stuffing everything in the same parser.
+Jinja stuff is experimental.
 
 ### Functions in Jinja templates
 
