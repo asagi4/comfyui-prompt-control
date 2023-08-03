@@ -166,17 +166,15 @@ class PromptSchedule(object):
         res = []
         prev_p = None
         prev_end = 0.0
-        idx = 0
         for end_at, p in parsed:
             if p == prev_p:
-                res[idx][0] = end_at
+                res[-1][0] = end_at
                 continue
             if end_at <= self.start:
                 continue
             elif end_at <= self.end:
                 res.append([end_at, p])
                 prev_end = end_at
-                idx += 1
             elif end_at > self.end and prev_end < self.end:
                 res.append([end_at, p])
                 break
