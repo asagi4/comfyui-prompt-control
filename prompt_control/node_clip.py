@@ -1,11 +1,59 @@
 from . import utils as utils
 from .parser import parse_prompt_schedules
+from .node_other import steps
 
 from nodes import NODE_CLASS_MAPPINGS as COMFY_NODES
 
 import logging
 
 log = logging.getLogger("comfyui-prompt-control")
+
+
+class CondLinearInterpolate:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {"start": ("CONDITIONING",), "end": ("CONDITIONING",)},
+            "optional": {
+                "until": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "step": ("FLOAT", {"default": 0.1, "min": 0.0, "max": 1.0, "step": 0.01}),
+            },
+        }
+
+    RETURN_TYPES = ("CONDITIONING",)
+    FUNCTION = "apply"
+    CATEGORY = "promptcontrol/exp"
+
+    def apply(self, start, end, until=1.0, step=0.1):
+        from_cond = start[0][0]
+        to_cond = end[0][0]
+        from_pooled = start[0][1].get("pooled_output")
+        to_pooled = end[0][1].get("pooled_output")
+        res = []
+        prev_s = 0
+        for s in steps(step, until, step=step):
+            factor = s * (1.0 / until)
+            new_cond = from_cond + (to_cond - from_cond) * factor
+            if from_pooled is not None and to_pooled is not None:
+                new_pooled = from_pooled + (to_pooled - from_pooled) * factor
+            elif from_pooled is not None:
+                new_pooled = from_pooled
+
+            n = [new_cond, start[0][1].copy()]
+            n[1]["pooled_output"] = new_pooled
+            n[1]["start_percent"] = 1.0 - prev_s
+            n[1]["end_percent"] = 1.0 - s
+            log.debug(
+                "Interpolating at step %s with factor %s (%s, %s)...",
+                s,
+                factor,
+                n[1]["start_percent"],
+                n[1]["end_percent"],
+            )
+            prev_s = s
+            res.append(n)
+        res[-1][1]["end_percent"] = 0.0
+        return (res,)
 
 
 class ScheduleToCond:
