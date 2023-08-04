@@ -24,7 +24,7 @@ def schedule_lora_common(model, schedules, lora_cache=None):
 
         def apply_lora_for_step(step, patch=True):
             # zero-indexed steps, 0 = first step, but schedules are 1-indexed
-            sched = schedules.at_step(steps, step + 1)
+            sched = schedules.at_step(step + 1, steps)
             lora_spec = sched[1]["loras"]
 
             if state["applied_loras"] != lora_spec:

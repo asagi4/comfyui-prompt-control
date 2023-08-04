@@ -1,5 +1,6 @@
 import logging
 from .parser import parse_prompt_schedules
+from .utils import steps
 import math
 
 log = logging.getLogger("comfyui-prompt-control")
@@ -15,16 +16,6 @@ def template(template, sequence, *funcs):
         res.append(x)
 
     return "".join(res)
-
-
-def steps(start, end=None, step=0.1):
-    if end is None:
-        end = start
-        start = step
-    while start <= end:
-        yield start
-        start += step
-        start = round(start, 2)
 
 
 class StringConcat:

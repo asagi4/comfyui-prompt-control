@@ -13,6 +13,16 @@ import sys
 log = logging.getLogger("comfyui-prompt-control")
 
 
+def steps(start, end=None, step=0.1):
+    if end is None:
+        end = start
+        start = step
+    while start <= end:
+        yield start
+        start += step
+        start = round(start, 2)
+
+
 def untuple(model):
     if isinstance(model, tuple):
         return model[0]

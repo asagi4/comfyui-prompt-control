@@ -91,6 +91,12 @@ Removes conditionings from the input whose timestep range ends before the cutoff
 
 # Experiments
 
+## Prompt interpolation
+
+`a red [INT:dog:cat:0.2,0.8:0.05]` will attempt to interpolate the tensors for `a red dog` and `a red cat` between the specified range in as many steps of 0.05 as will fit.
+
+You can only have one in a prompt, and this doesn't work properly together with any other editing feature for now, and is buggy in other ways too. Starting the interpolation at 0 currently fails.
+
 ## Jinja2
 You can use the `JinjaRender` node to evaluate a string as a Jinja2 template. Note, however, that because ComfyUI's frontend uses `{}` for syntax, There are the following modifications to Jinja syntax:
 

@@ -1,12 +1,65 @@
 from . import utils as utils
 from .parser import parse_prompt_schedules
-from .node_other import steps
 
 from nodes import NODE_CLASS_MAPPINGS as COMFY_NODES
 
 import logging
 
 log = logging.getLogger("comfyui-prompt-control")
+
+
+def linear_interpolate_cond(
+    start, end, start_step=0.0, until_step=1.0, step=0.1, total_step=None, prompt_start="N/A", prompt_end="N/A"
+):
+    from_cond = start[0][0]
+    to_cond = end[0][0]
+    from_pooled = start[0][1].get("pooled_output")
+    to_pooled = end[0][1].get("pooled_output")
+    res = []
+    num_steps = int((until_step - start_step) / step)
+    start_pct = start_step
+    for s in range(1, num_steps+1):
+        factor = round(s / (num_steps+1), 2)
+        new_cond = from_cond + (to_cond - from_cond) * factor
+        if from_pooled is not None and to_pooled is not None:
+            new_pooled = from_pooled + (to_pooled - from_pooled) * factor
+        elif from_pooled is not None:
+            new_pooled = from_pooled
+
+        n = [new_cond, start[0][1].copy()]
+        n[1]["pooled_output"] = new_pooled
+        n[1]["start_percent"] = round(1.0 - start_pct, 2)
+        n[1]["end_percent"] = round(1.0 - (start_pct + step), 2)
+        start_pct += step
+        start_pct = round(start_pct, 2)
+        if prompt_start:
+            n[1]["prompt"] = f"linear:{1.0 - factor} / {factor}"
+        log.debug(
+            "Interpolating at step %s with factor %s (%s, %s)...",
+            s,
+            factor,
+            n[1]["start_percent"],
+            n[1]["end_percent"],
+        )
+        res.append(n)
+    res[-1][1]["end_percent"] = round(1.0 - until_step, 2)
+    return res
+
+
+def linear_interpolate(schedule, from_step, to_step, step, encode):
+    start_prompt = schedule.at_step(from_step)
+    # Returns the prompt to interpolate towards
+    r = schedule.interpolation_at(from_step)
+    log.debug("Interpolation target: %s", r)
+    if not r:
+        raise Exception("No interpolation target? This isn't supposed to happen")
+    end_at, end_prompt = r
+    start = encode(start_prompt)
+    end = encode(end_prompt)
+    log.info("Interpolating %s to %s, (%s, %s, %s)", start_prompt, end_prompt, from_step, to_step, step)
+    return linear_interpolate_cond(
+        start, end, from_step, end_at, step, to_step, start_prompt[1]["prompt"], end_prompt[1]["prompt"]
+    )
 
 
 class CondLinearInterpolate:
@@ -25,34 +78,7 @@ class CondLinearInterpolate:
     CATEGORY = "promptcontrol/exp"
 
     def apply(self, start, end, until=1.0, step=0.1):
-        from_cond = start[0][0]
-        to_cond = end[0][0]
-        from_pooled = start[0][1].get("pooled_output")
-        to_pooled = end[0][1].get("pooled_output")
-        res = []
-        prev_s = 0
-        for s in steps(step, until, step=step):
-            factor = s * (1.0 / until)
-            new_cond = from_cond + (to_cond - from_cond) * factor
-            if from_pooled is not None and to_pooled is not None:
-                new_pooled = from_pooled + (to_pooled - from_pooled) * factor
-            elif from_pooled is not None:
-                new_pooled = from_pooled
-
-            n = [new_cond, start[0][1].copy()]
-            n[1]["pooled_output"] = new_pooled
-            n[1]["start_percent"] = 1.0 - prev_s
-            n[1]["end_percent"] = 1.0 - s
-            log.debug(
-                "Interpolating at step %s with factor %s (%s, %s)...",
-                s,
-                factor,
-                n[1]["start_percent"],
-                n[1]["end_percent"],
-            )
-            prev_s = s
-            res.append(n)
-        res[-1][1]["end_percent"] = 0.0
+        res = linear_interpolate_cond(start, end, 0.0, until, step, lambda x: x)
         return (res,)
 
 
@@ -145,6 +171,15 @@ def do_encode(that, clip, text):
     return fallback()
 
 
+def debug_conds(conds):
+    r = []
+    for i, c in enumerate(conds):
+        x = c[1].copy()
+        del x["pooled_output"]
+        r.append((i, x))
+    return r
+
+
 def control_to_clip_common(self, clip, schedules, lora_cache=None):
     orig_clip = clip.clone()
     current_loras = {}
@@ -176,6 +211,7 @@ def control_to_clip_common(self, clip, schedules, lora_cache=None):
         return "".join(str(i) for i in r)
 
     for end_pct, c in schedules:
+        log.debug("Encoding at %s: %s", end_pct, c["prompt"])
         prompt = c["prompt"]
         loras = c["loras"]
         cachekey = c_str(c)
@@ -185,16 +221,30 @@ def control_to_clip_common(self, clip, schedules, lora_cache=None):
                 clip = load_clip_lora(orig_clip.clone(), loras)
                 current_loras = loras
 
+        interpolations = c.get("interpolations")
+
+        def encode(x):
+            return do_encode(self, clip, x[1]["prompt"])
+
+        if interpolations:
+            start_step, end_step, step = interpolations
+            start_pct = start_step
+            cs = linear_interpolate(schedules, start_step, end_step, step, encode)
+            conds.extend(cs)
+        else:
             cond = do_encode(self, clip, prompt)
             cond_cache[cachekey] = cond
-        else:
-            pass
-        # Node functions return lists of cond
-        for n in cond:
-            n = [n[0], n[1].copy()]
-            n[1]["start_percent"] = 1.0 - start_pct
-            n[1]["end_percent"] = 1.0 - end_pct
-            n[1]["prompt"] = prompt
-            conds.append(n)
+            # Node functions return lists of cond
+            for n in cond:
+                n = [n[0], n[1].copy()]
+                n[1]["start_percent"] = round(1.0 - start_pct, 2)
+                n[1]["end_percent"] = round(1.0 - end_pct, 2)
+                n[1]["prompt"] = prompt
+                conds.append(n)
+
+
         start_pct = end_pct
+        log.debug("Conds at the end: %s", debug_conds(conds))
+
+    log.debug("Final cond info: %s", debug_conds(conds))
     return conds
