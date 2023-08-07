@@ -18,8 +18,8 @@ def linear_interpolate_cond(
     res = []
     num_steps = int((until_step - start_step) / step)
     start_pct = start_step
-    for s in range(1, num_steps+1):
-        factor = round(s / (num_steps+1), 2)
+    for s in range(1, num_steps + 1):
+        factor = round(s / (num_steps + 1), 2)
         new_cond = from_cond + (to_cond - from_cond) * factor
         if from_pooled is not None and to_pooled is not None:
             new_pooled = from_pooled + (to_pooled - from_pooled) * factor
@@ -49,17 +49,23 @@ def linear_interpolate_cond(
 def linear_interpolate(schedule, from_step, to_step, step, encode):
     start_prompt = schedule.at_step(from_step)
     # Returns the prompt to interpolate towards
-    r = schedule.interpolation_at(from_step)
-    log.debug("Interpolation target: %s", r)
-    if not r:
-        raise Exception("No interpolation target? This isn't supposed to happen")
-    end_at, end_prompt = r
-    start = encode(start_prompt)
-    end = encode(end_prompt)
-    log.info("Interpolating %s to %s, (%s, %s, %s)", start_prompt, end_prompt, from_step, to_step, step)
-    return linear_interpolate_cond(
-        start, end, from_step, end_at, step, to_step, start_prompt[1]["prompt"], end_prompt[1]["prompt"]
-    )
+    conds = []
+    end_at = 0
+    while end_at < to_step:
+        r = schedule.interpolation_at(from_step)
+        log.debug("Interpolation target: %s", r)
+        if not r:
+            raise Exception("No interpolation target? This isn't supposed to happen")
+        end_at, end_prompt = r
+        start = encode(start_prompt)
+        end = encode(end_prompt)
+        log.info("Interpolating %s to %s, (%s, %s, %s)", start_prompt, end_prompt, from_step, to_step, step)
+        cs = linear_interpolate_cond(
+            start, end, from_step, end_at, step, to_step, start_prompt[1]["prompt"], end_prompt[1]["prompt"]
+        )
+        conds.extend(cs)
+        from_step = end_at
+    return conds
 
 
 class CondLinearInterpolate:
@@ -241,7 +247,6 @@ def control_to_clip_common(self, clip, schedules, lora_cache=None):
                 n[1]["end_percent"] = round(1.0 - end_pct, 2)
                 n[1]["prompt"] = prompt
                 conds.append(n)
-
 
         start_pct = end_pct
         log.debug("Conds at the end: %s", debug_conds(conds))

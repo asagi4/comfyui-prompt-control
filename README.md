@@ -95,8 +95,6 @@ Removes conditionings from the input whose timestep range ends before the cutoff
 
 `a red [INT:dog:cat:0.2,0.8:0.05]` will attempt to interpolate the tensors for `a red dog` and `a red cat` between the specified range in as many steps of 0.05 as will fit.
 
-You can only have one in a prompt, and this doesn't work properly together with any other editing feature for now, and is buggy in other ways too. Starting the interpolation at 0 currently fails.
-
 ## Jinja2
 You can use the `JinjaRender` node to evaluate a string as a Jinja2 template. Note, however, that because ComfyUI's frontend uses `{}` for syntax, There are the following modifications to Jinja syntax:
 
@@ -132,6 +130,8 @@ There are some very minor differences compared to using multiple sampling passes
 
 More advanced workflows might explode horribly.
 
+- Having more than one interpolation in a prompt will break. I'm not likely to figure out a fix for this until I can understand how to parse the grammar into a real data structure so it's easier to generate the prompt combinations needed.
+- The interpolation math is highly likely to be incorrect. I didn't check.
 - If execution is interrupted and LoRA scheduling is used, your models might be left in an undefined state until you restart ComfyUI
 - Needs better syntax. A1111 is familiar, but not very good
 - More advanced LoRA weight scheduling
