@@ -196,7 +196,7 @@ class PromptSchedule(object):
         try:
             tree = prompt_parser.parse(self.prompt)
             interpolation_steps, steps = get_steps(tree)
-            log.info("Interpolation steps: %s", interpolation_steps)
+            log.debug("Interpolation steps: %s", interpolation_steps)
             parsed = []
 
             def f(x):
