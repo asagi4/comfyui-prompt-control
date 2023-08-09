@@ -9,6 +9,7 @@ import folder_paths
 
 import logging
 import sys
+from os import environ
 
 log = logging.getLogger("comfyui-prompt-control")
 
@@ -137,7 +138,8 @@ class Timer(object):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         elapsed = time.time() - self.start
-        log.debug(f"Executed {self.name} in {elapsed} seconds")
+        if environ.get('COMFYUI_PC_TIMING'):
+            log.info(f"Executed {self.name} in {elapsed} seconds")
 
 
 def load_loras(lora_specs, loaded_loras=None):

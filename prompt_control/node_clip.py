@@ -42,7 +42,8 @@ def linear_interpolate_cond(
             n[1]["end_percent"],
         )
         res.append(n)
-    res[-1][1]["end_percent"] = round(1.0 - until_step, 2)
+    if res:
+        res[-1][1]["end_percent"] = round(1.0 - until_step, 2)
     return res
 
 
@@ -59,7 +60,7 @@ def linear_interpolate(schedule, from_step, to_step, step, encode):
         end_at, end_prompt = r
         start = encode(start_prompt)
         end = encode(end_prompt)
-        log.info("Interpolating %s to %s, (%s, %s, %s)", start_prompt, end_prompt, from_step, to_step, step)
+        log.info("Interpolating %s to %s, (%s, %s, %s)", start_prompt[1]["prompt"], end_prompt[1]["prompt"], from_step, to_step, step)
         cs = linear_interpolate_cond(
             start, end, from_step, end_at, step, to_step, start_prompt[1]["prompt"], end_prompt[1]["prompt"]
         )
@@ -240,7 +241,8 @@ def control_to_clip_common(self, clip, schedules, lora_cache=None, cond_cache=No
             cs = linear_interpolate(schedules, start_step, end_step, step, encode)
             conds.extend(cs)
         else:
-            cond = do_encode(self, clip, prompt)
+            with Timer("CLIP Encode"):
+                cond = do_encode(self, clip, prompt)
             cond_cache[cachekey] = cond
             # Node functions return lists of cond
             for n in cond:
