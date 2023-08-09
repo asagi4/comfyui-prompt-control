@@ -125,59 +125,10 @@ class EditableCLIPEncode:
 
 
 def do_encode(that, clip, text):
-    def fallback():
-        tokens = clip.tokenize(text)
-        cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
-        return [[cond, {"pooled_output": pooled}]]
+    tokens = clip.tokenize(text)
+    cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
+    return [[cond, {"pooled_output": pooled}]]
 
-    # Super hacky way to call other nodes
-    # <f.Nodename(param=a,param2=b)>
-    if text.startswith("<f."):
-        encodernode, text = text[3:].split(">", 1)
-        encoderparams = {}
-        paramstart = encodernode.find("(")
-        paramend = encodernode.find(")")
-        if paramstart > 0 and paramend > paramstart:
-            ps = encodernode[paramstart + 1 : paramend]
-            encodernode = encodernode[:paramstart]
-            for p in ps.split(","):
-                k, v = p.split("=", 1)
-                encoderparams[k.strip().lower()] = v.strip()
-
-        node = COMFY_NODES.get(encodernode)
-        if not node or "CONDITIONING" not in node.RETURN_TYPES:
-            log.error("Invalid encoder node: %s, ignoring", encodernode)
-            return fallback()
-        ret_index = node.RETURN_TYPES.index("CONDITIONING")
-        log.info("Attempting to use %s", encodernode)
-        input_types = node.INPUT_TYPES()
-        r = input_types["required"]
-        params = {}
-        for k in r:
-            t = r[k][0]
-            if t == "STRING":
-                params[k] = text
-                log.info("Set %s=%s", k, params[k])
-            elif t == "CLIP":
-                params[k] = clip
-                log.info("Set %s to the CLIP model", k)
-            elif t in ("INT", "FLOAT"):
-                f = __builtins__[t.lower()]
-                if k in encoderparams:
-                    params[k] = f(encoderparams[k])
-                else:
-                    params[k] = r[k][1]["default"]
-                log.info("Set %s=%s", k, params[k])
-            elif isinstance(t, list):
-                if k in encoderparams and k in t:
-                    params[k] = encoderparams[k]
-                else:
-                    params[k] = t[0]
-                log.info("Set %s=%s", k, params[k])
-            nodefunc = getattr(node, node.FUNCTION)
-        res = nodefunc(that, **params)[ret_index]
-        return res
-    return fallback()
 
 
 def debug_conds(conds):
