@@ -60,7 +60,7 @@ class SimpleWildcard:
         for placeholder, wildcard, offset in matches:
             if offset:
                 offset = int(offset[1:])
-                self.RAND.seed(seed+offset)
+                self.RAND.seed(seed + offset)
             w = self.RAND.choice(self.read_wildcards(wildcard))
             text = text.replace(placeholder, w, 1)
             log.info("Selected wildcard %s for %s", w, placeholder)

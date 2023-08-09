@@ -264,6 +264,7 @@ class PromptSchedule(object):
 
     def load_loras(self, lora_cache=None):
         from .utils import Timer, load_loras_from_schedule
+
         if lora_cache is not None:
             self.loaded_loras = lora_cache
         with Timer("PromptSchedule.load_loras()"):

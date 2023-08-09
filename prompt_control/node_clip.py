@@ -1,7 +1,6 @@
 from . import utils as utils
 from .parser import parse_prompt_schedules
 from .utils import Timer
-from nodes import NODE_CLASS_MAPPINGS as COMFY_NODES
 
 import logging
 
@@ -60,7 +59,14 @@ def linear_interpolate(schedule, from_step, to_step, step, encode):
         end_at, end_prompt = r
         start = encode(start_prompt)
         end = encode(end_prompt)
-        log.info("Interpolating %s to %s, (%s, %s, %s)", start_prompt[1]["prompt"], end_prompt[1]["prompt"], from_step, to_step, step)
+        log.info(
+            "Interpolating %s to %s, (%s, %s, %s)",
+            start_prompt[1]["prompt"],
+            end_prompt[1]["prompt"],
+            from_step,
+            to_step,
+            step,
+        )
         cs = linear_interpolate_cond(
             start, end, from_step, end_at, step, to_step, start_prompt[1]["prompt"], end_prompt[1]["prompt"]
         )
@@ -128,7 +134,6 @@ def do_encode(that, clip, text):
     tokens = clip.tokenize(text)
     cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
     return [[cond, {"pooled_output": pooled}]]
-
 
 
 def debug_conds(conds):
