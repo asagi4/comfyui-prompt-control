@@ -1,6 +1,6 @@
 from . import utils as utils
 from .parser import parse_prompt_schedules
-
+from .utils import Timer
 from nodes import NODE_CLASS_MAPPINGS as COMFY_NODES
 
 import logging
@@ -98,7 +98,9 @@ class ScheduleToCond:
     FUNCTION = "apply"
 
     def apply(self, clip, prompt_schedule):
-        return (control_to_clip_common(self, clip, prompt_schedule),)
+        with Timer("ScheduleToCond"):
+            r = (control_to_clip_common(self, clip, prompt_schedule),)
+        return r
 
 
 class EditableCLIPEncode:
@@ -186,13 +188,13 @@ def debug_conds(conds):
     return r
 
 
-def control_to_clip_common(self, clip, schedules, lora_cache=None):
+def control_to_clip_common(self, clip, schedules, lora_cache=None, cond_cache=None):
     orig_clip = clip.clone()
     current_loras = {}
     loaded_loras = schedules.load_loras(lora_cache)
     start_pct = 0.0
     conds = []
-    cond_cache = {}
+    cond_cache = cond_cache if cond_cache is not None else {}
 
     def load_clip_lora(clip, loraspec):
         if not loraspec:

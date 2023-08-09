@@ -2,6 +2,10 @@ import logging
 from .parser import parse_prompt_schedules
 from .utils import steps
 import math
+from os import environ
+import random
+import re
+from pathlib import Path
 
 log = logging.getLogger("comfyui-prompt-control")
 
@@ -16,6 +20,49 @@ def template(template, sequence, *funcs):
         res.append(x)
 
     return "".join(res)
+
+
+class SimpleWildcard:
+    RAND = random.Random()
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "text": ("STRING", {"default": ""}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF}),
+            },
+            "hidden": {
+                "prompt": "PROMPT",
+                "extra_pnginfo": "EXTRA_PNGINFO",
+                "unique_id": "UNIQUE_ID",
+            },
+        }
+
+    RETURN_TYPES = ("STRING",)
+
+    CATEGORY = "promptcontrol/tools"
+    FUNCTION = "select"
+
+    def read_wildcards(self, name):
+        path = environ.get("PC_WILDCARD_BASEDIR", "wildcards")
+
+        f = (Path(path) / Path(name)).with_suffix(".txt")
+        try:
+            with open(f, "r") as file:
+                return [l.strip() for l in file.readlines() if l.strip()]
+        except:
+            return [name]
+
+    def select(self, text, seed, prompt, extra_pnginfo, unique_id):
+        self.RAND.seed(seed)
+        matches = re.findall(r"(\$([A-Za-z0-9/.-]+)\$)", text)
+        for placeholder, wildcard in matches:
+            w = self.RAND.choice(self.read_wildcards(wildcard))
+            text = text.replace(placeholder, w, 1)
+            log.info("Selected wildcard %s for %s", w, placeholder)
+
+        return (text,)
 
 
 class StringConcat:
