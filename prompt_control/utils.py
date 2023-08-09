@@ -125,7 +125,7 @@ def load_loras_from_schedule(schedules, loaded_loras):
     for step, sched in schedules:
         if sched["loras"]:
             lora_specs.update(sched["loras"])
-    loaded_loras = load_loras(lora_specs)
+    loaded_loras = load_loras(lora_specs, loaded_loras)
     return loaded_loras
 
 
@@ -143,7 +143,7 @@ class Timer(object):
 
 
 def load_loras(lora_specs, loaded_loras=None):
-    loaded_loras = loaded_loras or {}
+    loaded_loras = loaded_loras if loaded_loras is not None else {}
     filenames = [Path(f) for f in folder_paths.get_filename_list("loras")]
     for name in lora_specs.keys():
         if name in loaded_loras:

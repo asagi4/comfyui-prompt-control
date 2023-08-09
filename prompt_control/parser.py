@@ -2,15 +2,6 @@ import lark
 import logging
 from math import ceil
 
-# Don't care about this import when testing parser
-try:
-    from .utils import load_loras_from_schedule
-except ImportError:
-    logging.basicConfig(level=logging.DEBUG)
-    if __name__ != "__main__":
-        raise
-
-
 logging.basicConfig()
 log = logging.getLogger("comfyui-prompt-control")
 
@@ -249,7 +240,9 @@ class PromptSchedule(object):
         return res
 
     def with_filters(self, filters=None, start=None, end=None):
-        return PromptSchedule(self.prompt, filters or self.filters, start or self.start, end or self.end)
+        p = PromptSchedule(self.prompt, filters or self.filters, start or self.start, end or self.end)
+        p.loaded_loras = self.loaded_loras
+        return p
 
     def at_step(self, step, total_steps=1):
         _, x = self.at_step_idx(step, total_steps)
@@ -270,9 +263,11 @@ class PromptSchedule(object):
         return None
 
     def load_loras(self, lora_cache=None):
+        from .utils import Timer, load_loras_from_schedule
         if lora_cache is not None:
             self.loaded_loras = lora_cache
-        self.loaded_loras = load_loras_from_schedule(self.parsed_prompt, self.loaded_loras)
+        with Timer("PromptSchedule.load_loras()"):
+            self.loaded_loras = load_loras_from_schedule(self.parsed_prompt, self.loaded_loras)
         return self.loaded_loras
 
 
