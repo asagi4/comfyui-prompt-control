@@ -32,6 +32,7 @@ class SimpleWildcard:
                 "text": ("STRING", {"default": ""}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF}),
             },
+            "optional": {"use_pnginfo": ("BOOLEAN", {"default": False})},
             "hidden": {
                 "prompt": "PROMPT",
                 "extra_pnginfo": "EXTRA_PNGINFO",
@@ -54,7 +55,11 @@ class SimpleWildcard:
         except:
             return [name]
 
-    def select(self, text, seed, prompt, extra_pnginfo, unique_id):
+    def select(self, text, seed, prompt, extra_pnginfo, unique_id, use_pnginfo=False):
+        if use_pnginfo:
+            p = extra_pnginfo.get("pc_simple_wildcard", {}).get(unique_id)
+            if p:
+                return (p,)
         self.RAND.seed(seed)
         matches = re.findall(r"(\$([A-Za-z0-9/.-]+)(\+[0-9]+)?\$)", text)
         for placeholder, wildcard, offset in matches:
@@ -67,6 +72,10 @@ class SimpleWildcard:
             if offset:
                 self.RAND.seed(seed)
 
+        prompt[unique_id]["inputs"]["use_pnginfo"] = True
+        extra_info = extra_pnginfo.get("pc_simple_wildcard", {})
+        extra_info[unique_id] = text
+        extra_pnginfo["pc_simple_wildcard"] = extra_info
         return (text,)
 
 
