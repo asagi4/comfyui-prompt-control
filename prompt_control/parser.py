@@ -19,9 +19,10 @@ interpolate: "[INT" ":" interp_prompts ":" interp_steps "]"
 interp_prompts: prompt (":" prompt)+
 interp_steps: NUMBER ("," NUMBER)+ [":" NUMBER]
 alternate: "[" [prompt] ("|" [prompt])+ [":" NUMBER] "]"
-loraspec: "<lora:" PLAIN (":" WHITESPACE? NUMBER)~1..2 ">"
+loraspec: "<lora:" FILENAME (":" WHITESPACE? NUMBER)~1..2 ">"
 WHITESPACE: /\s+/
 PLAIN: /([^<>\\\[\]():|]|\\.)+/
+FILENAME: /[^<>:\/\\]+/
 TAG: /[A-Z_]+/
 %import common.SIGNED_NUMBER -> NUMBER
 """,
