@@ -8,16 +8,23 @@ log = logging.getLogger("comfyui-prompt-control")
 
 
 def linear_interpolate_cond(
-    start, end, start_step=0.0, until_step=1.0, step=0.1, total_step=None, prompt_start="N/A", prompt_end="N/A"
+    start, end, from_step=0.0, to_step=1.0, step=0.1, start_at=None, end_at=None, prompt_start="N/A", prompt_end="N/A"
 ):
     from_cond = start[0][0]
     to_cond = end[0][0]
     from_pooled = start[0][1].get("pooled_output")
     to_pooled = end[0][1].get("pooled_output")
     res = []
-    num_steps = int((until_step - start_step) / step)
-    start_pct = start_step
-    for s in range(1, num_steps + 1):
+    start_at = start_at or from_step
+    end_at = end_at or to_step
+    num_steps = int((to_step - from_step) / step)
+    start_on = int((start_at - from_step) / step) + 1
+    end_on = int((end_at - from_step) / step) + 1
+    start_pct = start_at
+    log.debug(
+        f"interpolate_cond {from_step=} {to_step=} {start_at=} {end_at=} {num_steps=} {start_on=} {end_on=} {step=}"
+    )
+    for s in range(start_on, end_on):
         factor = round(s / (num_steps + 1), 2)
         new_cond = from_cond + (to_cond - from_cond) * factor
         if from_pooled is not None and to_pooled is not None:
@@ -42,22 +49,24 @@ def linear_interpolate_cond(
         )
         res.append(n)
     if res:
-        res[-1][1]["end_percent"] = round(1.0 - until_step, 2)
+        res[-1][1]["end_percent"] = round(1.0 - end_at, 2)
     return res
 
 
-def linear_interpolate(schedule, from_step, to_step, step, encode):
-    start_prompt = schedule.at_step(from_step)
+def linear_interpolate(schedule, from_step, to_step, step, start_at, encode):
+    start_prompt = schedule.at_step(start_at)
     # Returns the prompt to interpolate towards
     conds = []
-    end_at = 0
+    end_at = start_at
+    start = encode(start_prompt)
     while end_at < to_step:
-        r = schedule.interpolation_at(from_step)
+        r = schedule.interpolation_at(start_at)
         log.debug("Interpolation target: %s", r)
         if not r:
-            raise Exception("No interpolation target? This isn't supposed to happen")
+            log.info("No interpolation target?")
+            return conds
         end_at, end_prompt = r
-        start = encode(start_prompt)
+        end_at = min(to_step, end_at)
         end = encode(end_prompt)
         log.info(
             "Interpolating %s to %s, (%s, %s, %s)",
@@ -68,10 +77,12 @@ def linear_interpolate(schedule, from_step, to_step, step, encode):
             step,
         )
         cs = linear_interpolate_cond(
-            start, end, from_step, end_at, step, to_step, start_prompt[1]["prompt"], end_prompt[1]["prompt"]
+            start, end, from_step, to_step, step, start_at, end_at, start_prompt[1]["prompt"], end_prompt[1]["prompt"]
         )
         conds.extend(cs)
-        from_step = end_at
+        start_at = end_at
+        start = end
+        start_prompt = end_prompt
     return conds
 
 
@@ -91,7 +102,7 @@ class CondLinearInterpolate:
     CATEGORY = "promptcontrol/exp"
 
     def apply(self, start, end, until=1.0, step=0.1):
-        res = linear_interpolate_cond(start, end, 0.0, until, step, lambda x: x)
+        res = linear_interpolate_cond(start, end, 0.0, until, step)
         return (res,)
 
 
@@ -175,6 +186,7 @@ def control_to_clip_common(self, clip, schedules, lora_cache=None, cond_cache=No
             r.append(loras[k]["weight_clip"])
         return "".join(str(i) for i in r)
 
+    max_interpolated = 0.0
     for end_pct, c in schedules:
         log.debug("Encoding at %s: %s", end_pct, c["prompt"])
         prompt = c["prompt"]
@@ -193,8 +205,9 @@ def control_to_clip_common(self, clip, schedules, lora_cache=None, cond_cache=No
 
         if interpolations:
             start_step, end_step, step = interpolations
-            start_pct = start_step
-            cs = linear_interpolate(schedules, start_step, end_step, step, encode)
+            start_pct = max(start_step, max_interpolated)
+            max_interpolated = max(end_step, max_interpolated)
+            cs = linear_interpolate(schedules, start_step, end_step, step, start_pct, encode)
             conds.extend(cs)
         else:
             with Timer("CLIP Encode"):

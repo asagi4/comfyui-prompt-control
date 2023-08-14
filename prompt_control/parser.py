@@ -261,7 +261,7 @@ class PromptSchedule(object):
             step = min(y[0], 1.0)
             if x[1]["prompt"] != y[1]["prompt"]:
                 return step, y
-        return None
+        return 1.0, self.parsed_prompt[-1]
 
     def load_loras(self, lora_cache=None):
         from .utils import Timer, load_loras_from_schedule
