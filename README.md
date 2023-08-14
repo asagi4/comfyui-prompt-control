@@ -56,7 +56,7 @@ LoRA scheduling supports AITemplate.
 
 Due to sampler patching, your AITemplate nodes must be cloned to a directory called `AIT` under `custom_nodes` or the hijack won't find it.
 
-Note that feeding too large conditionings to AITemplate seems to break it. This can happen when using alternating syntax with too small a step.
+AITemplate sometimes breaks because ComfyUI creates batches larger than what AITemplate can handle. You can apply [this patch](0001-Limit-batch-chunk-size-to-2.patch) to ComfyUI to make AITemplate more reliable. The patch is a hack though, and may slightly deoptimize non-AIT sampling
 
 ## Nodes
 

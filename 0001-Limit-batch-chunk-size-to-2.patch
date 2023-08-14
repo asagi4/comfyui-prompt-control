@@ -1,0 +1,32 @@
+From cc7531d1eb4c9042e614f24857df8b764c0c4ea6 Mon Sep 17 00:00:00 2001
+From: asagi4 <130366179+asagi4@users.noreply.github.com>
+Date: Mon, 14 Aug 2023 21:51:39 +0300
+Subject: [PATCH] Limit batch chunk size to 2
+
+This makes AITemplate more reliable
+---
+ comfy/samplers.py | 8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
+
+diff --git a/comfy/samplers.py b/comfy/samplers.py
+index 28cd466..c92bbdc 100644
+--- a/comfy/samplers.py
++++ b/comfy/samplers.py
+@@ -206,13 +206,7 @@ def sampling_function(model_function, x, timestep, uncond, cond, cond_scale, con
+                         to_batch_temp += [x]
+ 
+                 to_batch_temp.reverse()
+-                to_batch = to_batch_temp[:1]
+-
+-                for i in range(1, len(to_batch_temp) + 1):
+-                    batch_amount = to_batch_temp[:len(to_batch_temp)//i]
+-                    if (len(batch_amount) * first_shape[0] * first_shape[2] * first_shape[3] < max_total_area):
+-                        to_batch = batch_amount
+-                        break
++                to_batch = to_batch_temp[:2]
+ 
+                 input_x = []
+                 mult = []
+-- 
+2.39.3
+
