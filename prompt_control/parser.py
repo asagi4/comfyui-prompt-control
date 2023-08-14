@@ -112,13 +112,12 @@ def at_step(step, filters, tree):
             prompts, starts = args
             starts = starts[:-1]
             prev_prompt = None
-            if step <= starts[0]:
+            if step < starts[0]:
                 return prompts[0]
-            if step >= starts[-1]:
-                return prompts[-1]
             for i, x in enumerate(starts):
-                if step == x:
-                    return prompts[i]
+                prev_prompt = prompts[i]
+                if x >= step:
+                    break
             return prev_prompt
 
         def interp_steps(self, args):
