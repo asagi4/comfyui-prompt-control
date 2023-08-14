@@ -64,10 +64,10 @@ def get_steps(tree):
             tree.children[-1] = step = tostep(tree.children[-1] or 0.1)
             # zip start, end pairs
             for i, (start, end) in enumerate(zip(tree.children[:-1], tree.children[1:-1])):
-                tree.children[i] = start = tostep(tree.children[i])
-                tree.children[i + 1] = end = tostep(tree.children[i + 1])
-                interpolation_steps.append((start, end, step))
-                res.extend([start, end])
+                tree.children[i] = s = tostep(start)
+                tree.children[i + 1] = e = tostep(end)
+                interpolation_steps.append((s, e, step))
+                res.extend([s, e])
 
         def sequence(self, tree):
             steps = tree.children[1::2]
@@ -110,14 +110,15 @@ def at_step(step, filters, tree):
 
         def interpolate(self, args):
             prompts, starts = args
+            starts = starts[:-1]
             prev_prompt = None
             if step <= starts[0]:
                 return prompts[0]
             if step >= starts[-1]:
                 return prompts[-1]
-            for i, x in enumerate(starts[:-1]):
-                if step <= x:
-                    prev_prompt = prompts[i]
+            for i, x in enumerate(starts):
+                if step == x:
+                    return prompts[i]
             return prev_prompt
 
         def interp_steps(self, args):
