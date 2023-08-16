@@ -20,7 +20,7 @@ interp_prompts: prompt (":" prompt)+
 interp_steps: NUMBER ("," NUMBER)+ [":" NUMBER]
 alternate: "[" [prompt] ("|" [prompt])+ [":" NUMBER] "]"
 loraspec: "<lora:" FILENAME (":" WHITESPACE? NUMBER)~1..2 ">"
-embedding.100: "<emb:" FILENAME ">" 
+embedding.100: "<emb:" FILENAME ">"
 WHITESPACE: /\s+/
 PLAIN: /([^<>\\\[\]():|]|\\.)+/
 FILENAME: /[^<>:\/\\]+/
