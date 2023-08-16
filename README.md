@@ -46,6 +46,13 @@ a [black:blue:X] [cat:dog:Y] [walking:running:Z] in space
 ```
 with `tags` `x,z` would result in the prompt `a blue cat running in space`
 
+### Other syntax:
+
+- `<emb:xyz>` is alternative syntax for `embedding:xyz` to work around a syntax conflict with `[embedding:xyz:0.5]` which is parsed as a schedule that switches from `embedding` to `xyz`.
+
+- The keyword `BREAK` causes the prompt to be tokenized in separate chunks, which results in each chunk being individually padded to the text encoder's maximum token length.
+
+
 ## Schedulable LoRAs
 The `ScheduleToModel` node patches a model such that when sampling, it'll switch LoRAs between steps. You can apply the LoRA's effect separately to CLIP conditioning and the unet (model)
 
