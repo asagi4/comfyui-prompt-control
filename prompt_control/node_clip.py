@@ -142,7 +142,13 @@ class EditableCLIPEncode:
 
 
 def do_encode(that, clip, text):
-    tokens = clip.tokenize(text)
+    chunks = text.split("BREAK")
+    tokens = []
+    for c in chunks:
+        if not c.strip():
+            continue
+        # Tokenizer returns padded results
+        tokens.extend(clip.tokenize(c))
     cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
     return [[cond, {"pooled_output": pooled}]]
 
