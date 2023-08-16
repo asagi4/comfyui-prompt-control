@@ -52,6 +52,11 @@ with `tags` `x,z` would result in the prompt `a blue cat running in space`
 
 - The keyword `BREAK` causes the prompt to be tokenized in separate chunks, which results in each chunk being individually padded to the text encoder's maximum token length.
 
+- `AND` can be used to combine prompts. You can also use a weight at the end. It does a weighted sum of each prompt,
+```
+cat :1 AND dog :2
+```
+The weight defaults to 1 and are normalized so that `a:2 AND b:2` is equal to `a AND b`. `AND` is processed after schedule parsing, so you can change the weight mid-prompt: `cat:[1:2:0.5] AND dog`
 
 ## Schedulable LoRAs
 The `ScheduleToModel` node patches a model such that when sampling, it'll switch LoRAs between steps. You can apply the LoRA's effect separately to CLIP conditioning and the unet (model)

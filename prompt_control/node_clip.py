@@ -3,6 +3,9 @@ from .parser import parse_prompt_schedules
 from .utils import Timer
 
 import logging
+import re
+
+from math import lcm
 
 log = logging.getLogger("comfyui-prompt-control")
 
@@ -141,7 +144,7 @@ class EditableCLIPEncode:
         return (control_to_clip_common(self, clip, parsed),)
 
 
-def do_encode(that, clip, text):
+def encode_prompt(clip, text):
     chunks = text.split("BREAK")
     tokens = []
     for c in chunks:
@@ -149,8 +152,43 @@ def do_encode(that, clip, text):
             continue
         # Tokenizer returns padded results
         tokens.extend(clip.tokenize(c))
-    cond, pooled = clip.encode_from_tokens(tokens, return_pooled=True)
-    return [[cond, {"pooled_output": pooled}]]
+    return clip.encode_from_tokens(tokens, return_pooled=True)
+
+
+def do_encode(clip, text):
+    prompts = [p.strip() for p in text.split("AND") if p.strip()]
+    if len(prompts) == 1:
+        cond, pooled = encode_prompt(clip, prompts[0])
+        return [[cond, {"pooled_output": pooled}]]
+
+    def weight(t):
+        x = re.findall(":(-?\d.?\d*)$", t) or [1.0]
+        return float(x[0])
+
+    conds = []
+    pooleds = []
+    max_len = 0
+    scale = sum(abs(weight(p)) for p in prompts)
+    for prompt in prompts:
+        w = weight(prompt)
+        if not w:
+            continue
+        cond, pooled = encode_prompt(clip, prompt)
+        if max_len == 0:
+            max_len = cond.shape[1]
+        else:
+            max_len = lcm(max_len, cond.shape[1])
+        conds.append(cond * (w / scale))
+        pooleds.append(pooled)
+
+    def repeat(x):
+        for i in x:
+            if i.shape[1] < max_len:
+                yield i.repeat(1, max_len // i.shape[1], 1)
+            else:
+                yield i
+
+    return [[sum(repeat(conds)), {"pooled_output": sum(repeat(pooleds))}]]
 
 
 def debug_conds(conds):
@@ -207,7 +245,7 @@ def control_to_clip_common(self, clip, schedules, lora_cache=None, cond_cache=No
         interpolations = c.get("interpolations")
 
         def encode(x):
-            return do_encode(self, clip, x[1]["prompt"])
+            return do_encode(clip, x[1]["prompt"])
 
         if interpolations:
             start_step, end_step, step = interpolations
@@ -217,7 +255,7 @@ def control_to_clip_common(self, clip, schedules, lora_cache=None, cond_cache=No
             conds.extend(cs)
         else:
             with Timer("CLIP Encode"):
-                cond = do_encode(self, clip, prompt)
+                cond = do_encode(clip, prompt)
             cond_cache[cachekey] = cond
             # Node functions return lists of cond
             for n in cond:
