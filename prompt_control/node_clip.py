@@ -162,7 +162,7 @@ def do_encode(clip, text):
         return [[cond, {"pooled_output": pooled}]]
 
     def weight(t):
-        x = re.findall(":(-?\d.?\d*)$", t) or [1.0]
+        x = re.findall(r":(-?\d\.?\d*)$", t) or [1.0]
         return float(x[0])
 
     conds = []
