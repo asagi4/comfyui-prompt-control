@@ -8,7 +8,7 @@ log = logging.getLogger("comfyui-prompt-control")
 prompt_parser = lark.Lark(
     r"""
 !start: (prompt | /[][():]/+)*
-prompt: (emphasized | scheduled | alternate | sequence | interpolate | loraspec | PLAIN | /</ | />/ | WHITESPACE)+
+prompt: (emphasized | embedding | scheduled | alternate | sequence | interpolate | loraspec | PLAIN | /</ | />/ | WHITESPACE)+
 !emphasized: "(" prompt? ")"
         | "(" prompt ":" prompt ")"
         | "[" prompt "]"
@@ -20,6 +20,7 @@ interp_prompts: prompt (":" prompt)+
 interp_steps: NUMBER ("," NUMBER)+ [":" NUMBER]
 alternate: "[" [prompt] ("|" [prompt])+ [":" NUMBER] "]"
 loraspec: "<lora:" FILENAME (":" WHITESPACE? NUMBER)~1..2 ">"
+embedding.100: "<emb:" FILENAME ">" 
 WHITESPACE: /\s+/
 PLAIN: /([^<>\\\[\]():|]|\\.)+/
 FILENAME: /[^<>:\/\\]+/
@@ -157,6 +158,9 @@ def at_step(step, filters, tree):
 
         def plain(self, args):
             return args[0].value
+
+        def embedding(self, args):
+            return "embedding:" + args[0].value
 
         def loraspec(self, args):
             name = "".join(flatten(args[0]))
