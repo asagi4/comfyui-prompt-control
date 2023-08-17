@@ -61,7 +61,7 @@ class SimpleWildcard:
             if p:
                 return (p,)
         self.RAND.seed(seed)
-        matches = re.findall(r"(\$([A-Za-z0-9/.-]+)(\+[0-9]+)?\$)", text)
+        matches = re.findall(r"(\$([A-Za-z0-9_/.-]+)(\+[0-9]+)?\$)", text)
         for placeholder, wildcard, offset in matches:
             if offset:
                 offset = int(offset[1:])
