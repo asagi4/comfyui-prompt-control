@@ -156,8 +156,8 @@ def at_step(step, filters, tree):
             p = "".join(prompt)
             return {"prompt": p, "loras": loraspecs}
 
-        def plain(self, args):
-            return args[0].value
+        def PLAIN(self, args):
+            return args.replace("\\:", ":")
 
         def embedding(self, args):
             return "embedding:" + args[0].value

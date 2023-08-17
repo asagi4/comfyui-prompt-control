@@ -188,7 +188,9 @@ class JinjaRender:
     FUNCTION = "render"
 
     def render(self, text):
-        return (render_jinja(text),)
+        t = render_jinja(text)
+        log.info("Jinja render result: %s", re.sub("\s+", " ", t, flags=re.MULTILINE))
+        return (t,)
 
 
 class ConditioningCutoff:

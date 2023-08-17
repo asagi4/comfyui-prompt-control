@@ -142,7 +142,7 @@ There are some very minor differences compared to using multiple sampling passes
 
 More advanced workflows might explode horribly.
 
-- Having more than one interpolation in a prompt will break. I'm not likely to figure out a fix for this until I can understand how to parse the grammar into a real data structure so it's easier to generate the prompt combinations needed.
+- Multiple interpolations in a prompt sort of work, but probably don't do what they should
 - The interpolation math is highly likely to be incorrect. I didn't check.
 - If execution is interrupted and LoRA scheduling is used, your models might be left in an undefined state until you restart ComfyUI
 - Needs better syntax. A1111 is familiar, but not very good
