@@ -10,11 +10,19 @@ from math import lcm
 log = logging.getLogger("comfyui-prompt-control")
 
 
+def equalize(*tensors):
+    if all(t.shape[1] == tensors[0].shape[1] for t in tensors):
+        return tensors
+
+    x = lcm(*(t.shape[1] for t in tensors))
+
+    return (t.repeat(1, x // t.shape[1], 1) for t in tensors)
+
+
 def linear_interpolate_cond(
     start, end, from_step=0.0, to_step=1.0, step=0.1, start_at=None, end_at=None, prompt_start="N/A", prompt_end="N/A"
 ):
-    from_cond = start[0][0]
-    to_cond = end[0][0]
+    from_cond, to_cond = equalize(start[0][0], end[0][0])
     from_pooled = start[0][1].get("pooled_output")
     to_pooled = end[0][1].get("pooled_output")
     res = []
@@ -31,6 +39,7 @@ def linear_interpolate_cond(
         factor = round(s / (num_steps + 1), 2)
         new_cond = from_cond + (to_cond - from_cond) * factor
         if from_pooled is not None and to_pooled is not None:
+            from_pooled, to_pooled = equalize(from_pooled, to_pooled)
             new_pooled = from_pooled + (to_pooled - from_pooled) * factor
         elif from_pooled is not None:
             new_pooled = from_pooled
@@ -167,28 +176,16 @@ def do_encode(clip, text):
 
     conds = []
     pooleds = []
-    max_len = 0
     scale = sum(abs(weight(p)) for p in prompts)
     for prompt in prompts:
         w = weight(prompt)
         if not w:
             continue
         cond, pooled = encode_prompt(clip, prompt)
-        if max_len == 0:
-            max_len = cond.shape[1]
-        else:
-            max_len = lcm(max_len, cond.shape[1])
         conds.append(cond * (w / scale))
         pooleds.append(pooled)
 
-    def repeat(x):
-        for i in x:
-            if i.shape[1] < max_len:
-                yield i.repeat(1, max_len // i.shape[1], 1)
-            else:
-                yield i
-
-    return [[sum(repeat(conds)), {"pooled_output": sum(repeat(pooleds))}]]
+    return [[sum(equalize(*conds)), {"pooled_output": sum(equalize(*pooleds))}]]
 
 
 def debug_conds(conds):
