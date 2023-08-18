@@ -225,7 +225,7 @@ def control_to_clip_common(self, clip, schedules, lora_cache=None, cond_cache=No
             if params["weight_clip"] == 0:
                 continue
             clip = utils.load_lora(clip, loaded_loras[name], params["weight_clip"], key_map, clone=False)
-            log.info("CLIP LoRA loaded: %s:%s", name, params["weight_clip"])
+            log.info("CLIP LoRA applied: %s:%s", name, params["weight_clip"])
         return clip
 
     def c_str(c):
@@ -237,8 +237,10 @@ def control_to_clip_common(self, clip, schedules, lora_cache=None, cond_cache=No
         return "".join(str(i) for i in r)
 
     max_interpolated = 0.0
-    for end_pct, c in schedules:
-        log.debug("Encoding at %s: %s", end_pct, c["prompt"])
+
+    def encode(c):
+        nonlocal clip
+        nonlocal current_loras
         prompt = c["prompt"]
         loras = c["loras"]
         cachekey = c_str(c)
@@ -247,12 +249,11 @@ def control_to_clip_common(self, clip, schedules, lora_cache=None, cond_cache=No
             if loras != current_loras:
                 clip = load_clip_lora(orig_clip.clone(), loras)
                 current_loras = loras
+            cond_cache[cachekey] = do_encode(clip, prompt)
+        return cond_cache[cachekey]
 
+    for end_pct, c in schedules:
         interpolations = c.get("interpolations")
-
-        def encode(x):
-            return do_encode(clip, x[1]["prompt"])
-
         if interpolations:
             start_step, end_step, step = interpolations
             start_pct = max(start_step, max_interpolated)
@@ -260,15 +261,13 @@ def control_to_clip_common(self, clip, schedules, lora_cache=None, cond_cache=No
             cs = linear_interpolate(schedules, start_step, end_step, step, start_pct, encode)
             conds.extend(cs)
         else:
-            with Timer("CLIP Encode"):
-                cond = do_encode(clip, prompt)
-            cond_cache[cachekey] = cond
+            cond = encode(c)
             # Node functions return lists of cond
             for n in cond:
                 n = [n[0], n[1].copy()]
                 n[1]["start_percent"] = round(1.0 - start_pct, 2)
                 n[1]["end_percent"] = round(1.0 - end_pct, 2)
-                n[1]["prompt"] = prompt
+                n[1]["prompt"] = c["prompt"]
                 conds.append(n)
 
         start_pct = end_pct
