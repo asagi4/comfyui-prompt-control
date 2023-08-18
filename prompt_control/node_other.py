@@ -6,6 +6,7 @@ from os import environ
 import random
 import re
 from pathlib import Path
+from datetime import datetime
 
 log = logging.getLogger("comfyui-prompt-control")
 
@@ -155,6 +156,7 @@ JINJA_ENV = {
     "round": round,
     "template": template,
     "steps": steps,
+    "datetime": datetime,
 }
 
 for fname in ["sqrt", "sin", "cos", "tan", "asin", "acos", "atan"]:
