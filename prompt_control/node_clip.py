@@ -171,18 +171,27 @@ def do_encode(clip, text):
         return [[cond, {"pooled_output": pooled}]]
 
     def weight(t):
-        x = re.findall(r":(-?\d\.?\d*)$", t) or [1.0]
-        return float(x[0])
+        opts = {}
+        m = re.search(r":(-?\d\.?\d*)(![A-Za-z]+)?$", t)
+        if not m:
+            return (1.0, opts, t)
+        w = float(m[1])
+        tag = m[2]
+        t = t[: m.span()[0]]
+        if tag == "!noscale":
+            opts["scale"] = 1
+
+        return w, opts, t
 
     conds = []
     pooleds = []
-    scale = sum(abs(weight(p)) for p in prompts)
+    scale = sum(abs(weight(p)[0]) for p in prompts)
     for prompt in prompts:
-        w = weight(prompt)
+        w, opts, prompt = weight(prompt)
         if not w:
             continue
         cond, pooled = encode_prompt(clip, prompt)
-        conds.append(cond * (w / scale))
+        conds.append(cond * (w / opts.get("scale", scale)))
         pooleds.append(pooled)
 
     return [[sum(equalize(*conds)), {"pooled_output": sum(equalize(*pooleds))}]]
