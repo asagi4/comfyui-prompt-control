@@ -76,7 +76,9 @@ AITemplate sometimes breaks because ComfyUI creates batches larger than what AIT
 Parses a schedule from a text prompt. A schedule is essentially an array of `(valid_until, prompt)` pairs that the other nodes can use.
 
 ### FilterSchedule
-Filters a schedule according to its parameters, removing any *changes* that do not occur within `[start, end)` as well as doing tag filtering. Always returns at least the last prompt in the schedule if everything would otherwise be filtered, so `start=1.0, end=1.0` returns the prompt at 1.0.
+Filters a schedule according to its parameters, removing any *changes* that do not occur within `[start, end)` as well as doing tag filtering. Always returns at least the last prompt in the schedule if everything would otherwise be filtered.
+
+`start=0, end=0` returns the prompt at the start and `start=1.0, end=1.0` returns the prompt at the end.
 
 ### ScheduleToCond
 Produces a combined conditioning for the appropriate timesteps. From a schedule. Also applies LoRAs to the CLIP model according to the schedule.

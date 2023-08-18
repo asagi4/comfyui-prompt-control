@@ -205,10 +205,12 @@ class PromptSchedule(object):
                 interp_step = 100
                 for start, end, step in interpolation_steps:
                     if t == end:
-                        interp_start = max(interp_start or 0, start)
-                        interp_end = min(interp_end or 100, end)
+                        interp_start = max(interp_start or int(self.start * 100), start)
+                        interp_end = min(interp_end or int(self.end * 100), end)
                         interp_step = min(interp_step, step)
-                if interp_start is not None and interp_end is not None:
+                        # When t < self.end:
+                        t = interp_end
+                if interp_start is not None and interp_end is not None and interp_end > interp_start:
                     p["interpolations"] = (f(interp_start), f(interp_end), f(interp_step))
                 parsed.append([f(t), p])
 
@@ -219,14 +221,14 @@ class PromptSchedule(object):
         # Tag filtering may return redundant prompts, so filter them out here
         res = []
         prev_p = None
-        prev_end = 0.0
+        prev_end = -1
 
         for end_at, p in parsed:
             interpolations = p.get("interpolations")
             if p == prev_p and not interpolations:
                 res[-1][0] = end_at
                 continue
-            if end_at <= self.start and not interpolations:
+            if end_at < self.start:
                 continue
             elif end_at <= self.end:
                 res.append([end_at, p])
@@ -239,13 +241,24 @@ class PromptSchedule(object):
         # Always use the last prompt if everything was filtered
         if len(res) == 0:
             res = [[1.0, parsed[-1][1]]]
-        # The last item always ends at 1.0
+        last = res[-1]
+        interpolations = last[1].get("interpolations")
+        # The last item should always end at 1.0, but we can't just extend it if
+        # it has interpolations. That causes weirdness.
+        if interpolations and last[0] != 1.0:
+            res.append([1.0, last[1].copy()])
+            del res[-1][1]["interpolations"]
         res[-1][0] = 1.0
 
         return res
 
     def with_filters(self, filters=None, start=None, end=None):
-        p = PromptSchedule(self.prompt, filters or self.filters, start or self.start, end or self.end)
+        p = PromptSchedule(
+            self.prompt,
+            filters or self.filters,
+            start if start is not None else self.start,
+            end if end is not None else self.end,
+        )
         p.loaded_loras = self.loaded_loras
         return p
 

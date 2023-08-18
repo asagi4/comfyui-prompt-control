@@ -120,6 +120,11 @@ class FilterSchedule:
 
     def apply(self, prompt_schedule, tags="", start=0.0, end=1.0):
         p = prompt_schedule.with_filters(tags, start=start, end=end)
+        log.debug(
+            f"Filtered {prompt_schedule.parsed_prompt} with:",
+            f'("{tags}", {start}, {end}); the result is',
+            p.parsed_prompt,
+        )
         return (p,)
 
 
