@@ -4,10 +4,24 @@ from .utils import Timer
 
 import logging
 import re
-
 from math import lcm
 
 log = logging.getLogger("comfyui-prompt-control")
+
+try:
+    from custom_nodes.ComfyUI_ADV_CLIP_emb.adv_encode import advanced_encode_from_tokens
+
+    have_advanced_encode = True
+    AVAILABLE_STYLES = ["comfy", "A1111", "compel", "comfy++", "down_weight"]
+    AVAILABLE_NORMALIZATIONS = ["none", "mean", "length", "length+mean"]
+    log.info(
+        "Advanced CLIP encoding available. Use STYLE:weight_interpretation:normalization at the start of a prompt to use advanced encodings"
+    )
+    log.info("Weight interpretations available: %s", ",".join(AVAILABLE_STYLES))
+    log.info("Normalization types available: %s", ",".join(AVAILABLE_NORMALIZATIONS))
+except ImportError:
+    have_advanced_encode = False
+    log.info("Advanced prompt encoding nodes not found. Only ComfyUI default encoding is available")
 
 
 def equalize(*tensors):
@@ -153,7 +167,26 @@ class EditableCLIPEncode:
         return (control_to_clip_common(self, clip, parsed),)
 
 
-def encode_prompt(clip, text):
+def get_style(text, default_style="comfy", default_normalization="none"):
+    if text.startswith("STYLE:"):
+        style, text = text.split(maxsplit=1)
+        r = style.split(":", maxsplit=2)
+        style = r[1]
+        if len(r) > 2:
+            normalization = r[3]
+        if style not in AVAILABLE_STYLES:
+            log.warning("Unrecognized prompt style: %s. Using %s", style, default_style)
+            style = default_style
+
+        if normalization not in AVAILABLE_NORMALIZATIONS:
+            log.warning("Unrecognized prompt normalization: %s. Using %s", normalization, default_normalization)
+            normalization = default_normalization
+
+    return style, normalization, text
+
+
+def encode_prompt(clip, text, default_style="comfy", default_normalization="none"):
+    style, normalization, text = get_style(text, default_style, default_normalization)
     chunks = text.split("BREAK")
     tokens = []
     for c in chunks:
@@ -161,13 +194,19 @@ def encode_prompt(clip, text):
             continue
         # Tokenizer returns padded results
         tokens.extend(clip.tokenize(c))
-    return clip.encode_from_tokens(tokens, return_pooled=True)
+    if have_advanced_encode:
+        # TODO: Does not handle SDXL correctly
+        return advanced_encode_from_tokens(tokens, normalization, style, lambda x: (clip.encode_from_tokens(x), None))
+    else:
+        return clip.encode_from_tokens(tokens, return_pooled=True)
 
 
 def do_encode(clip, text):
+    # First style modifier applies to ANDed prompts too unless overridden
+    style, normalization = get_style(text)
     prompts = [p.strip() for p in text.split("AND") if p.strip()]
     if len(prompts) == 1:
-        cond, pooled = encode_prompt(clip, prompts[0])
+        cond, pooled = encode_prompt(clip, prompts[0], style, normalization)
         return [[cond, {"pooled_output": pooled}]]
 
     def weight(t):
@@ -190,7 +229,7 @@ def do_encode(clip, text):
         w, opts, prompt = weight(prompt)
         if not w:
             continue
-        cond, pooled = encode_prompt(clip, prompt)
+        cond, pooled = encode_prompt(clip, prompt, style, normalization)
         conds.append(cond * (w / opts.get("scale", scale)))
         pooleds.append(pooled)
 
