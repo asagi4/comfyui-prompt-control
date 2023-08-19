@@ -86,7 +86,7 @@ def linear_interpolate(schedule, from_step, to_step, step, start_at, encode):
     # Returns the prompt to interpolate towards
     conds = []
     end_at = start_at
-    start = encode(start_prompt)
+    start = encode(start_prompt[1])
     while end_at < to_step:
         r = schedule.interpolation_at(start_at)
         log.debug("Interpolation target: %s", r)
@@ -95,7 +95,7 @@ def linear_interpolate(schedule, from_step, to_step, step, start_at, encode):
             return conds
         end_at, end_prompt = r
         end_at = min(to_step, end_at)
-        end = encode(end_prompt)
+        end = encode(end_prompt[1])
         log.info(
             "Interpolating %s to %s, (%s, %s, %s)",
             start_prompt[1]["prompt"],
