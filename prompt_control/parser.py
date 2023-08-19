@@ -62,13 +62,12 @@ def get_steps(tree):
             res.append(tree.children[-1])
 
         def interp_steps(self, tree):
-            tree.children[-1] = step = tostep(tree.children[-1] or 0.1)
-            # zip start, end pairs
-            for i, (start, end) in enumerate(zip(tree.children[:-1], tree.children[1:-1])):
-                tree.children[i] = s = tostep(start)
-                tree.children[i + 1] = e = tostep(end)
-                interpolation_steps.append((s, e, step))
-                res.extend([s, e])
+            tree.children[-1] = tostep(tree.children[-1] or 0.1)
+            for i, _ in enumerate(tree.children[:-1]):
+                tree.children[i] = tostep(tree.children[i])
+
+            interpolation_steps.append((tuple(tree.children[:-1]), tree.children[-1]))
+            res.extend(tree.children[:-1])
 
         def sequence(self, tree):
             steps = tree.children[1::2]
@@ -182,10 +181,11 @@ class PromptSchedule(object):
         self.prompt = prompt.strip()
         self.loaded_loras = {}
 
-        self.parsed_prompt = self._parse()
+        self.interpolations, self.parsed_prompt = self._parse()
 
     def __iter__(self):
-        return (x for x in self.parsed_prompt)
+        # Filter out zero, it's only useful for interpolation
+        return (x for x in self.parsed_prompt if x[0] != 0)
 
     def _parse(self):
         filters = [x.strip() for x in self.filters.upper().split(",")]
@@ -194,24 +194,24 @@ class PromptSchedule(object):
             interpolation_steps, steps = get_steps(tree)
             log.debug("Interpolation steps: %s", interpolation_steps)
             parsed = []
+            interpolations = set()
 
             def f(x):
                 return round(x / 100, 2)
 
             for t in steps:
                 p = at_step(t, filters, tree)
-                interp_start = None
-                interp_end = None
-                interp_step = 100
-                for start, end, step in interpolation_steps:
-                    if t == end:
-                        interp_start = max(interp_start or int(self.start * 100), start)
-                        interp_end = min(interp_end or int(self.end * 100), end)
-                        interp_step = min(interp_step, step)
-                        # When t < self.end:
-                        t = interp_end
-                if interp_start is not None and interp_end is not None and interp_end > interp_start:
-                    p["interpolations"] = (f(interp_start), f(interp_end), f(interp_step))
+                for control_points, step in interpolation_steps:
+                    interp_start = None
+                    interp_end = None
+                    if t == control_points[-1]:
+                        interp_start = max(control_points[0], int(self.start * 100))
+                        interp_end = min(control_points[-1], int(self.end * 100))
+                        control_points = tuple(
+                            sorted(set(f(c) for c in control_points if c >= interp_start or c <= interp_end))
+                        )
+                    if interp_start is not None and interp_end is not None and interp_end > interp_start:
+                        interpolations.add((control_points, f(step)))
                 parsed.append([f(t), p])
 
         except lark.exceptions.LarkError as e:
@@ -224,8 +224,8 @@ class PromptSchedule(object):
         prev_end = -1
 
         for end_at, p in parsed:
-            interpolations = p.get("interpolations")
-            if p == prev_p and not interpolations:
+            # Preserve prompt if it ends at the start of an interpolation, otherwise bump its end time
+            if p == prev_p and res[-1][0] not in [x[0][0] for x in interpolations]:
                 res[-1][0] = end_at
                 continue
             if end_at < self.start:
@@ -241,16 +241,8 @@ class PromptSchedule(object):
         # Always use the last prompt if everything was filtered
         if len(res) == 0:
             res = [[1.0, parsed[-1][1]]]
-        last = res[-1]
-        interpolations = last[1].get("interpolations")
-        # The last item should always end at 1.0, but we can't just extend it if
-        # it has interpolations. That causes weirdness.
-        if interpolations and last[0] != 1.0:
-            res.append([1.0, last[1].copy()])
-            del res[-1][1]["interpolations"]
-        res[-1][0] = 1.0
 
-        return res
+        return interpolations, res
 
     def with_filters(self, filters=None, start=None, end=None):
         p = PromptSchedule(

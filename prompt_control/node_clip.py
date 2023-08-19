@@ -42,17 +42,18 @@ def linear_interpolate_cond(
     from_pooled = start[0][1].get("pooled_output")
     to_pooled = end[0][1].get("pooled_output")
     res = []
-    start_at = start_at or from_step
-    end_at = end_at or to_step
-    num_steps = int((to_step - from_step) / step)
-    start_on = int((start_at - from_step) / step) + 1
-    end_on = int((end_at - from_step) / step) + 1
+    start_at = start_at if start_at is not None else from_step
+    end_at = end_at if end_at is not None else to_step
+    total_steps = int(round((to_step - from_step) / step, 0))
+    num_steps = int(round((end_at - from_step) / step, 0))
+    start_on = int(round((start_at - from_step) / step, 0))
     start_pct = start_at
-    log.debug(
-        f"interpolate_cond {from_step=} {to_step=} {start_at=} {end_at=} {num_steps=} {start_on=} {end_on=} {step=}"
+    log.info(
+        f"interpolate_cond {from_step=} {to_step=} {start_at=} {end_at=} {total_steps=} {num_steps=} {start_on=} {step=}"
     )
-    for s in range(start_on, end_on):
-        factor = round(s / (num_steps + 1), 2)
+    x = 1 / (num_steps + 1)
+    for s in range(start_on, num_steps + 1):
+        factor = round(s * x, 2)
         new_cond = from_cond + (to_cond - from_cond) * factor
         if from_pooled is not None and to_pooled is not None:
             from_pooled, to_pooled = equalize(from_pooled, to_pooled)
@@ -63,7 +64,7 @@ def linear_interpolate_cond(
         n = [new_cond, start[0][1].copy()]
         n[1]["pooled_output"] = new_pooled
         n[1]["start_percent"] = round(1.0 - start_pct, 2)
-        n[1]["end_percent"] = round(1.0 - (start_pct + step), 2)
+        n[1]["end_percent"] = max(round(1.0 - (start_pct + step), 2), 0)
         start_pct += step
         start_pct = round(start_pct, 2)
         if prompt_start:
@@ -81,36 +82,35 @@ def linear_interpolate_cond(
     return res
 
 
-def linear_interpolate(schedule, from_step, to_step, step, start_at, encode):
-    start_prompt = schedule.at_step(start_at)
-    # Returns the prompt to interpolate towards
+def get_control_points(schedule, steps, encoder):
+    assert len(steps) > 1
+    new_steps = set(steps)
+
+    for step in (s[0] for s in schedule if s[0] >= steps[0] and s[0] <= steps[-1]):
+        new_steps.add(step)
+    control_points = [(s, encoder(schedule.at_step(s)[1])) for s in new_steps]
+    log.info("Actual control points for interpolation: %s (from %s)", new_steps, steps)
+    return sorted(control_points, key=lambda x: x[0])
+
+
+def linear_interpolator(control_points, step, start_pct, end_pct):
+    o_start, start = control_points[0]
+    o_end, _ = control_points[-1]
+    t_start = o_start
     conds = []
-    end_at = start_at
-    start = encode(start_prompt[1])
-    while end_at < to_step:
-        r = schedule.interpolation_at(start_at)
-        log.debug("Interpolation target: %s", r)
-        if not r:
-            log.info("No interpolation target?")
-            return conds
-        end_at, end_prompt = r
-        end_at = min(to_step, end_at)
-        end = encode(end_prompt[1])
-        log.info(
-            "Interpolating %s to %s, (%s, %s, %s)",
-            start_prompt[1]["prompt"],
-            end_prompt[1]["prompt"],
-            from_step,
-            to_step,
-            step,
-        )
-        cs = linear_interpolate_cond(
-            start, end, from_step, to_step, step, start_at, end_at, start_prompt[1]["prompt"], end_prompt[1]["prompt"]
-        )
-        conds.extend(cs)
-        start_at = end_at
+    for t_end, end in control_points[1:]:
+        if t_start < start_pct:
+            t_start, start = t_end, end
+            continue
+        if t_start >= end_pct:
+            break
+        cs = linear_interpolate_cond(start, end, o_start, o_end, step, start_at=t_start, end_at=end_pct)
+        if cs:
+            conds.extend(cs)
+        else:
+            break
+        t_start = t_end
         start = end
-        start_prompt = end_prompt
     return conds
 
 
@@ -288,8 +288,6 @@ def control_to_clip_common(self, clip, schedules, lora_cache=None, cond_cache=No
             r.append(loras[k]["weight_clip"])
         return "".join(str(i) for i in r)
 
-    max_interpolated = 0.0
-
     def encode(c):
         nonlocal clip
         nonlocal current_loras
@@ -309,14 +307,26 @@ def control_to_clip_common(self, clip, schedules, lora_cache=None, cond_cache=No
             use_static_steps = True
             log.info("Using static schedules")
             c["prompt"] = c["prompt"].replace("#ABS#", "")
-        interpolations = c.get("interpolations")
+        interpolations = [
+            i
+            for i in schedules.interpolations
+            if (start_pct >= i[0][0] and start_pct < i[0][-1]) or (end_pct > i[0][0] and start_pct < i[0][-1])
+        ]
+        new_start_pct = start_pct
         if interpolations:
-            start_step, end_step, step = interpolations
-            start_pct = max(start_step, max_interpolated)
-            max_interpolated = max(end_step, max_interpolated)
-            cs = linear_interpolate(schedules, start_step, end_step, step, start_pct, encode)
-            conds.extend(cs)
-        else:
+            min_step = min(i[1] for i in interpolations)
+            for i in interpolations:
+                control_points, _ = i
+                interpolation_end_pct = min(control_points[-1], end_pct)
+                interpolation_start_pct = max(control_points[0], start_pct)
+
+                control_points = get_control_points(schedules, control_points, encode)
+                cs = linear_interpolator(control_points, min_step, interpolation_start_pct, interpolation_end_pct)
+                conds.extend(cs)
+                new_start_pct = max(new_start_pct, interpolation_end_pct)
+        start_pct = new_start_pct
+
+        if start_pct < end_pct:
             cond = encode(c)
             # Node functions return lists of cond
             for n in cond:
