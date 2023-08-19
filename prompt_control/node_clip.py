@@ -21,6 +21,8 @@ try:
     log.info("Normalization types available: %s", ",".join(AVAILABLE_NORMALIZATIONS))
 except ImportError:
     have_advanced_encode = False
+    AVAILABLE_STYLES = ["comfy"]
+    AVAILABLE_NORMALIZATIONS = ["none"]
     log.info("Advanced prompt encoding nodes not found. Only ComfyUI default encoding is available")
 
 
@@ -168,12 +170,15 @@ class EditableCLIPEncode:
 
 
 def get_style(text, default_style="comfy", default_normalization="none"):
+    style = default_style
+    normalization = default_normalization
+    text = text.strip()
     if text.startswith("STYLE:"):
         style, text = text.split(maxsplit=1)
         r = style.split(":", maxsplit=2)
         style = r[1]
         if len(r) > 2:
-            normalization = r[3]
+            normalization = r[2]
         if style not in AVAILABLE_STYLES:
             log.warning("Unrecognized prompt style: %s. Using %s", style, default_style)
             style = default_style
@@ -193,17 +198,24 @@ def encode_prompt(clip, text, default_style="comfy", default_normalization="none
         if not c.strip():
             continue
         # Tokenizer returns padded results
-        tokens.extend(clip.tokenize(c))
+        tokens.extend(clip.tokenize(c, return_word_ids=have_advanced_encode))
     if have_advanced_encode:
         # TODO: Does not handle SDXL correctly
-        return advanced_encode_from_tokens(tokens, normalization, style, lambda x: (clip.encode_from_tokens(x), None))
+        return advanced_encode_from_tokens(
+            tokens,
+            normalization,
+            style,
+            lambda x: clip.encode_from_tokens(x, return_pooled=True),
+            return_pooled=True,
+            apply_to_pooled=True,
+        )
     else:
         return clip.encode_from_tokens(tokens, return_pooled=True)
 
 
 def do_encode(clip, text):
     # First style modifier applies to ANDed prompts too unless overridden
-    style, normalization = get_style(text)
+    style, normalization, text = get_style(text)
     prompts = [p.strip() for p in text.split("AND") if p.strip()]
     if len(prompts) == 1:
         cond, pooled = encode_prompt(clip, prompts[0], style, normalization)
