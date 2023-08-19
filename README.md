@@ -70,6 +70,23 @@ Due to sampler patching, your AITemplate nodes must be cloned to a directory cal
 
 AITemplate sometimes breaks because ComfyUI creates batches larger than what AITemplate can handle. You can apply [this patch](0001-Limit-batch-chunk-size-to-2.patch) to ComfyUI to make AITemplate more reliable. The patch is a hack though, and may slightly deoptimize non-AIT sampling
 
+## Advanced CLIP encoding
+
+If you have [Advanced CLIP Encoding nodes](https://github.com/BlenderNeko/ComfyUI_ADV_CLIP_emb/tree/master) cloned into your `custom_nodes`, you can use the syntax `STYLE:weight_interpretation:normalization` at the start of a prompt to affect how prompts are interpreted.
+
+The style can be specified separately for each AND:ed prompt, but the first prompt is special; later prompts will "inherit" it as default. For example:
+
+```
+STYLE:A1111 a (red:1.1) cat with (brown:0.9) spots and a long tail AND an (old:0.5) dog AND a (green:1.4) (balloon:1.1)
+```
+will interpret everything as A1111, but
+```
+a (red:1.1) cat with (brown:0.9) spots and a long tail AND STYLE:A1111 an (old:0.5) dog AND a (green:1.4) (balloon:1.1)
+```
+Will interpret the first one using the default ComfyUI behaviour, the second prompt with A1111 and the last prompt with the default again
+
+For things (ie. the code imports) to work, the nodes must be cloned in a directory named exactly `ComfyUI_ADV_CLIP_emb`.
+
 ## Nodes
 
 ### PromptToSchedule
@@ -144,6 +161,7 @@ There are some very minor differences compared to using multiple sampling passes
 
 More advanced workflows might explode horribly.
 
+- The advanced prompt encoding integration seems to work, but I haven't verified if it gives the same results as the actual nodes.
 - Multiple interpolations in a prompt sort of work, but probably don't do what they should
 - The interpolation math is highly likely to be incorrect. I didn't check.
 - If execution is interrupted and LoRA scheduling is used, your models might be left in an undefined state until you restart ComfyUI
