@@ -15,11 +15,11 @@ prompt: (emphasized | embedding | scheduled | alternate | sequence | interpolate
 scheduled: "[" [prompt ":"] [prompt] ":" WHITESPACE? NUMBER "]"
         | "[" [prompt ":"] [prompt] ":" WHITESPACE? TAG "]"
 sequence:  "[SEQ" ":" [prompt] ":" NUMBER (":" [prompt] ":" NUMBER)+ "]"
-interpolate: "[INT" ":" interp_prompts ":" interp_steps "]"
+interpolate.100: "[INT" ":" interp_prompts ":" interp_steps "]"
 interp_prompts: prompt (":" prompt)+
 interp_steps: NUMBER ("," NUMBER)+ [":" NUMBER]
 alternate: "[" [prompt] ("|" [prompt])+ [":" NUMBER] "]"
-loraspec: "<lora:" FILENAME (":" WHITESPACE? NUMBER)~1..2 ">"
+loraspec.99: "<lora:" FILENAME (":" WHITESPACE? NUMBER)~1..2 ">"
 embedding.100: "<emb:" FILENAME ">"
 WHITESPACE: /\s+/
 PLAIN: /([^<>\\\[\]():|]|\\.)+/
