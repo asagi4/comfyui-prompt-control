@@ -90,11 +90,6 @@ def hijack_ksampler(module, cls):
         ):
             if sigmas is None:
                 sigmas = self.sigmas
-            if last_step is not None and last_step < (len(sigmas) - 1):
-                sigmas = sigmas[: last_step + 1]
-            if start_step is not None and start_step < (len(sigmas) - 1):
-                sigmas = sigmas[start_step]
-
             calculate_absolute_timesteps(self.model_wrap, positive, sigmas)
             calculate_absolute_timesteps(self.model_wrap, negative, sigmas)
 
