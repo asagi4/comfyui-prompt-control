@@ -169,9 +169,8 @@ There are some very minor differences compared to using multiple sampling passes
 
 More advanced workflows might explode horribly.
 
+- Interpolation is probably buggy and will likely change behaviour whenever code gets refactored.
 - The advanced prompt encoding integration seems to work, but I haven't verified if it gives the same results as the actual nodes.
-- Multiple interpolations in a prompt sort of work, but probably don't do what they should
-- The interpolation math is highly likely to be incorrect. I didn't check.
 - If execution is interrupted and LoRA scheduling is used, your models might be left in an undefined state until you restart ComfyUI
 - Needs better syntax. A1111 is familiar, but not very good
 - More advanced LoRA weight scheduling
