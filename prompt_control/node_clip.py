@@ -264,6 +264,7 @@ def control_to_clip_common(self, clip, schedules, lora_cache=None, cond_cache=No
     start_pct = 0.0
     conds = []
     cond_cache = cond_cache if cond_cache is not None else {}
+    use_static_steps = False
 
     def load_clip_lora(clip, loraspec):
         if not loraspec:
@@ -304,6 +305,10 @@ def control_to_clip_common(self, clip, schedules, lora_cache=None, cond_cache=No
         return cond_cache[cachekey]
 
     for end_pct, c in schedules:
+        if "#ABS#" in c["prompt"]:
+            use_static_steps = True
+            log.info("Using static schedules")
+            c["prompt"] = c["prompt"].replace("#ABS#", "")
         interpolations = c.get("interpolations")
         if interpolations:
             start_step, end_step, step = interpolations
@@ -325,4 +330,7 @@ def control_to_clip_common(self, clip, schedules, lora_cache=None, cond_cache=No
         log.debug("Conds at the end: %s", debug_conds(conds))
 
     log.debug("Final cond info: %s", debug_conds(conds))
+    if use_static_steps:
+        for t in range(len(conds)):
+            conds[t][1]["absolute_timesteps"] = True
     return conds
