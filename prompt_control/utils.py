@@ -51,12 +51,11 @@ def patch_model(model):
             l.apply_unet(
                 aitemplate_module=l.pc_applied_module,
                 unet=l.compvis_unet(model.model.state_dict()),
-                in_channels=m.model.diffusion_model.in_channels,
+                in_channels=model.model.diffusion_model.in_channels,
                 conv_in_key="conv_in_weight",
             )
     else:
-        model.patch_model(model.load_device)
-        model.model.to(model.load_device)
+        model.patch_model()
 
 
 def get_callback(model):
