@@ -34,7 +34,7 @@ def unpatch_model(model):
 
 
 def clone_model(model):
-        return model.clone()
+    return model.clone()
 
 
 def add_patches(model, patches, weight):
