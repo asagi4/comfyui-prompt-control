@@ -48,7 +48,7 @@ def linear_interpolate_cond(
     num_steps = int(round((end_at - from_step) / step, 0))
     start_on = int(round((start_at - from_step) / step, 0))
     start_pct = start_at
-    log.info(
+    log.debug(
         f"interpolate_cond {from_step=} {to_step=} {start_at=} {end_at=} {total_steps=} {num_steps=} {start_on=} {step=}"
     )
     x = 1 / (num_steps + 1)
@@ -89,7 +89,7 @@ def get_control_points(schedule, steps, encoder):
     for step in (s[0] for s in schedule if s[0] >= steps[0] and s[0] <= steps[-1]):
         new_steps.add(step)
     control_points = [(s, encoder(schedule.at_step(s)[1])) for s in new_steps]
-    log.info("Actual control points for interpolation: %s (from %s)", new_steps, steps)
+    log.debug("Actual control points for interpolation: %s (from %s)", new_steps, steps)
     return sorted(control_points, key=lambda x: x[0])
 
 
