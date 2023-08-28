@@ -99,7 +99,7 @@ class SimpleWildcard:
     def doit(self, text, seed, extra_pnginfo, unique_id, use_pnginfo=False):
         if use_pnginfo and unique_id in extra_pnginfo.get("SimpleWildcard", {}):
             text = extra_pnginfo["SimpleWildcard"][unique_id]
-            log.info("SimpleWildcard using prompt:", text)
+            log.info("SimpleWildcard using prompt: %s", text)
         return (text,)
 
 
