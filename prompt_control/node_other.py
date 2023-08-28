@@ -7,6 +7,7 @@ import random
 import re
 from pathlib import Path
 from datetime import datetime
+from server import PromptServer
 
 log = logging.getLogger("comfyui-prompt-control")
 
@@ -23,6 +24,30 @@ def template(template, sequence, *funcs):
     return "".join(res)
 
 
+def wildcard_prompt_handler(json_data):
+    log.info("Resolving wildcards...")
+    for node_id in json_data["prompt"].keys():
+        if json_data["prompt"][node_id]["class_type"] == "SimpleWildcard":
+            handle_wildcard_node(json_data, node_id)
+    return json_data
+
+
+def handle_wildcard_node(json_data, node_id):
+    wildcard_info = json_data.get("extra_data", {}).get("extra_pnginfo", {}).get("SimpleWildcard", {})
+    n = json_data["prompt"][node_id]
+    if not (n["inputs"].get("use_pnginfo") and node_id in wildcard_info):
+        text = SimpleWildcard.select(n["inputs"]["text"], n["inputs"]["seed"])
+
+    if text.strip() != n["inputs"]["text"].strip():
+        json_data["prompt"][node_id]["inputs"]["use_pnginfo"] = True
+        wildcard_info[node_id] = text
+        json_data["extra_data"]["extra_pnginfo"]["SimpleWildcard"] = wildcard_info
+    return json_data
+
+
+PromptServer.instance.add_on_prompt_handler(wildcard_prompt_handler)
+
+
 class SimpleWildcard:
     RAND = random.Random()
 
@@ -35,7 +60,6 @@ class SimpleWildcard:
             },
             "optional": {"use_pnginfo": ("BOOLEAN", {"default": False})},
             "hidden": {
-                "prompt": "PROMPT",
                 "extra_pnginfo": "EXTRA_PNGINFO",
                 "unique_id": "UNIQUE_ID",
             },
@@ -44,9 +68,10 @@ class SimpleWildcard:
     RETURN_TYPES = ("STRING",)
 
     CATEGORY = "promptcontrol/tools"
-    FUNCTION = "select"
+    FUNCTION = "doit"
 
-    def read_wildcards(self, name):
+    @classmethod
+    def read_wildcards(cls, name):
         path = environ.get("PC_WILDCARD_BASEDIR", "wildcards")
 
         f = (Path(path) / Path(name)).with_suffix(".txt")
@@ -56,27 +81,25 @@ class SimpleWildcard:
         except:
             return [name]
 
-    def select(self, text, seed, prompt, extra_pnginfo, unique_id, use_pnginfo=False):
-        if use_pnginfo:
-            p = extra_pnginfo.get("pc_simple_wildcard", {}).get(unique_id)
-            if p:
-                return (p,)
-        self.RAND.seed(seed)
+    @classmethod
+    def select(cls, text, seed):
+        cls.RAND.seed(seed)
         matches = re.findall(r"(\$([A-Za-z0-9_/.-]+)(\+[0-9]+)?\$)", text)
         for placeholder, wildcard, offset in matches:
             if offset:
                 offset = int(offset[1:])
-                self.RAND.seed(seed + offset)
-            w = self.RAND.choice(self.read_wildcards(wildcard))
+                cls.RAND.seed(seed + offset)
+            w = cls.RAND.choice(cls.read_wildcards(wildcard))
             text = text.replace(placeholder, w, 1)
             log.info("Selected wildcard %s for %s", w, placeholder)
             if offset:
-                self.RAND.seed(seed)
+                cls.RAND.seed(seed)
+        return text
 
-        prompt[unique_id]["inputs"]["use_pnginfo"] = True
-        extra_info = extra_pnginfo.get("pc_simple_wildcard", {})
-        extra_info[unique_id] = text
-        extra_pnginfo["pc_simple_wildcard"] = extra_info
+    def doit(self, text, seed, extra_pnginfo, unique_id, use_pnginfo=False):
+        if use_pnginfo and unique_id in extra_pnginfo.get("SimpleWildcard", {}):
+            text = extra_pnginfo["SimpleWildcard"][unique_id]
+            log.info("SimpleWildcard using prompt:", text)
         return (text,)
 
 
