@@ -8,12 +8,13 @@ import logging
 log = logging.getLogger("comfyui-prompt-control")
 
 
-def schedule_lora_common(model, schedules, lora_cache=None, split_sampling=False):
+def schedule_lora_common(model, schedules, lora_cache=None):
     do_hijack()
     orig_model = clone_model(model)
     loaded_loras = schedules.load_loras(lora_cache)
 
     def sampler_cb(orig_sampler, *args, **kwargs):
+        split_sampling = args[0].model_options.get("pc_split_sampling")
         state = {}
         steps = args[2]
         start_step = kwargs["start_step"] or 0
@@ -55,14 +56,13 @@ def schedule_lora_common(model, schedules, lora_cache=None, split_sampling=False
                     del x["end_percent"]
                     r.append([c[0].clone(), x])
             if len(r) == 0:
-                log.error("??? No conds at ", t, start_t, end_t)
+                log.error("No %s conds between (%s, %s); Try adjusting your steps", t, start_t, end_t)
             return r
 
         if split_sampling:
             actual_end_step = kwargs["last_step"] or steps
             first_step = True
             s = args[8]
-            zero_noise = torch.zeros(s.size(), dtype=s.dtype, layout=s.layout, device="cpu")
             while start_step < actual_end_step:
                 end_t, _ = schedules.at_step(start_step + 1, total_steps=steps)
                 start_t = round(start_step / steps, 2)
@@ -73,9 +73,9 @@ def schedule_lora_common(model, schedules, lora_cache=None, split_sampling=False
                 new_kwargs = kwargs.copy()
                 new_args = list(args)
                 new_args[0] = state["model"]
+                new_args[6] = filter_conds(new_args[6], "positive", start_t, end_t)
+                new_args[7] = filter_conds(new_args[7], "negative", start_t, end_t)
                 new_args[8] = s
-                pos = filter_conds(new_args[6], "positive", start_t, end_t)
-                neg = filter_conds(new_args[7], "negative", start_t, end_t)
                 log.info("Sampling from %s to %s (total: %s)", start_step, end_step, actual_end_step)
                 new_kwargs["start_step"] = start_step
                 new_kwargs["last_step"] = end_step
@@ -87,6 +87,7 @@ def schedule_lora_common(model, schedules, lora_cache=None, split_sampling=False
                 if not first_step:
                     # this actually does nothing currently, we need to override noise in args
                     new_kwargs["disable_noise"] = True
+                    zero_noise = torch.zeros(s.size(), dtype=s.dtype, layout=s.layout, device="cpu")
                     new_args[1] = zero_noise
                 s = orig_sampler(*new_args, **new_kwargs)
                 start_step = end_step
@@ -116,15 +117,34 @@ class ScheduleToModel:
                 "model": ("MODEL",),
                 "prompt_schedule": ("PROMPT_SCHEDULE",),
             },
-            "optional": {"split_sampling": ("BOOLEAN", {"default": False})},
         }
 
     RETURN_TYPES = ("MODEL",)
     CATEGORY = "promptcontrol"
     FUNCTION = "apply"
 
-    def apply(self, model, prompt_schedule, split_sampling=False):
-        return (schedule_lora_common(model, prompt_schedule, split_sampling=split_sampling),)
+    def apply(self, model, prompt_schedule):
+        return (schedule_lora_common(model, prompt_schedule),)
+
+
+class PCSplitSampling:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "model": ("MODEL",),
+                "split_sampling": ("BOOLEAN", {"default": True}),
+            },
+        }
+
+    RETURN_TYPES = ("MODEL",)
+    CATEGORY = "promptcontrol"
+    FUNCTION = "apply"
+
+    def apply(self, model, split_sampling):
+        model = model.clone()
+        model.model_options["pc_split_sampling"] = split_sampling
+        return (model,)
 
 
 class LoRAScheduler:
