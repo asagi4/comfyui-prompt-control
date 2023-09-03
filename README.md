@@ -22,6 +22,8 @@ ComfyUI does not use the step number to determine whether to apply conds; instea
 
 Currently there doesn't seem to be a good way to change this.
 
+You can try using the `PCSplitSampling` node to enable an alternative method of sampling.
+
 ## Syntax
 
 Syntax is like A1111 for now, but only fractions are supported for steps.
@@ -119,6 +121,9 @@ Produces a model that'll cause the sampler to reapply LoRAs at specific steps ac
 
 This depends on a callback handled by a monkeypatch of the ComfyUI sampler function, so it might not work with custom samplers, but it shouldn't interfere with them either.
 
+### PCSplitSampling
+Causes sampling to be split into multiple sampler calls instead of relying on timesteps for scheduling. This makes the schedules more accurate, but seems to cause weird behaviour with SDE samplers. (Upstream bug?)
+
 ### JinjaRender
 Renders a String with Jinja2. See below for details
 
@@ -171,10 +176,9 @@ The second form is equivalent to `steps(step, end, step)`. i.e. it starts at the
 
 The loaders can mostly reproduce the output from using `LoraLoader`.
 
-There are some very minor differences compared to using multiple sampling passes when LoRA scheduling is in use. Changing this would require changing the implementation to call sampling multiple times. I may do this at some point, but it's good enough for now.
-
 More advanced workflows might explode horribly.
 
+- `PCSplitSampling` with SDE schedulers seems to add noise into the latent for some reason.
 - Interpolation is probably buggy and will likely change behaviour whenever code gets refactored.
 - The advanced prompt encoding integration seems to work, but I haven't verified if it gives the same results as the actual nodes.
 - If execution is interrupted and LoRA scheduling is used, your models might be left in an undefined state until you restart ComfyUI
