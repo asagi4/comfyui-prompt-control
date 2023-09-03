@@ -79,16 +79,16 @@ def schedule_lora_common(model, schedules, lora_cache=None):
                 log.info("Sampling from %s to %s (total: %s)", start_step, end_step, actual_end_step)
                 new_kwargs["start_step"] = start_step
                 new_kwargs["last_step"] = end_step
-                if end_step >= actual_end_step:
+                if end_step >= min(steps, actual_end_step):
                     new_kwargs["force_full_denoise"] = kwargs["force_full_denoise"]
                 else:
                     new_kwargs["force_full_denoise"] = False
 
                 if not first_step:
-                    # this actually does nothing currently, we need to override noise in args
+                    # disable_noise apparently does nothing currently, we need to override noise in args
                     new_kwargs["disable_noise"] = True
-                    zero_noise = torch.zeros(s.size(), dtype=s.dtype, layout=s.layout, device="cpu")
-                    new_args[1] = zero_noise
+                    new_args[1] = torch.zeros_like(s)
+
                 s = orig_sampler(*new_args, **new_kwargs)
                 start_step = end_step
                 first_step = False
@@ -133,7 +133,7 @@ class PCSplitSampling:
         return {
             "required": {
                 "model": ("MODEL",),
-                "split_sampling": ("BOOLEAN", {"default": True}),
+                "split_sampling": (["enable", "disable"],),
             },
         }
 
@@ -143,7 +143,7 @@ class PCSplitSampling:
 
     def apply(self, model, split_sampling):
         model = model.clone()
-        model.model_options["pc_split_sampling"] = split_sampling
+        model.model_options["pc_split_sampling"] = split_sampling == "enable"
         return (model,)
 
 
