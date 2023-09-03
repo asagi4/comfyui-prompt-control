@@ -51,24 +51,30 @@ def schedule_lora_common(model, schedules, lora_cache=None):
                 x = c[1].copy()
                 start_at = round(1 - x["start_percent"], 2)
                 end_at = round(1 - x["end_percent"], 2)
-                if start_t >= start_at and end_t <= end_at:
+                # Take any cond that has any effect before end_t, since the percentages may not perfectly match
+                if end_t > start_at and end_t <= end_at:
                     del x["start_percent"]
                     del x["end_percent"]
                     r.append([c[0].clone(), x])
+                else:
+                    log.debug("Rejecting cond (%s, %s) between (%s, %s)", start_at, end_at, start_t, end_t)
             if len(r) == 0:
                 log.error("No %s conds between (%s, %s); Try adjusting your steps", t, start_t, end_t)
             return r
+
+        def get_steps(conds):
+            for c in conds:
+                yield round(1 - c[1].get("end_percent", 0), 2)
 
         if split_sampling:
             actual_end_step = kwargs["last_step"] or steps
             first_step = True
             s = args[8]
-            while start_step < actual_end_step:
-                end_t, _ = schedules.at_step(start_step + 1, total_steps=steps)
+            all_steps = sorted(set(int(steps * i) for i in [1.0] + list(get_steps(args[6])) + list(get_steps(args[7]))))
+            for end_step in all_steps:
+                if end_step <= start_step:
+                    continue
                 start_t = round(start_step / steps, 2)
-                if end_t == start_t:
-                    end_t, _ = schedules.at_step(start_step + 1, total_steps=steps)
-                end_step = int(steps * end_t)
                 end_t = round(end_step / steps, 2)
                 new_kwargs = kwargs.copy()
                 new_args = list(args)
