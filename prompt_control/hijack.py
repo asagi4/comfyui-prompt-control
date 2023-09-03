@@ -26,7 +26,10 @@ def hijack_sampler(module, function):
     def pc_sample(*args, **kwargs):
         model = args[0]
         cb = get_callback(model)
-        BrownianTreeNoiseSampler.pc_reset(model.model_options.get("pc_split_sampling"))
+        BrownianTreeNoiseSampler.pc_reset(
+            model.model_options.get("pc_split_sampling"),
+            kwargs.get("force_full_denoise") or kwargs.get("denoise", 1.0) >= 1.0,
+        )
         if cb:
             try:
                 r = cb(orig_sampler, *args, **kwargs)
@@ -133,24 +136,31 @@ def hijack_browniannoisesampler(module, cls):
         global_instance = None
         use_global_sigmas = False
         global_sigmas = None
+        force_full_denoise = False
 
         @classmethod
-        def pc_reset(cls, use_global_sigmas=False):
+        def pc_reset(cls, use_global_sigmas=False, force_full_denoise=False):
             cls.global_instance = None
             cls.global_sigmas = None
             cls.use_global_sigmas = use_global_sigmas
+            cls.force_full_denoise = force_full_denoise
 
         @classmethod
         def set_global_sigmas(cls, sigmas):
             if cls.global_sigmas is None and cls.use_global_sigmas:
-                cls.global_sigmas = sigmas[sigmas > 0].min(), sigmas.max()
+                cls.global_sigmas = (0 if cls.force_full_denoise else sigmas[sigmas > 0].min(), sigmas.max())
+                log.info(
+                    "Initializing BrownianTreeNoiseSampler instance with global sigmas %s, %s",
+                    cls.global_sigmas,
+                    cls.force_full_denoise,
+                )
 
         def __init__(self, x, sigma_min, sigma_max, **kwargs):
             if self.global_sigmas is not None:
-                log.info("Initializing Brownian Sampler instance with global sigmas")
                 sigma_min, sigma_max = self.global_sigmas
-
-            super().__init__(x, sigma_min, sigma_max, **kwargs)
+            if not self.global_instance:
+                super().__init__(x, sigma_min, sigma_max, **kwargs)
+                PCBrownianTreeNoiseSampler.global_instance = self
 
         def __call__(self, *args, **kwargs):
             if self.global_instance and self != self.global_instance:
