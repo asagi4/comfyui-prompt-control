@@ -178,7 +178,7 @@ The loaders can mostly reproduce the output from using `LoraLoader`.
 
 More advanced workflows might explode horribly.
 
-- `PCSplitSampling` with SDE schedulers seems to add noise into the latent for some reason.
+- `PCSplitSampling` with SDE schedulers overrides the noise sampling behaviour so that each split segment doesn't add crazy amounts of noise to the result
 - Split sampling may have weird behaviour if your step percentages go below 1 step.
 - Interpolation is probably buggy and will likely change behaviour whenever code gets refactored.
 - The advanced prompt encoding integration seems to work, but I haven't verified if it gives the same results as the actual nodes.

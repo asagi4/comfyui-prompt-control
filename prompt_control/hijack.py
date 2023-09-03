@@ -21,18 +21,24 @@ def hijack_sampler(module, function):
     if has_hijack(orig_sampler):
         return
 
+    from comfy.k_diffusion.sampling import BrownianTreeNoiseSampler
+
     def pc_sample(*args, **kwargs):
         model = args[0]
         cb = get_callback(model)
+        BrownianTreeNoiseSampler.pc_reset(model.model_options.get("pc_split_sampling"))
         if cb:
             try:
-                return cb(orig_sampler, *args, **kwargs)
+                r = cb(orig_sampler, *args, **kwargs)
             except Exception:
                 log.info("Exception occurred during callback, unpatching model...")
                 unpatch_model(model)
+                BrownianTreeNoiseSampler.pc_reset(False)
                 raise
         else:
-            return orig_sampler(*args, **kwargs)
+            r = orig_sampler(*args, **kwargs)
+        BrownianTreeNoiseSampler.pc_reset()
+        return r
 
     hijack(mod, function, pc_sample)
 
@@ -90,6 +96,11 @@ def hijack_ksampler(module, cls):
         ):
             if sigmas is None:
                 sigmas = self.sigmas
+
+            from comfy.k_diffusion.sampling import BrownianTreeNoiseSampler
+
+            BrownianTreeNoiseSampler.set_global_sigmas(self.sigmas)
+
             calculate_absolute_timesteps(self.model_wrap, positive, sigmas)
             calculate_absolute_timesteps(self.model_wrap, negative, sigmas)
 
@@ -112,6 +123,44 @@ def hijack_ksampler(module, cls):
     hijack(mod, cls, HijackedKSampler)
 
 
+def hijack_browniannoisesampler(module, cls):
+    mod = sys.modules[module]
+    orig_sampler = getattr(mod, cls)
+    if has_hijack(orig_sampler):
+        return
+
+    class PCBrownianTreeNoiseSampler(orig_sampler):
+        global_instance = None
+        use_global_sigmas = False
+        global_sigmas = None
+
+        @classmethod
+        def pc_reset(cls, use_global_sigmas=False):
+            cls.global_instance = None
+            cls.global_sigmas = None
+            cls.use_global_sigmas = use_global_sigmas
+
+        @classmethod
+        def set_global_sigmas(cls, sigmas):
+            if cls.global_sigmas is None and cls.use_global_sigmas:
+                cls.global_sigmas = sigmas[sigmas > 0].min(), sigmas.max()
+
+        def __init__(self, x, sigma_min, sigma_max, **kwargs):
+            if self.global_sigmas is not None:
+                log.info("Initializing Brownian Sampler instance with global sigmas")
+                sigma_min, sigma_max = self.global_sigmas
+
+            super().__init__(x, sigma_min, sigma_max, **kwargs)
+
+        def __call__(self, *args, **kwargs):
+            if self.global_instance and self != self.global_instance:
+                return self.global_instance(*args, **kwargs)
+            else:
+                return super().__call__(*args, **kwargs)
+
+    hijack(mod, cls, PCBrownianTreeNoiseSampler)
+
+
 def hijack_aitemplate():
     try:
         AITLoader = sys.modules["AIT.AITemplate.ait.load"].AITLoader
@@ -130,8 +179,8 @@ def hijack_aitemplate():
         log.info("AITemplate hijack failed or not necessary")
 
 
-# Default hijack. No KSampler hijack for now
 def do_hijack():
+    hijack_browniannoisesampler("comfy.k_diffusion.sampling", "BrownianTreeNoiseSampler")
     hijack_sampler("comfy.sample", "sample")
     hijack_aitemplate()
     hijack_ksampler("comfy.samplers", "KSampler")
