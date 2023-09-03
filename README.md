@@ -179,6 +179,7 @@ The loaders can mostly reproduce the output from using `LoraLoader`.
 More advanced workflows might explode horribly.
 
 - `PCSplitSampling` with SDE schedulers seems to add noise into the latent for some reason.
+- Split sampling may have weird behaviour if your step percentages go below 1 step.
 - Interpolation is probably buggy and will likely change behaviour whenever code gets refactored.
 - The advanced prompt encoding integration seems to work, but I haven't verified if it gives the same results as the actual nodes.
 - If execution is interrupted and LoRA scheduling is used, your models might be left in an undefined state until you restart ComfyUI
