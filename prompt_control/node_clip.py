@@ -193,12 +193,21 @@ def get_style(text, default_style="comfy", default_normalization="none"):
 def encode_prompt(clip, text, default_style="comfy", default_normalization="none"):
     style, normalization, text = get_style(text, default_style, default_normalization)
     chunks = text.split("BREAK")
-    tokens = []
+    token_chunks = []
     for c in chunks:
         if not c.strip():
             continue
         # Tokenizer returns padded results
-        tokens.extend(clip.tokenize(c, return_word_ids=have_advanced_encode))
+        token_chunks.append(clip.tokenize(c, return_word_ids=have_advanced_encode))
+    tokens = token_chunks[0]
+    for c in token_chunks[1:]:
+        if isinstance(tokens, list):
+            tokens.extend(c)
+        else:
+            # dict, SDXL
+            for key in tokens:
+                tokens[key].extend(c[key])
+
     if have_advanced_encode:
         # TODO: Does not handle SDXL correctly
         return advanced_encode_from_tokens(
