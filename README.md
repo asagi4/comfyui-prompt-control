@@ -137,6 +137,19 @@ Removes conditionings from the input whose timestep range ends before the cutoff
 
 # Experiments
 
+## Cutoff node integration
+
+[ComfyUI Cutoff](https://github.com/BlenderNeko/ComfyUI_Cutoff) cloned into your `custom_nodes`, you can use the `CUT` keyword to use cutoff functionality
+
+Currently, the syntax is:
+```
+a group of animals, white cat, brown dog CUT white cat; white CUT brown dog;brown;0.5;1.0;1.0;_`
+```
+the parameters in the `CUT` section are `region_text;target_text;weight;strict_mask;start_from_masked;padding_token` of which only the first two are required.
+If `strict_mask`, `start_from_masked` or `padding_token` are specified in more than one section, the last one takes effect for the whole prompt
+
+The syntax is likely to change at some point.
+
 ## Prompt interpolation
 
 `a red [INT:dog:cat:0.2,0.8:0.05]` will attempt to interpolate the tensors for `a red dog` and `a red cat` between the specified range in as many steps of 0.05 as will fit.

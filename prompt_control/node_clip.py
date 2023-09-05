@@ -1,6 +1,6 @@
 from . import utils as utils
 from .parser import parse_prompt_schedules
-from .utils import Timer
+from .utils import Timer, safe_float
 
 import logging
 import re
@@ -196,8 +196,51 @@ def get_style(text, default_style="comfy", default_normalization="none"):
     return style, normalization, text
 
 
+def encode_regions(clip, tokens, regions, token_normalization="none", weight_interpretation="comfy"):
+    from custom_nodes.ComfyUI_Cutoff.cutoff import CLIPSetRegion, finalize_clip_regions
+
+    clip_regions = {
+        "clip": clip,
+        "base_tokens": tokens,
+        "regions": [],
+        "targets": [],
+        "weights": [],
+    }
+    # Defaults to ensure they're always defined
+    strict_mask = 1.0
+    start_from_masked = 1.0
+    mask_token = ""
+
+    for region in regions:
+        region_text, target_text, *args = region.split(";")
+        args = [a.strip() for a in args if a.strip()]
+        args_def = [1.0, strict_mask, start_from_masked, mask_token]
+        for i in range(len(args)):
+            args_def[i] = args[i]
+        (
+            w,
+            strict_mask,
+            start_from_masked,
+            mask_token,
+        ) = args_def
+        w = safe_float(w, 1.0)
+        strict_mask = safe_float(strict_mask, 1.0)
+        start_from_masked = safe_float(start_from_masked, 1.0)
+        mask_token = mask_token.strip()
+        log.info("Region: text %s, target %s, weight %s", region_text.strip(), target_text.strip(), w)
+        (clip_regions,) = CLIPSetRegion.add_clip_region(None, clip_regions, region_text, target_text, w)
+    log.info("Regions: mask_token=%s strict_mask=%s start_from_masked=%s", mask_token, strict_mask, start_from_masked)
+
+    (r,) = finalize_clip_regions(
+        clip_regions, mask_token, strict_mask, start_from_masked, token_normalization, weight_interpretation
+    )
+    cond, pooled = r[0][0], r[0][1].get("pooled_output")
+    return cond, pooled
+
+
 def encode_prompt(clip, text, default_style="comfy", default_normalization="none"):
     style, normalization, text = get_style(text, default_style, default_normalization)
+    text, *regions = text.split("CUT")
     chunks = text.split("BREAK")
     token_chunks = []
     for c in chunks:
@@ -213,6 +256,9 @@ def encode_prompt(clip, text, default_style="comfy", default_normalization="none
             # dict, SDXL
             for key in tokens:
                 tokens[key].extend(c[key])
+
+    if len(regions) > 0:
+        return encode_regions(clip, tokens, regions)
 
     if have_advanced_encode:
         if isinstance(tokens, dict):
@@ -280,9 +326,10 @@ def do_encode(clip, text):
             continue
         cond, pooled = encode_prompt(clip, prompt, style, normalization)
         conds.append(cond * (w / opts.get("scale", scale)))
-        pooleds.append(pooled)
+        if pooled is not None:
+            pooleds.append(pooled)
 
-    return [[sum(equalize(*conds)), {"pooled_output": sum(equalize(*pooleds))}]]
+    return [[sum(equalize(*conds)), {"pooled_output": sum(equalize(*pooleds)) if len(pooleds) > 0 else None}]]
 
 
 def debug_conds(conds):

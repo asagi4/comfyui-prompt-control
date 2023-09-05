@@ -15,6 +15,13 @@ from os import environ
 log = logging.getLogger("comfyui-prompt-control")
 
 
+def safe_float(f, default):
+    try:
+        return round(float(f), 2)
+    except ValueError:
+        return default
+
+
 def steps(start, end=None, step=0.1):
     if end is None:
         end = start
