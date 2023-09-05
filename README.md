@@ -2,7 +2,7 @@
 
 Nodes for convenient prompt editing. The aim is to make basic generations in ComfyUI completely prompt-controllable.
 
-The generated schedules depend on ComfyUI's timestep range feature.
+The generated schedules depend on ComfyUI's timestep range feature unless you use the `PCSplitSampling` node.
 
 Due to recent ComfyUI code refactoring, if you get import errors, you must update your ComfyUI installation.
 
@@ -40,7 +40,6 @@ Might be useful with Jinja templating (see Experiments below for details). For e
 ```
 [SEQ<% for x in steps(0.1, 0.9, 0.1) %>:<lora:test:<= sin(x*pi) + 0.1 =>>:<= x =><% endfor %>]
 ```
-
 generates a LoRA schedule based on a sinewave
 
 ### Tag selection
@@ -139,7 +138,7 @@ Removes conditionings from the input whose timestep range ends before the cutoff
 
 ## Cutoff node integration
 
-[ComfyUI Cutoff](https://github.com/BlenderNeko/ComfyUI_Cutoff) cloned into your `custom_nodes`, you can use the `CUT` keyword to use cutoff functionality
+If you have [ComfyUI Cutoff](https://github.com/BlenderNeko/ComfyUI_Cutoff) cloned into your `custom_nodes`, you can use the `CUT` keyword to use cutoff functionality
 
 Currently, the syntax is:
 ```
