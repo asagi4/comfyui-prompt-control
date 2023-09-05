@@ -9,7 +9,13 @@ from math import lcm
 log = logging.getLogger("comfyui-prompt-control")
 
 try:
-    from custom_nodes.ComfyUI_ADV_CLIP_emb.adv_encode import advanced_encode_from_tokens
+    from custom_nodes.ComfyUI_ADV_CLIP_emb.adv_encode import (
+        advanced_encode_from_tokens,
+        encode_token_weights_l,
+        encode_token_weights_g,
+        prepareXL,
+        encode_token_weights,
+    )
 
     have_advanced_encode = True
     AVAILABLE_STYLES = ["comfy", "A1111", "compel", "comfy++", "down_weight"]
@@ -209,7 +215,29 @@ def encode_prompt(clip, text, default_style="comfy", default_normalization="none
                 tokens[key].extend(c[key])
 
     if have_advanced_encode:
-        # TODO: Does not handle SDXL correctly
+        if isinstance(tokens, dict):
+            embs_l = None
+            embs_g = None
+            pooled = None
+            if "l" in tokens:
+                embs_l, _ = advanced_encode_from_tokens(
+                    tokens["l"],
+                    normalization,
+                    style,
+                    lambda x: encode_token_weights(clip, x, encode_token_weights_l),
+                    return_pooled=False,
+                )
+            if "g" in tokens:
+                embs_g, pooled = advanced_encode_from_tokens(
+                    tokens["g"],
+                    normalization,
+                    style,
+                    lambda x: encode_token_weights(clip, x, encode_token_weights_g),
+                    return_pooled=True,
+                    apply_to_pooled=True,
+                )
+            # Hardcoded clip_balance
+            return prepareXL(embs_l, embs_g, pooled, 0.5)
         return advanced_encode_from_tokens(
             tokens,
             normalization,
