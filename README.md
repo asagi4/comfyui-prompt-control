@@ -82,8 +82,11 @@ Due to sampler patching, your AITemplate nodes must be cloned to a directory cal
 AITemplate sometimes breaks because ComfyUI creates batches larger than what AITemplate can handle. You can apply [this patch](0001-Limit-batch-chunk-size-to-2.patch) to ComfyUI to make AITemplate more reliable. The patch is a hack though, and may slightly deoptimize non-AIT sampling
 
 ## Advanced CLIP encoding
+You can use the syntax `STYLE:weight_interpretation:normalization` at the start of a prompt to affect how prompts are interpreted.
 
-If you have [Advanced CLIP Encoding nodes](https://github.com/BlenderNeko/ComfyUI_ADV_CLIP_emb/tree/master) cloned into your `custom_nodes`, you can use the syntax `STYLE:weight_interpretation:normalization` at the start of a prompt to affect how prompts are interpreted.
+Without any extra nodes, only `perp` is available, which does the same as [ComfyUI_PerpWeight](https://github.com/bvhari/ComfyUI_PerpWeight) extension.
+
+If you have [Advanced CLIP Encoding nodes](https://github.com/BlenderNeko/ComfyUI_ADV_CLIP_emb/tree/master) cloned into your `custom_nodes`, more options will be available.
 
 The style can be specified separately for each AND:ed prompt, but the first prompt is special; later prompts will "inherit" it as default. For example:
 
