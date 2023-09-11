@@ -254,6 +254,7 @@ def perp_encode(clip, tokens):
         unweighted_cond, unweighted_pooled = clip.encode_from_tokens(unweighted_tokens, return_pooled=True)
 
         cond = torch.clone(unweighted_cond)
+        empty_cond, _ = equalize(empty_cond, unweighted_cond)
         for i in range(unweighted_cond.shape[0]):
             for j in range(unweighted_cond.shape[1]):
                 weight_l = tokens["l"][i][j][1]
@@ -279,6 +280,7 @@ def perp_encode(clip, tokens):
         unweighted_cond, unweighted_pooled = clip.encode_from_tokens(unweighted_tokens, return_pooled=True)
 
         cond = torch.clone(unweighted_cond)
+        empty_cond, _ = equalize(empty_cond, unweighted_cond)
         for i in range(unweighted_cond.shape[0]):
             for j in range(unweighted_cond.shape[1]):
                 weight = tokens[i][j][1]
