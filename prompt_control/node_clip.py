@@ -247,6 +247,7 @@ def perp_encode(clip, tokens):
         sdxl_flag = True
 
     if sdxl_flag:
+        max_tokens = len(tokens["l"][0])
         empty_cond, empty_cond_pooled = clip.encode_from_tokens(empty_tokens, return_pooled=True)
         unweighted_tokens = {}
         unweighted_tokens["l"] = [[(t, 1.0) for t, _ in x] for x in tokens["l"]]
@@ -257,7 +258,7 @@ def perp_encode(clip, tokens):
         empty_cond, _ = equalize(empty_cond, unweighted_cond)
         for i in range(unweighted_cond.shape[0]):
             for j in range(unweighted_cond.shape[1]):
-                weight_l = tokens["l"][i][j][1]
+                weight_l = tokens["l"][j // max_tokens][j % max_tokens][1]
                 if weight_l != 1.0:
                     token_vector_l = unweighted_cond[i][j][:768]
                     zero_vector_l = empty_cond[0][j][:768]
@@ -275,6 +276,7 @@ def perp_encode(clip, tokens):
                     ) * token_vector_g
                     cond[i][j][768:] = token_vector_g + (weight_g * perp_g)
     else:
+        max_tokens = len(tokens[0])
         empty_cond, empty_cond_pooled = clip.encode_from_tokens(empty_tokens, return_pooled=True)
         unweighted_tokens = [[(t, 1.0) for t, _ in x] for x in tokens]
         unweighted_cond, unweighted_pooled = clip.encode_from_tokens(unweighted_tokens, return_pooled=True)
@@ -283,7 +285,7 @@ def perp_encode(clip, tokens):
         empty_cond, _ = equalize(empty_cond, unweighted_cond)
         for i in range(unweighted_cond.shape[0]):
             for j in range(unweighted_cond.shape[1]):
-                weight = tokens[i][j][1]
+                weight = tokens[j // max_tokens][j % max_tokens][1]
                 if weight != 1.0:
                     token_vector = unweighted_cond[i][j]
                     zero_vector = empty_cond[0][j]
