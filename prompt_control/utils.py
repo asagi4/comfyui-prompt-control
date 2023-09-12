@@ -1,4 +1,5 @@
 from pathlib import Path
+from math import lcm
 import time
 
 import comfy.sample
@@ -13,6 +14,15 @@ import sys
 from os import environ
 
 log = logging.getLogger("comfyui-prompt-control")
+
+
+def equalize(*tensors):
+    if all(t.shape[1] == tensors[0].shape[1] for t in tensors):
+        return tensors
+
+    x = lcm(*(t.shape[1] for t in tensors))
+
+    return (t.repeat(1, x // t.shape[1], 1) for t in tensors)
 
 
 def safe_float(f, default):
