@@ -186,7 +186,7 @@ def get_style(text, default_style="comfy", default_normalization="none"):
     return style, normalization, text
 
 
-def encode_regions(clip, tokens, regions, token_normalization="none", weight_interpretation="comfy"):
+def encode_regions(clip, tokens, regions, weight_interpretation="comfy", token_normalization="none"):
     from custom_nodes.ComfyUI_Cutoff.cutoff import CLIPSetRegion, finalize_clip_regions
 
     clip_regions = {
