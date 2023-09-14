@@ -1,6 +1,6 @@
 from . import utils as utils
-from .parser import parse_prompt_schedules
-from .utils import Timer, safe_float, equalize
+from .parser import parse_prompt_schedules, parse_cuts
+from .utils import Timer, equalize, safe_float
 from .perp_weight import perp_encode
 
 import logging
@@ -196,27 +196,23 @@ def encode_regions(clip, tokens, regions, weight_interpretation="comfy", token_n
         "targets": [],
         "weights": [],
     }
-    # Defaults to ensure they're always defined
+
     strict_mask = 1.0
     start_from_masked = 1.0
     mask_token = ""
 
     for region in regions:
-        region_text, target_text, *args = region.split(";")
-        args = [a.strip() for a in args if a.strip()]
-        args_def = [1.0, strict_mask, start_from_masked, mask_token]
-        for i in range(len(args)):
-            args_def[i] = args[i]
-        (
-            w,
-            strict_mask,
-            start_from_masked,
-            mask_token,
-        ) = args_def
-        w = safe_float(w, 1.0)
-        strict_mask = safe_float(strict_mask, 1.0)
-        start_from_masked = safe_float(start_from_masked, 1.0)
-        mask_token = mask_token.strip()
+        region_text, target_text, w, sm, sfm, mt = region
+        if w is not None:
+            w = safe_float(w, 0)
+        else:
+            w = 1.0
+        if sm is not None:
+            strict_mask = safe_float(sm, 1.0)
+        if sfm is not None:
+            start_from_masked = safe_float(sfm, 1.0)
+        if mt is not None:
+            mask_token = mt
         log.info("Region: text %s, target %s, weight %s", region_text.strip(), target_text.strip(), w)
         (clip_regions,) = CLIPSetRegion.add_clip_region(None, clip_regions, region_text, target_text, w)
     log.info("Regions: mask_token=%s strict_mask=%s start_from_masked=%s", mask_token, strict_mask, start_from_masked)
@@ -230,7 +226,7 @@ def encode_regions(clip, tokens, regions, weight_interpretation="comfy", token_n
 
 def encode_prompt(clip, text, default_style="comfy", default_normalization="none"):
     style, normalization, text = get_style(text, default_style, default_normalization)
-    text, *regions = text.split("CUT")
+    text, regions = parse_cuts(text)
     chunks = text.split("BREAK")
     token_chunks = []
     for c in chunks:

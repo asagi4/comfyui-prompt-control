@@ -143,14 +143,12 @@ Removes conditionings from the input whose timestep range ends before the cutoff
 
 If you have [ComfyUI Cutoff](https://github.com/BlenderNeko/ComfyUI_Cutoff) cloned into your `custom_nodes`, you can use the `CUT` keyword to use cutoff functionality
 
-Currently, the syntax is:
+The syntax is
 ```
-a group of animals, white cat, brown dog CUT white cat; white CUT brown dog;brown;0.5;1.0;1.0;_`
+a group of animals, [CUT:white cat:white], [CUT:brown dog:brown:0.5:1.0:1.0:_]
 ```
-the parameters in the `CUT` section are `region_text;target_text;weight;strict_mask;start_from_masked;padding_token` of which only the first two are required.
+the parameters in the `CUT` section are `region_text:target_text:weight;strict_mask:start_from_masked:padding_token` of which only the first two are required.
 If `strict_mask`, `start_from_masked` or `padding_token` are specified in more than one section, the last one takes effect for the whole prompt
-
-The syntax is likely to change at some point.
 
 ## Prompt interpolation
 
@@ -189,6 +187,7 @@ The loaders can mostly reproduce the output from using `LoraLoader`.
 
 More advanced workflows might explode horribly.
 
+- `CUT` does not work with `STYLE:perp` currently
 - `PCSplitSampling` with SDE schedulers overrides the noise sampling behaviour so that each split segment doesn't add crazy amounts of noise to the result
 - Split sampling may have weird behaviour if your step percentages go below 1 step.
 - Interpolation is probably buggy and will likely change behaviour whenever code gets refactored.
