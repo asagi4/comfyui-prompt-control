@@ -287,6 +287,20 @@ def encode_prompt(clip, text, default_style="comfy", default_normalization="none
         return clip.encode_from_tokens(tokens, return_pooled=True)
 
 
+def get_area(text):
+    rex = r"AREA\((.*?)\)"
+    areas = re.findall(rex, text)
+    if not areas:
+        return text, None
+    text = re.sub(rex, "", text)
+    area = areas[0]
+    args = [1.0, 1.0, 0, 0, 1.0]
+    for i, arg in list(enumerate(area.split(",")))[:5]:
+        args[i] = safe_float(arg, args[i])
+    h, w, y, x, strength = args
+    return text, (("percentage", h, w, y, x), strength)
+
+
 def do_encode(clip, text):
     # First style modifier applies to ANDed prompts too unless overridden
     style, normalization, text = get_style(text)
@@ -309,18 +323,31 @@ def do_encode(clip, text):
         return w, opts, t
 
     conds = []
-    pooleds = []
-    scale = sum(abs(weight(p)[0]) for p in prompts)
+    res = []
+    scale = sum(abs(weight(p)[0]) for p in prompts if not "AREA(" in p)
     for prompt in prompts:
         w, opts, prompt = weight(prompt)
         if not w:
             continue
+        prompt, area = get_area(prompt)
         cond, pooled = encode_prompt(clip, prompt, style, normalization)
-        conds.append(cond * (w / opts.get("scale", scale)))
-        if pooled is not None:
-            pooleds.append(pooled)
+        if area:
+            log.info("Prompt %s with area %s", prompt, area)
+            conds.append(
+                [cond, {"pooled_output": pooled, "area": area[0], "strength": area[1], "set_area_to_bounds": False}]
+            )
+        else:
+            s = opts.get("scale", scale)
+            res.append((cond, pooled, w / s))
 
-    return [[sum(equalize(*conds)), {"pooled_output": sum(equalize(*pooleds)) if len(pooleds) > 0 else None}]]
+    sumconds = [r[0] * r[2] for r in res]
+    pooleds = [r[1] for r in res if r is not None]
+
+    if len(res) > 0:
+        conds.append(
+            [sum(equalize(*sumconds)), {"pooled_output": sum(equalize(*pooleds)) if len(pooleds) > 0 else None}]
+        )
+    return conds
 
 
 def debug_conds(conds):
