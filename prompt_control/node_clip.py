@@ -230,8 +230,7 @@ def encode_prompt(clip, text, default_style="comfy", default_normalization="none
     chunks = text.split("BREAK")
     token_chunks = []
     for c in chunks:
-        if not c.strip():
-            continue
+        c = c.strip()
         # Tokenizer returns padded results
         token_chunks.append(clip.tokenize(c, return_word_ids=have_advanced_encode and style != "perp"))
     tokens = token_chunks[0]
@@ -304,7 +303,7 @@ def get_area(text):
 def do_encode(clip, text):
     # First style modifier applies to ANDed prompts too unless overridden
     style, normalization, text = get_style(text)
-    prompts = [p.strip() for p in text.split("AND") if p.strip()]
+    prompts = [p.strip() for p in text.split("AND")]
     if len(prompts) == 1:
         cond, pooled = encode_prompt(clip, prompts[0], style, normalization)
         return [[cond, {"pooled_output": pooled}]]
