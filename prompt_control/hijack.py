@@ -46,34 +46,6 @@ def hijack_sampler(module, function):
     hijack(mod, function, pc_sample)
 
 
-def calculate_absolute_timesteps(model, conds, sigmas):
-    def find_sigma_t(pct):
-        idx = int(round((1 - pct) * (len(sigmas) - 1), 0))
-        s = model.sigma_to_t(sigmas[idx])
-        return s
-
-    for t in range(len(conds)):
-        c = conds[t]
-        if not c[1].get("absolute_timesteps"):
-            continue
-
-        timestep_start = None
-        timestep_end = None
-        if "start_percent" in c[1]:
-            timestep_start = find_sigma_t(c[1]["start_percent"])
-        if "end_percent" in c[1]:
-            timestep_end = find_sigma_t(c[1]["end_percent"])
-        n = c[1].copy()
-
-        if timestep_start:
-            del n["start_percent"]
-            n["timestep_start"] = timestep_start
-        if timestep_end:
-            del n["end_percent"]
-            n["timestep_end"] = timestep_end
-        conds[t] = [c[0], n]
-
-
 def hijack_ksampler(module, cls):
     mod = sys.modules[module]
     orig_sampler = getattr(mod, cls)
@@ -103,9 +75,6 @@ def hijack_ksampler(module, cls):
             from comfy.k_diffusion.sampling import BrownianTreeNoiseSampler
 
             BrownianTreeNoiseSampler.set_global_sigmas(self.sigmas)
-
-            calculate_absolute_timesteps(self.model_wrap, positive, sigmas)
-            calculate_absolute_timesteps(self.model_wrap, negative, sigmas)
 
             return super().sample(
                 noise,
