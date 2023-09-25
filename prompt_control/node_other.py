@@ -48,6 +48,20 @@ def handle_wildcard_node(json_data, node_id):
 PromptServer.instance.add_on_prompt_handler(wildcard_prompt_handler)
 
 
+def variable_substitution(text):
+    var_re = re.compile(r"(\$[a-z]+)\s*=(.*)")
+    m = re.search(var_re, text)
+    while m:
+        var = m[1]
+        sub = m[2]
+        s, e = m.span()
+        text = text[:s] + text[e:]
+        log.info("Substituting %s with '%s'", var, sub)
+        text = text.replace(var, sub)
+        m = re.search(var_re, text)
+    return text
+
+
 class SimpleWildcard:
     RAND = random.Random()
 
@@ -100,6 +114,7 @@ class SimpleWildcard:
         if use_pnginfo and unique_id in extra_pnginfo.get("SimpleWildcard", {}):
             text = extra_pnginfo["SimpleWildcard"][unique_id]
             log.info("SimpleWildcard using prompt: %s", text)
+        text = variable_substitution(text)
         return (text,)
 
 
