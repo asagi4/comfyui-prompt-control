@@ -49,8 +49,8 @@ PromptServer.instance.add_on_prompt_handler(wildcard_prompt_handler)
 
 
 def variable_substitution(text):
-    var_re = re.compile(r"(\$[a-z]+)\s*=(.*)")
-    m = re.search(var_re, text)
+    var_re = re.compile(r"(\$[a-z]+)\s*=([^;\n]*);?")
+    m = var_re.search(text)
     while m:
         var = m[1]
         sub = m[2]
@@ -58,7 +58,7 @@ def variable_substitution(text):
         text = text[:s] + text[e:]
         log.info("Substituting %s with '%s'", var, sub)
         text = text.replace(var, sub)
-        m = re.search(var_re, text)
+        m = var_re.search(text)
     return text
 
 
