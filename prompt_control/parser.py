@@ -229,11 +229,11 @@ class PromptSchedule(object):
     def _parse(self):
         filters = [x.strip() for x in self.filters.upper().split(",")]
         try:
+            parsed = []
+            interpolations = set()
             tree = prompt_parser.parse(self.prompt)
             interpolation_steps, steps = get_steps(tree)
             log.debug("Interpolation steps: %s", interpolation_steps)
-            parsed = []
-            interpolations = set()
 
             def f(x):
                 return round(x / 100, 2)
