@@ -286,23 +286,65 @@ def encode_prompt(clip, text, default_style="comfy", default_normalization="none
         return clip.encode_from_tokens(tokens, return_pooled=True)
 
 
+def get_function(text, func):
+    rex = re.compile(f"{func}\((.*?)\)", re.MULTILINE)
+    instances = rex.findall(text)
+    if not instances:
+        return text, []
+    text = rex.sub("", text)
+    return text, [i.split(",") for i in instances]
+
+
 def get_area(text):
-    rex = r"AREA\((.*?)\)"
-    areas = re.findall(rex, text)
+    text, areas = get_function(text, "AREA")
     if not areas:
         return text, None
-    text = re.sub(rex, "", text)
     area = areas[0]
     args = [1.0, 1.0, 0, 0, 1.0]
-    for i, arg in list(enumerate(area.split(",")))[:5]:
+    for i, arg in list(enumerate(area))[:5]:
         args[i] = safe_float(arg, args[i])
     h, w, y, x, strength = args
     return text, (("percentage", h, w, y, x), strength)
 
 
+def get_mask_size(text):
+    text, sizes = get_function(text, "MASK_SIZE")
+    if not sizes:
+        return text, (512, 512)
+    h, w = sizes[0]
+    return text, (int(h), int(w))
+
+
+def get_mask(text, size):
+    text, masks = get_function(text, "MASK")
+    if not masks:
+        return text, None
+    import torch
+
+    args = ["0-1", "0-1", "1"]
+    for i, arg in list(enumerate(masks[0]))[:3]:
+        args[i] = arg
+
+    wp = re.match("(.+)\s+?(.+)?", args[0]) or [None, 0, 1]
+    hp = re.match("(.+)\s+?(.+)?", args[1]) or [None, 0, 1]
+
+    h, w = size
+    ys = int(h * safe_float(hp[1], 0)), int(h * safe_float(hp[2], 1))
+    xs = int(w * safe_float(wp[1], 0)), int(w * safe_float(wp[2], 1))
+    log.info("Mask ys, xs: (%s, %s)", ys, xs)
+
+    weight = safe_float(args[2], 1.0)
+    mask = torch.full(size, 0, dtype=torch.float32, device="cpu")
+    mask[ys[0] : ys[1], xs[0] : xs[1]] = 1 * weight
+    mask = torch.clamp(mask, 0.0, 1.0)
+
+    return text, mask
+
+
 def do_encode(clip, text):
     # First style modifier applies to ANDed prompts too unless overridden
     style, normalization, text = get_style(text)
+    text, mask_size = get_mask_size(text)
     prompts = [p.strip() for p in text.split("AND")]
     if len(prompts) == 1:
         cond, pooled = encode_prompt(clip, prompts[0], style, normalization)
@@ -323,18 +365,20 @@ def do_encode(clip, text):
 
     conds = []
     res = []
-    scale = sum(abs(weight(p)[0]) for p in prompts if not "AREA(" in p)
+    scale = sum(abs(weight(p)[0]) for p in prompts if not ("AREA(" in p or "MASK(" in p))
     for prompt in prompts:
+        prompt, mask = get_mask(prompt, mask_size)
         w, opts, prompt = weight(prompt)
         if not w:
             continue
         prompt, area = get_area(prompt)
         cond, pooled = encode_prompt(clip, prompt, style, normalization)
         if area:
-            log.info("Prompt %s with area %s", prompt, area)
             conds.append(
                 [cond, {"pooled_output": pooled, "area": area[0], "strength": area[1], "set_area_to_bounds": False}]
             )
+        elif mask is not None:
+            conds.append([cond, {"pooled_output": pooled, "mask": mask}])
         else:
             s = opts.get("scale", scale)
             res.append((cond, pooled, w / s))
