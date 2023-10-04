@@ -166,22 +166,17 @@ class EditableCLIPEncode:
 
 
 def get_style(text, default_style="comfy", default_normalization="none"):
-    style = default_style
-    normalization = default_normalization
-    text = text.strip()
-    if text.startswith("STYLE:"):
-        style, text = text.split(maxsplit=1)
-        r = style.split(":", maxsplit=2)
-        style = r[1]
-        if len(r) > 2:
-            normalization = r[2]
-        if style not in AVAILABLE_STYLES:
-            log.warning("Unrecognized prompt style: %s. Using %s", style, default_style)
-            style = default_style
+    text, styles = get_function(text, 'STYLE', [default_style, default_normalization])
+    if not styles:
+        return default_style, default_normalization, text
+    style, normalization = styles[0]
+    if style not in AVAILABLE_STYLES:
+        log.warning("Unrecognized prompt style: %s. Using %s", style, default_style)
+        style = default_style
 
-        if normalization not in AVAILABLE_NORMALIZATIONS:
-            log.warning("Unrecognized prompt normalization: %s. Using %s", normalization, default_normalization)
-            normalization = default_normalization
+    if normalization not in AVAILABLE_NORMALIZATIONS:
+        log.warning("Unrecognized prompt normalization: %s. Using %s", normalization, default_normalization)
+        normalization = default_normalization
 
     return style, normalization, text
 
