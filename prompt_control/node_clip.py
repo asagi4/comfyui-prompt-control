@@ -340,7 +340,6 @@ def get_mask(text, size):
     import torch
 
     args = masks[0]
-    print("MASK", args)
     wp = parse_floats(args[0], [0.0, 1.0], split_re="\s+")
     hp = parse_floats(args[1], [0.0, 1.0], split_re="\s+")
     weight = safe_float(args[2], 1.0)
