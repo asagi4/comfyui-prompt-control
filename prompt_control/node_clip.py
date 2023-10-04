@@ -349,7 +349,7 @@ def get_mask(text, size):
     ys = int(h * hp[0]), int(h * hp[1])
     log.info("Mask xs, ys: (%s, %s)", ys, xs)
 
-    mask = torch.full(size, 0, dtype=torch.float32, device="cpu")
+    mask = torch.full((h, w), 0, dtype=torch.float32, device="cpu")
     mask[ys[0] : ys[1], xs[0] : xs[1]] = 1 * weight
     mask = torch.clamp(mask, 0.0, 1.0)
 
