@@ -166,7 +166,7 @@ class EditableCLIPEncode:
 
 
 def get_style(text, default_style="comfy", default_normalization="none"):
-    text, styles = get_function(text, 'STYLE', [default_style, default_normalization])
+    text, styles = get_function(text, "STYLE", [default_style, default_normalization])
     if not styles:
         return default_style, default_normalization, text
     style, normalization = styles[0]

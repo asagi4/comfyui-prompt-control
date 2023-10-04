@@ -12,7 +12,7 @@ prompt: (emphasized | embedding | scheduled | alternate | sequence | interpolate
 !emphasized: "(" prompt? ")"
         | "(" prompt ":" prompt ")"
         | "[" prompt "]"
-scheduled: "[" [prompt ":"] [prompt] ":" WHITESPACE? NUMBER "]"
+scheduled: "[" [prompt ":"] [prompt] ":" WHITESPACE? NUMBER ["," NUMBER] "]"
         | "[" [prompt ":"] [prompt] ":" WHITESPACE? TAG "]"
 sequence:  "[SEQ" ":" [prompt] ":" NUMBER (":" [prompt] ":" NUMBER)+ "]"
 interpolate.100: "[INT" ":" interp_prompts ":" interp_steps "]"
@@ -95,10 +95,12 @@ def get_steps(tree):
     class CollectSteps(lark.Visitor):
         def scheduled(self, tree):
             i = tree.children[-1]
-            if i.type == "TAG":
+            if i and i.type == "TAG":
                 return
-            tree.children[-1] = tostep(tree.children[-1])
-            res.append(tree.children[-1])
+            for i in [-1, -2]:
+                if tree.children[i] is not None:
+                    tree.children[i] = tostep(tree.children[i])
+                    res.append(tree.children[i])
 
         def interp_steps(self, tree):
             tree.children[-1] = tostep(tree.children[-1] or 0.1)
@@ -129,11 +131,29 @@ def get_steps(tree):
 def at_step(step, filters, tree):
     class AtStep(lark.Transformer):
         def scheduled(self, args):
-            before, after, when = args
+            before, after, when, when_end = args
             if isinstance(when, str):
                 return before or "" if when not in filters else after or ""
 
-            return before or "" if step <= when else after or ""
+            if when_end is not None and step <= when and before is not None:
+                return ""
+
+            if when_end is not None and (step > when and step <= when_end):
+                # handle [a:0,1]
+                if before is None:
+                    return after or ""
+                return before or ""
+
+            if when_end is not None and step >= when_end:
+                # handle [a:0,1]
+                if before is None:
+                    return ""
+                return after or ""
+
+            if step <= when:
+                return before or ""
+            else:
+                return after or ""
 
         def sequence(self, args):
             previous_step = 0.0
