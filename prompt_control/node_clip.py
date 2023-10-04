@@ -307,8 +307,8 @@ def get_mask_size(text):
     text, sizes = get_function(text, "MASK_SIZE", ["512", "512"])
     if not sizes:
         return text, (512, 512)
-    h, w = sizes[0]
-    return text, (int(h), int(w))
+    w, h = sizes[0]
+    return text, (int(w), int(h))
 
 
 def parse_args(strings, arg_spec):
@@ -345,7 +345,7 @@ def get_mask(text, size):
     hp = parse_floats(args[1], [0.0, 1.0], split_re="\s+")
     weight = safe_float(args[2], 1.0)
 
-    h, w = size
+    w, h = size
     xs = int(w * wp[0]), int(w * wp[1])
     ys = int(h * hp[0]), int(h * hp[1])
     log.info("Mask xs, ys: (%s, %s)", ys, xs)
