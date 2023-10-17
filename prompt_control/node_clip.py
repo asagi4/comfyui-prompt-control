@@ -304,7 +304,7 @@ def get_area(text):
         return f >= 0.0 and f <= 1.0
 
     def is_pixel(f):
-        return f == 0 or f >= 1
+        return f == 0 or f > 1
 
     if all(is_pct(v) for v in [h, w, y, x]):
         area = ("percentage", h, w, y, x)
@@ -355,13 +355,29 @@ def get_mask(text, size):
     import torch
 
     args = masks[0]
-    wp = parse_floats(args[0], [0.0, 1.0], split_re="\s+")
-    hp = parse_floats(args[1], [0.0, 1.0], split_re="\s+")
+    x1, x2 = parse_floats(args[0], [0.0, 1.0], split_re="\s+")
+    y1, y2 = parse_floats(args[1], [0.0, 1.0], split_re="\s+")
     weight = safe_float(args[2], 1.0)
 
-    w, h = size
-    xs = int(w * wp[0]), int(w * wp[1])
-    ys = int(h * hp[0]), int(h * hp[1])
+    def is_pct(f):
+        return f >= 0.0 and f <= 1.0
+
+    def is_pixel(f):
+        return f == 0 or f > 1
+
+    if all(is_pct(v) for v in [x1, x2, y1, y2]):
+        w, h = size
+        xs = int(w * x1), int(w * x2)
+        ys = int(h * y1), int(h * y2)
+    elif all(is_pixel(v) for v in [x1, x2, y1, y2]):
+        w, h = size
+        xs = int(x1), int(x2)
+        ys = int(y1), int(y2)
+    else:
+        raise Exception(
+            f"Mask specified with invalid size {x1} {x2}, {y1} {y2}. They must either all be percentages between 0 and 1 or absolute pixel values greater than 1"
+        )
+
     log.info("Mask xs, ys: (%s, %s)", ys, xs)
 
     mask = torch.full((h, w), 0, dtype=torch.float32, device="cpu")
