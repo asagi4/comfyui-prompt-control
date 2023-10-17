@@ -312,7 +312,7 @@ def get_area(text):
         area = (int(h) // 8, int(w) // 8, int(y) // 8, int(x) // 8)
     else:
         raise Exception(
-            f"Area specified with invalid size {x} {w}, {h} {y}. They must either all be percentages between 0 and 1 or absolute pixel values greater than 1"
+            f"AREA specified with invalid size {x} {w}, {h} {y}. They must either all be percentages between 0 and 1 or positive integer pixel values excluding 1"
         )
 
     return text, (area, weight)
@@ -375,7 +375,7 @@ def get_mask(text, size):
         ys = int(y1), int(y2)
     else:
         raise Exception(
-            f"Mask specified with invalid size {x1} {x2}, {y1} {y2}. They must either all be percentages between 0 and 1 or absolute pixel values greater than 1"
+            f"MASK specified with invalid size {x1} {x2}, {y1} {y2}. They must either all be percentages between 0 and 1 or positive integer pixel values excluding 1"
         )
 
     log.info("Mask xs, ys: (%s, %s)", ys, xs)

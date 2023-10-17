@@ -80,11 +80,15 @@ cat :1 AND dog :2
 The weight defaults to 1 and are normalized so that `a:2 AND b:2` is equal to `a AND b`. `AND` is processed after schedule parsing, so you can change the weight mid-prompt: `cat:[1:2:0.5] AND dog`
 
 ## MASK and AREA
-You can use `MASK(x1 x2, y1 y2, weight)` to specify a region mask for a prompt. The values are specified as a percentage with a float between `0` and `1`. The mask assumes a size of `(512, 512)`. ComfyUI will scale the mask to match the image resolution, but you can change it manually by using `MASK_SIZE(width, height)` anywhere in the prompt,
+You can use `MASK(x1 x2, y1 y2, weight)` to specify a region mask for a prompt. The values are specified as a percentage with a float between `0` and `1`, or as absolute pixel values (these can't be mixed). `1` will be interpreted as a percentage instead of a pixel value.
+
+Masks assume a size of `(512, 512)`, and pixel values will be relative to that. ComfyUI will scale the mask to match the image resolution, but you can change it manually by using `MASK_SIZE(width, height)` anywhere in the prompt,
 
 The default values are `MASK(0 1, 0 1, 1)` and you can omit unnecessary ones, that is, `MASK(0 0.5, 0.3)` is `MASK(0 0.5, 0.3 1, 1)`
 
-Similarly, you can use `AREA(x1 x2, y1 y2, weight)` to specify an area for the prompt (see ComfyUI's area composition examples)
+Note that because the default values are percentages, `MASK(0 256, 64 512)` is valid, but `MASK(0 200)` will raise an error.
+
+Similarly, you can use `AREA(x1 x2, y1 y2, weight)` to specify an area for the prompt (see ComfyUI's area composition examples). The area is calculated by ComfyUI relative to your latent size.
 
 These are handled per `AND`-ed prompt, so in `prompt1 AND MASK(...) prompt2`, the mask will only affect prompt2.
 
