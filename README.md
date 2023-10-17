@@ -208,16 +208,11 @@ You can call it either as `steps(end)`, `steps(end, step=0.1)` or `steps(start, 
 
 The second form is equivalent to `steps(step, end, step)`. i.e. it starts at the first step.
 
-# TODO & BUGS
+# Known issues
 
-The loaders can mostly reproduce the output from using `LoraLoader`.
-
-More advanced workflows might explode horribly.
-
-- `CUT` does not work with `STYLE:perp` currently
-- `PCSplitSampling` with SDE schedulers overrides the noise sampling behaviour so that each split segment doesn't add crazy amounts of noise to the result
+- Interpolation does not work with `AREA` and `MASK`. It results in garbage.
+- `CUT` does not work with `STYLE:perp`
+- `PCSplitSampling` overrides ComfyUI's `BrownianTreeNoiseSampler` noise sampling behaviour so that each split segment doesn't add crazy amounts of noise to the result with some samplers.
 - Split sampling may have weird behaviour if your step percentages go below 1 step.
 - Interpolation is probably buggy and will likely change behaviour whenever code gets refactored.
-- The advanced prompt encoding integration seems to work, but I haven't verified if it gives the same results as the actual nodes.
 - If execution is interrupted and LoRA scheduling is used, your models might be left in an undefined state until you restart ComfyUI
-- Needs better syntax. A1111 is familiar, but not very good
