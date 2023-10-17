@@ -300,7 +300,22 @@ def get_area(text):
     y, h = parse_floats(args[1], [0.0, 1.0], split_re="\s+")
     weight = safe_float(args[2], 1.0)
 
-    return text, (("percentage", h, w, y, x), weight)
+    def is_pct(f):
+        return f >= 0.0 and f <= 1.0
+
+    def is_pixel(f):
+        return f == 0 or f >= 1
+
+    if all(is_pct(v) for v in [h, w, y, x]):
+        area = ("percentage", h, w, y, x)
+    elif all(is_pixel(v) for v in [h, w, y, x]):
+        area = (int(h) // 8, int(w) // 8, int(y) // 8, int(x) // 8)
+    else:
+        raise Exception(
+            f"Area specified with invalid size {x} {w}, {h} {y}. They must either all be percentages between 0 and 1 or absolute pixel values greater than 1"
+        )
+
+    return text, (area, weight)
 
 
 def get_mask_size(text):
