@@ -210,7 +210,6 @@ The second form is equivalent to `steps(step, end, step)`. i.e. it starts at the
 
 # Known issues
 
-- Interpolation does not work with `AREA` and `MASK`. It results in garbage.
 - `CUT` does not work with `STYLE:perp`
 - `PCSplitSampling` overrides ComfyUI's `BrownianTreeNoiseSampler` noise sampling behaviour so that each split segment doesn't add crazy amounts of noise to the result with some samplers.
 - Split sampling may have weird behaviour if your step percentages go below 1 step.

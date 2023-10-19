@@ -34,48 +34,60 @@ log.info("Normalization types available: %s", ",".join(AVAILABLE_NORMALIZATIONS)
 def linear_interpolate_cond(
     start, end, from_step=0.0, to_step=1.0, step=0.1, start_at=None, end_at=None, prompt_start="N/A", prompt_end="N/A"
 ):
-    from_cond, to_cond = equalize(start[0][0], end[0][0])
-    from_pooled = start[0][1].get("pooled_output")
-    to_pooled = end[0][1].get("pooled_output")
-    res = []
-    start_at = start_at if start_at is not None else from_step
-    end_at = end_at if end_at is not None else to_step
-    total_steps = int(round((to_step - from_step) / step, 0))
-    num_steps = int(round((end_at - from_step) / step, 0))
-    start_on = int(round((start_at - from_step) / step, 0))
-    start_pct = start_at
-    log.debug(
-        f"interpolate_cond {from_step=} {to_step=} {start_at=} {end_at=} {total_steps=} {num_steps=} {start_on=} {step=}"
-    )
-    x = 1 / (num_steps + 1)
-    for s in range(start_on, num_steps + 1):
-        factor = round(s * x, 2)
-        new_cond = from_cond + (to_cond - from_cond) * factor
-        if from_pooled is not None and to_pooled is not None:
-            from_pooled, to_pooled = equalize(from_pooled, to_pooled)
-            new_pooled = from_pooled + (to_pooled - from_pooled) * factor
-        elif from_pooled is not None:
-            new_pooled = from_pooled
-
-        n = [new_cond, start[0][1].copy()]
-        n[1]["pooled_output"] = new_pooled
-        n[1]["start_percent"] = round(1.0 - start_pct, 2)
-        n[1]["end_percent"] = max(round(1.0 - (start_pct + step), 2), 0)
-        start_pct += step
-        start_pct = round(start_pct, 2)
-        if prompt_start:
-            n[1]["prompt"] = f"linear:{1.0 - factor} / {factor}"
-        log.debug(
-            "Interpolating at step %s with factor %s (%s, %s)...",
-            s,
-            factor,
-            n[1]["start_percent"],
-            n[1]["end_percent"],
+    count = min(len(start), len(end))
+    if len(start) != len(end):
+        log.info(
+            "Length of conds to interpolate does not match (start=%s != end=%s), interpolating up to %s.",
+            len(start),
+            len(end),
+            count,
         )
-        res.append(n)
-    if res:
-        res[-1][1]["end_percent"] = round(1.0 - end_at, 2)
-    return res
+
+    all_res = []
+    for idx in range(count):
+        res = []
+        from_cond, to_cond = equalize(start[idx][0], end[idx][0])
+        from_pooled = start[idx][1].get("pooled_output")
+        to_pooled = end[idx][1].get("pooled_output")
+        start_at = start_at if start_at is not None else from_step
+        end_at = end_at if end_at is not None else to_step
+        total_steps = int(round((to_step - from_step) / step, 0))
+        num_steps = int(round((end_at - from_step) / step, 0))
+        start_on = int(round((start_at - from_step) / step, 0))
+        start_pct = start_at
+        log.debug(
+            f"interpolate_cond {idx=} {from_step=} {to_step=} {start_at=} {end_at=} {total_steps=} {num_steps=} {start_on=} {step=}"
+        )
+        x = 1 / (num_steps + 1)
+        for s in range(start_on, num_steps + 1):
+            factor = round(s * x, 2)
+            new_cond = from_cond + (to_cond - from_cond) * factor
+            if from_pooled is not None and to_pooled is not None:
+                from_pooled, to_pooled = equalize(from_pooled, to_pooled)
+                new_pooled = from_pooled + (to_pooled - from_pooled) * factor
+            elif from_pooled is not None:
+                new_pooled = from_pooled
+
+            n = [new_cond, start[idx][1].copy()]
+            n[1]["pooled_output"] = new_pooled
+            n[1]["start_percent"] = round(1.0 - start_pct, 2)
+            n[1]["end_percent"] = max(round(1.0 - (start_pct + step), 2), 0)
+            start_pct += step
+            start_pct = round(start_pct, 2)
+            if prompt_start:
+                n[1]["prompt"] = f"linear:{1.0 - factor} / {factor}"
+            log.debug(
+                "Interpolating at step %s with factor %s (%s, %s)...",
+                s,
+                factor,
+                n[1]["start_percent"],
+                n[1]["end_percent"],
+            )
+            res.append(n)
+        if res:
+            res[-1][1]["end_percent"] = round(1.0 - end_at, 2)
+            all_res.extend(res)
+    return all_res
 
 
 def get_control_points(schedule, steps, encoder):
@@ -394,7 +406,7 @@ def do_encode(clip, text):
     prompts = [p.strip() for p in re.split(r"\bAND\b", text)]
     if len(prompts) == 1:
         cond, pooled = encode_prompt(clip, prompts[0], style, normalization)
-        return [[cond, {"pooled_output": pooled}]]
+        return [[cond, {"pooled_output": pooled, "prompt": prompts[0]}]]
 
     def weight(t):
         opts = {}
@@ -419,7 +431,7 @@ def do_encode(clip, text):
             continue
         prompt, area = get_area(prompt)
         cond, pooled = encode_prompt(clip, prompt, style, normalization)
-        settings = {"pooled_output": pooled}
+        settings = {"pooled_output": pooled, "prompt": prompt}
         if area:
             settings["area"] = area[0]
             settings["strength"] = area[1]
