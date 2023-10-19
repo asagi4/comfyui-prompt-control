@@ -69,7 +69,8 @@ def linear_interpolate_cond(
                 new_pooled = from_pooled
 
             n = [new_cond, start[idx][1].copy()]
-            n[1]["pooled_output"] = new_pooled
+            if new_pooled:
+                n[1]["pooled_output"] = new_pooled
             n[1]["start_percent"] = round(1.0 - start_pct, 2)
             n[1]["end_percent"] = max(round(1.0 - (start_pct + step), 2), 0)
             start_pct += step
@@ -446,12 +447,13 @@ def do_encode(clip, text):
             res.append((cond, pooled, w / s))
 
     sumconds = [r[0] * r[2] for r in res]
-    pooleds = [r[1] for r in res if r is not None]
+    pooleds = [r[1] for r in res if r[1] is not None]
 
     if len(res) > 0:
-        conds.append(
-            [sum(equalize(*sumconds)), {"pooled_output": sum(equalize(*pooleds)) if len(pooleds) > 0 else None}]
-        )
+        opts = {}
+        if pooleds:
+            opts["pooled_output"] = sum(equalize(*pooleds))
+        conds.append([sum(equalize(*sumconds)), opts])
     return conds
 
 
@@ -459,7 +461,8 @@ def debug_conds(conds):
     r = []
     for i, c in enumerate(conds):
         x = c[1].copy()
-        del x["pooled_output"]
+        if "pooled_output" in x:
+            del x["pooled_output"]
         r.append((i, x))
     return r
 
