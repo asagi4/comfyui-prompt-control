@@ -131,9 +131,13 @@ def get_steps(tree):
 def at_step(step, filters, tree):
     class AtStep(lark.Transformer):
         def scheduled(self, args):
-            before, after, when, when_end = args
+            when_end = None
+            before, after, when, *rest = args
             if isinstance(when, str):
                 return before or "" if when not in filters else after or ""
+
+            if rest:
+                when_end = rest[0]
 
             if when_end is not None and step <= when and before is not None:
                 return ""
