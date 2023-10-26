@@ -233,7 +233,8 @@ class JinjaRender:
 
     def render(self, text):
         t = render_jinja(text)
-        log.info("Jinja render result: %s", re.sub("\s+", " ", t, flags=re.MULTILINE))
+        if t.strip() != text.strip():
+            log.info("Jinja render result: %s", re.sub("\s+", " ", t, flags=re.MULTILINE))
         return (t,)
 
 
