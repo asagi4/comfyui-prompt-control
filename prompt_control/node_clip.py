@@ -240,7 +240,8 @@ def encode_prompt(clip, text, default_style="comfy", default_normalization="none
     for c in chunks:
         c = c.strip()
         # Tokenizer returns padded results
-        token_chunks.append(clip.tokenize(c, return_word_ids=have_advanced_encode and style != "perp"))
+        t = clip.tokenize(c, return_word_ids=len(regions) > 0 or (have_advanced_encode and style != "perp"))
+        token_chunks.append(t)
     tokens = token_chunks[0]
     for c in token_chunks[1:]:
         if isinstance(tokens, list):
