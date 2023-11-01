@@ -4,16 +4,17 @@ import torch
 # Copied and adapted from https://github.com/bvhari/ComfyUI_PerpWeight/blob/main/clipperpweight.py
 def perp_encode(clip, tokens):
     empty_tokens = clip.tokenize("")
-    sdxl_flag = isinstance(empty_tokens, dict)
+    sdxl_flag = "g" in tokens
+    empty_cond, empty_cond_pooled = clip.encode_from_tokens(empty_tokens, return_pooled=True)
+    unweighted_tokens = {}
+    for k in ["l", "g"]:
+        if k not in tokens:
+            continue
+        unweighted_tokens[k] = [[(t, 1.0) for t, _ in x] for x in tokens[k]]
+    unweighted_cond, unweighted_pooled = clip.encode_from_tokens(unweighted_tokens, return_pooled=True)
+    cond = torch.clone(unweighted_cond)
 
     if sdxl_flag:
-        empty_cond, empty_cond_pooled = clip.encode_from_tokens(empty_tokens, return_pooled=True)
-        unweighted_tokens = {}
-        unweighted_tokens["l"] = [[(t, 1.0) for t, _ in x] for x in tokens["l"]]
-        unweighted_tokens["g"] = [[(t, 1.0) for t, _ in x] for x in tokens["g"]]
-        unweighted_cond, unweighted_pooled = clip.encode_from_tokens(unweighted_tokens, return_pooled=True)
-
-        cond = torch.clone(unweighted_cond)
         for i in range(unweighted_cond.shape[0]):
             for j in range(unweighted_cond.shape[1]):
                 weight_l = tokens["l"][(j // 77)][(j % 77)][1]
@@ -48,11 +49,7 @@ def perp_encode(clip, tokens):
                     elif weight_g == 0.0:
                         cond[i][j][768:] = empty_cond[0][(j % 77)][768:]
     else:
-        empty_cond, empty_cond_pooled = clip.encode_from_tokens(empty_tokens, return_pooled=True)
-        unweighted_tokens = [[(t, 1.0) for t, _ in x] for x in tokens]
-        unweighted_cond, unweighted_pooled = clip.encode_from_tokens(unweighted_tokens, return_pooled=True)
-
-        cond = torch.clone(unweighted_cond)
+        tokens = tokens["l"]
         for i in range(unweighted_cond.shape[0]):
             for j in range(unweighted_cond.shape[1]):
                 weight = tokens[(j // 77)][(j % 77)][1]
