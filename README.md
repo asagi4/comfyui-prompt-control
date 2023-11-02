@@ -4,13 +4,20 @@ Nodes for convenient prompt editing. The aim is to make basic generations in Com
 
 The generated schedules depend on ComfyUI's timestep range feature unless you use the `PCSplitSampling` node.
 
-Due to recent ComfyUI code refactoring, if you get import errors, you must update your ComfyUI installation.
-
-You need to have `lark` installed in your Python environment for parsing to work (If you reuse A1111's venv, it'll already be there)
-
 The basic nodes should now be stable, though I won't make interface guarantees quite yet.
 
 [This example workflow](workflows/example.json) implements a two-pass workflow illustrating most features.
+
+## Requirements
+
+You need to have `lark` installed in your Python environment for parsing to work (If you reuse A1111's venv, it'll already be there)
+
+If you use the portable version of ComfyUI on Windows with its embedded Python, you must open a terminal in the ComfyUI installation directory and run the command:
+```
+.\python_embeded\python.exe -m pip install lark
+```
+
+Then restart ComfyUI afterwards.
 
 ## Notable changes
 
