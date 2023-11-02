@@ -109,6 +109,8 @@ The `ScheduleToModel` node patches a model such that when sampling, it'll switch
 For me this seems to be quite slow without the --highvram switch because ComfyUI will shuffle things between the CPU and GPU. YMMV. When things stay on the GPU, it's quite fast.
 
 ## AITemplate support
+Note: The old AITemplate project is unmaintaned. I have a fork at https://github.com/asagi4/AIT that I'll keep on minimal life support until I can fix https://github.com/asagi4/comfyui-prompt-control/issues/15
+
 LoRA scheduling supports AITemplate.
 
 Due to sampler patching, your AITemplate nodes must be cloned to a directory called `AIT` under `custom_nodes` or the hijack won't find it.
