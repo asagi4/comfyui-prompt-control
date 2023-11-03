@@ -232,7 +232,11 @@ class JinjaRender:
     FUNCTION = "render"
 
     def render(self, text):
-        t = render_jinja(text)
+        try:
+            t = render_jinja(text)
+        except jinja2.exceptions.TemplateSyntaxError as e:
+            log.error("Syntax error rendering template: %s, template:\n%s", e, text)
+            t = text
         if t.strip() != text.strip():
             log.info("Jinja render result: %s", re.sub("\s+", " ", t, flags=re.MULTILINE))
         return (t,)
