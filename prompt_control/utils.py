@@ -51,7 +51,10 @@ def unpatch_model(model):
 
 
 def clone_model(model):
-    return model.clone()
+    model = model.clone()
+    if environ.get('PC_INPLACE_UPDATE'):
+        model.weight_inplace_update = True
+    return model
 
 
 def add_patches(model, patches, weight):

@@ -148,7 +148,7 @@ class PCSplitSampling:
     FUNCTION = "apply"
 
     def apply(self, model, split_sampling):
-        model = model.clone()
+        model = clone_model(model)
         model.model_options["pc_split_sampling"] = split_sampling == "enable"
         return (model,)
 
