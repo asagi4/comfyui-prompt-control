@@ -1,6 +1,7 @@
 from pathlib import Path
 from math import lcm
 import time
+import re
 
 import comfy.sample
 import comfy.samplers
@@ -14,6 +15,35 @@ import sys
 from os import environ
 
 log = logging.getLogger("comfyui-prompt-control")
+
+
+def get_function(text, func, defaults):
+    rex = re.compile(rf"\b{func}\((.*?)\)", re.MULTILINE)
+    instances = rex.findall(text)
+    if not instances:
+        return text, []
+    text = rex.sub("", text)
+    return text, [parse_strings(i, defaults) for i in instances]
+
+
+def parse_args(strings, arg_spec):
+    args = [s[1] for s in arg_spec]
+    for i, spec in list(enumerate(arg_spec))[: len(strings)]:
+        try:
+            args[i] = spec[0](strings[i].strip())
+        except ValueError:
+            pass
+    return args
+
+
+def parse_floats(string, defaults, split_re=","):
+    spec = [(float, d) for d in defaults]
+    return parse_args(re.split(split_re, string.strip()), spec)
+
+
+def parse_strings(string, defaults, split_re=","):
+    spec = [(lambda x: x, d) for d in defaults]
+    return parse_args(re.split(split_re, string.strip()), spec)
 
 
 def equalize(*tensors):
@@ -52,7 +82,7 @@ def unpatch_model(model):
 
 def clone_model(model):
     model = model.clone()
-    if environ.get('PC_INPLACE_UPDATE'):
+    if environ.get("PC_INPLACE_UPDATE"):
         model.weight_inplace_update = True
     return model
 

@@ -1,6 +1,6 @@
 from . import utils as utils
 from .parser import parse_prompt_schedules, parse_cuts
-from .utils import Timer, equalize, safe_float
+from .utils import Timer, equalize, safe_float, get_function, parse_floats
 from .perp_weight import perp_encode
 
 import logging
@@ -295,15 +295,6 @@ def encode_prompt(clip, text, default_style="comfy", default_normalization="none
         return clip.encode_from_tokens(tokens, return_pooled=True)
 
 
-def get_function(text, func, defaults):
-    rex = re.compile(rf"\b{func}\((.*?)\)", re.MULTILINE)
-    instances = rex.findall(text)
-    if not instances:
-        return text, []
-    text = rex.sub("", text)
-    return text, [parse_strings(i, defaults) for i in instances]
-
-
 def get_area(text):
     text, areas = get_function(text, "AREA", ["0 1", "0 1", "1"])
     if not areas:
@@ -338,26 +329,6 @@ def get_mask_size(text):
         return text, (512, 512)
     w, h = sizes[0]
     return text, (int(w), int(h))
-
-
-def parse_args(strings, arg_spec):
-    args = [s[1] for s in arg_spec]
-    for i, spec in list(enumerate(arg_spec))[: len(strings)]:
-        try:
-            args[i] = spec[0](strings[i].strip())
-        except ValueError:
-            pass
-    return args
-
-
-def parse_floats(string, defaults, split_re=","):
-    spec = [(float, d) for d in defaults]
-    return parse_args(re.split(split_re, string.strip()), spec)
-
-
-def parse_strings(string, defaults, split_re=","):
-    spec = [(lambda x: x, d) for d in defaults]
-    return parse_args(re.split(split_re, string.strip()), spec)
 
 
 def get_mask(text, size):
