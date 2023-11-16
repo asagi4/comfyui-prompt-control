@@ -25,9 +25,9 @@ def template(template, sequence, *funcs):
 
 
 def wildcard_prompt_handler(json_data):
-    log.info("Resolving wildcards...")
     for node_id in json_data["prompt"].keys():
         if json_data["prompt"][node_id]["class_type"] == "SimpleWildcard":
+            log.info("Resolving wildcard node %s", node_id)
             handle_wildcard_node(json_data, node_id)
     return json_data
 
@@ -69,7 +69,7 @@ class SimpleWildcard:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "text": ("STRING", {"default": ""}),
+                "text": ("STRING", {"default": "", "multiline": True}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF}),
             },
             "optional": {"use_pnginfo": ("BOOLEAN", {"default": False})},
