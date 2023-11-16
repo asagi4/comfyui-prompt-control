@@ -71,8 +71,8 @@ def linear_interpolate_cond(
             n = [new_cond, start[idx][1].copy()]
             if new_pooled:
                 n[1]["pooled_output"] = new_pooled
-            n[1]["start_percent"] = round(1.0 - start_pct, 2)
-            n[1]["end_percent"] = max(round(1.0 - (start_pct + step), 2), 0)
+            n[1]["start_percent"] = round(start_pct, 2)
+            n[1]["end_percent"] = max(round((start_pct - step), 2), 0)
             start_pct += step
             start_pct = round(start_pct, 2)
             if prompt_start:
@@ -86,7 +86,7 @@ def linear_interpolate_cond(
             )
             res.append(n)
         if res:
-            res[-1][1]["end_percent"] = round(1.0 - end_at, 2)
+            res[-1][1]["end_percent"] = round(end_at, 2)
             all_res.extend(res)
     return all_res
 
@@ -508,8 +508,8 @@ def control_to_clip_common(self, clip, schedules, lora_cache=None, cond_cache=No
             # Node functions return lists of cond
             for n in cond:
                 n = [n[0], n[1].copy()]
-                n[1]["start_percent"] = round(1.0 - start_pct, 2)
-                n[1]["end_percent"] = round(1.0 - end_pct, 2)
+                n[1]["start_percent"] = round(start_pct, 2)
+                n[1]["end_percent"] = round(end_pct, 2)
                 n[1]["prompt"] = c["prompt"]
                 conds.append(n)
 

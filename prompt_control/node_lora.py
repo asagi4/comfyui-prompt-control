@@ -49,8 +49,8 @@ def schedule_lora_common(model, schedules, lora_cache=None):
             r = []
             for c in conds:
                 x = c[1].copy()
-                start_at = round(1 - x["start_percent"], 2)
-                end_at = round(1 - x["end_percent"], 2)
+                start_at = round(x["start_percent"], 2)
+                end_at = round(x["end_percent"], 2)
                 # Take any cond that has any effect before end_t, since the percentages may not perfectly match
                 if end_t > start_at and end_t <= end_at:
                     del x["start_percent"]
@@ -64,7 +64,7 @@ def schedule_lora_common(model, schedules, lora_cache=None):
 
         def get_steps(conds):
             for c in conds:
-                yield round(1 - c[1].get("end_percent", 0), 2)
+                yield round(c[1].get("end_percent", 0), 2)
 
         if split_sampling:
             actual_end_step = kwargs["last_step"] or steps
