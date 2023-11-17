@@ -103,10 +103,7 @@ def schedule_lora_common(model, schedules, lora_cache=None):
             args[0] = state["model"]
             s = orig_sampler(*args, **kwargs)
 
-        if state["applied_loras"]:
-            log.info("Sampling done with leftover LoRAs, unpatching")
-            # state may have been modified
-            unpatch_model(state["model"])
+        unpatch_model(state["model"])
 
         return s
 
