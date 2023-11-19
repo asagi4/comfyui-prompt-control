@@ -58,9 +58,9 @@ def linear_interpolate_cond(
         log.debug(
             f"interpolate_cond {idx=} {from_step=} {to_step=} {start_at=} {end_at=} {total_steps=} {num_steps=} {start_on=} {step=}"
         )
-        x = 1 / (num_steps + 1)
-        for s in range(start_on, num_steps + 1):
-            factor = round(s * x, 2)
+        x = 1 / (total_steps + 1)
+        for s in range(start_on, num_steps):
+            factor = round((s+1) * x, 2)
             new_cond = from_cond + (to_cond - from_cond) * factor
             if from_pooled is not None and to_pooled is not None:
                 from_pooled, to_pooled = equalize(from_pooled, to_pooled)
@@ -69,14 +69,14 @@ def linear_interpolate_cond(
                 new_pooled = from_pooled
 
             n = [new_cond, start[idx][1].copy()]
-            if new_pooled:
+            if new_pooled is not None:
                 n[1]["pooled_output"] = new_pooled
             n[1]["start_percent"] = round(start_pct, 2)
-            n[1]["end_percent"] = max(round((start_pct - step), 2), 0)
+            n[1]["end_percent"] = min(round((start_pct + step), 2), 1.0)
             start_pct += step
             start_pct = round(start_pct, 2)
             if prompt_start:
-                n[1]["prompt"] = f"linear:{1.0 - factor} / {factor}"
+                n[1]["prompt"] = f"linear:{round(1.0 - factor, 2)} / {factor}"
             log.debug(
                 "Interpolating at step %s with factor %s (%s, %s)...",
                 s,
