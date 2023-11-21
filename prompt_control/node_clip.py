@@ -60,7 +60,7 @@ def linear_interpolate_cond(
         )
         x = 1 / (total_steps + 1)
         for s in range(start_on, num_steps):
-            factor = round((s+1) * x, 2)
+            factor = round((s + 1) * x, 2)
             new_cond = from_cond + (to_cond - from_cond) * factor
             if from_pooled is not None and to_pooled is not None:
                 from_pooled, to_pooled = equalize(from_pooled, to_pooled)

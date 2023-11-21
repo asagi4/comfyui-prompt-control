@@ -161,5 +161,6 @@ def hijack_aitemplate():
 def do_hijack():
     hijack_browniannoisesampler("comfy.k_diffusion.sampling", "BrownianTreeNoiseSampler")
     hijack_sampler("comfy.sample", "sample")
+    hijack_sampler("comfy.sample", "sample_custom")
     hijack_aitemplate()
     hijack_ksampler("comfy.samplers", "KSampler")

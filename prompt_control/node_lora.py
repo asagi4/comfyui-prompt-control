@@ -17,7 +17,7 @@ def schedule_lora_common(model, schedules, lora_cache=None):
         split_sampling = args[0].model_options.get("pc_split_sampling")
         state = {}
         steps = args[2]
-        start_step = kwargs["start_step"] or 0
+        start_step = kwargs.get("start_step") or 0
         # The model patcher may change if LoRAs are applied
         state["model"] = args[0]
         state["applied_loras"] = []
