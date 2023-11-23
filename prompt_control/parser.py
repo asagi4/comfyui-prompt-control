@@ -12,16 +12,17 @@ prompt: (emphasized | embedding | scheduled | alternate | sequence | interpolate
 !emphasized: "(" prompt? ")"
         | "(" prompt ":" prompt ")"
         | "[" prompt "]"
-scheduled: "[" [prompt ":"] [prompt] ":" WHITESPACE? NUMBER ["," NUMBER] "]"
-        | "[" [prompt ":"] [prompt] ":" WHITESPACE? TAG "]"
+scheduled: "[" [prompt ":"] [prompt] ":" _WS? NUMBER ["," NUMBER] "]"
+        | "[" [prompt ":"] [prompt] ":" _WS? TAG "]"
 sequence:  "[SEQ" ":" [prompt] ":" NUMBER (":" [prompt] ":" NUMBER)+ "]"
 interpolate.100: "[INT" ":" interp_prompts ":" interp_steps "]"
 interp_prompts: prompt (":" prompt)+
 interp_steps: NUMBER ("," NUMBER)+ [":" NUMBER]
 alternate: "[" [prompt] ("|" [prompt])+ [":" NUMBER] "]"
-loraspec.99: "<lora:" FILENAME (":" WHITESPACE? NUMBER)~1..2 ">"
+loraspec.99: "<lora:" FILENAME (":" _WS? NUMBER)~1..2 ">"
 embedding.100: "<emb:" FILENAME ">"
 WHITESPACE: /\s+/
+_WS: WHITESPACE
 PLAIN: /([^<>\\\[\]():|]|\\.)+/
 FILENAME: /[^<>:\/\\]+/
 TAG: /[A-Z_]+/
