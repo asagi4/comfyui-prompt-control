@@ -23,7 +23,7 @@ Then restart ComfyUI afterwards.
 
 I try to avoid behavioural changes that break old prompts, but they may happen occasionally.
 
-- 2023-12-06: Removed `JinjaRender`, `SimpleWildcard`, `ConditioningCutoff` and `StringConcat`. For the first two, see [this repository](https://github.com/asagi4/comfyui-utility-nodes) for mostly-compatible implementations.
+- 2023-12-06: Removed `JinjaRender`, `SimpleWildcard`, `ConditioningCutoff`, `CondLinearInterpolate` and `StringConcat`. For the first two, see [this repository](https://github.com/asagi4/comfyui-utility-nodes) for mostly-compatible implementations.
 - 2023-10-04: `STYLE:...` syntax changed to `STYLE(...)`
 
 ## Note on how schedules work

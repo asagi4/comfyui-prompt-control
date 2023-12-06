@@ -123,26 +123,6 @@ def linear_interpolator(control_points, step, start_pct, end_pct):
     return conds
 
 
-class CondLinearInterpolate:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {"start": ("CONDITIONING",), "end": ("CONDITIONING",)},
-            "optional": {
-                "until": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
-                "step": ("FLOAT", {"default": 0.1, "min": 0.0, "max": 1.0, "step": 0.01}),
-            },
-        }
-
-    RETURN_TYPES = ("CONDITIONING",)
-    FUNCTION = "apply"
-    CATEGORY = "promptcontrol/exp"
-
-    def apply(self, start, end, until=1.0, step=0.1):
-        res = linear_interpolate_cond(start, end, 0.0, until, step)
-        return (res,)
-
-
 class ScheduleToCond:
     @classmethod
     def INPUT_TYPES(s):
