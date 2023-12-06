@@ -1,3 +1,4 @@
+import torch
 from . import utils as utils
 from .parser import parse_prompt_schedules, parse_cuts
 from .utils import Timer, equalize, safe_float, get_function, parse_floats
@@ -317,7 +318,6 @@ def get_mask(text, size):
     text, masks = get_function(text, "MASK", ["0 1", "0 1", "1"])
     if not masks:
         return text, None
-    import torch
 
     args = masks[0]
     x1, x2 = parse_floats(args[0], [0.0, 1.0], split_re="\s+")
@@ -352,13 +352,47 @@ def get_mask(text, size):
     return text, mask
 
 
+def get_noise(text):
+    text, noises = get_function(
+        text,
+        "NOISE",
+        ["0.0", "none"],
+    )
+    if not noises:
+        return text, None, None
+    w = 0
+    # Only take seed from first noise spec, for simplicity
+    seed = safe_float(noises[0][1], "none")
+    if seed == "none":
+        gen = None
+    else:
+        gen = torch.Generator()
+        gen.manual_seed(int(seed))
+    for n in noises:
+        w += safe_float(n[0], 0.0)
+    return text, max(min(w, 1.0), 0.0), gen
+
+
+def apply_noise(cond, weight, gen):
+    if cond is None or not weight:
+        return cond
+
+    n = torch.randn(cond.size(), generator=gen).to(cond)
+
+    return cond * (1 - weight) + n * weight
+
+
 def do_encode(clip, text):
     # First style modifier applies to ANDed prompts too unless overridden
     style, normalization, text = get_style(text)
     text, mask_size = get_mask_size(text)
     prompts = [p.strip() for p in re.split(r"\bAND\b", text)]
     if len(prompts) == 1:
-        cond, pooled = encode_prompt(clip, prompts[0], style, normalization)
+        text = prompts[0]
+        text, noise_w, generator = get_noise(text)
+        cond, pooled = encode_prompt(clip, text, style, normalization)
+        cond = apply_noise(cond, noise_w, generator)
+        pooled = apply_noise(cond, noise_w, generator)
         return [[cond, {"pooled_output": pooled, "prompt": prompts[0]}]]
 
     def weight(t):
@@ -380,10 +414,13 @@ def do_encode(clip, text):
     for prompt in prompts:
         prompt, mask = get_mask(prompt, mask_size)
         w, opts, prompt = weight(prompt)
+        text, noise_w, generator = get_noise(text)
         if not w:
             continue
         prompt, area = get_area(prompt)
         cond, pooled = encode_prompt(clip, prompt, style, normalization)
+        cond = apply_noise(cond, noise_w, generator)
+        pooled = apply_noise(cond, noise_w, generator)
         settings = {"pooled_output": pooled, "prompt": prompt}
         if area:
             settings["area"] = area[0]
