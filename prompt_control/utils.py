@@ -62,16 +62,6 @@ def safe_float(f, default):
         return default
 
 
-def steps(start, end=None, step=0.1):
-    if end is None:
-        end = start
-        start = step
-    while start <= end:
-        yield start
-        start += step
-        start = round(start, 2)
-
-
 def get_aitemplate_module():
     return sys.modules["AIT.AITemplate.AITemplate"]
 

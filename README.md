@@ -23,6 +23,7 @@ Then restart ComfyUI afterwards.
 
 I try to avoid behavioural changes that break old prompts, but they may happen occasionally.
 
+- 2023-12-06: Removed `JinjaRender`, `SimpleWildcard`, `ConditioningCutoff` and `StringConcat`. For the first two, see [this repository](https://github.com/asagi4/comfyui-utility-nodes) for mostly-compatible implementations.
 - 2023-10-04: `STYLE:...` syntax changed to `STYLE(...)`
 
 ## Note on how schedules work
@@ -52,7 +53,7 @@ Alternating syntax is `[a|b:pct_steps]`, causing the prompt to alternate every `
 
 The syntax `[SEQ:a:N1:b:N2:c:N3]` is shorthand for `[a:[b:[c::N3]:N2]:N1]` ie. it switches from `a` to `b` to `c` to nothing at the specified points in sequence.
 
-Might be useful with Jinja templating (see Experiments below for details). For example:
+Might be useful with Jinja templating (see https://github.com/asagi4/comfyui-utility-nodes). For example:
 ```
 [SEQ<% for x in steps(0.1, 0.9, 0.1) %>:<lora:test:<= sin(x*pi) + 0.1 =>>:<= x =><% endfor %>]
 ```
@@ -158,22 +159,10 @@ This depends on a callback handled by a monkeypatch of the ComfyUI sampler funct
 ### PCSplitSampling
 Causes sampling to be split into multiple sampler calls instead of relying on timesteps for scheduling. This makes the schedules more accurate, but seems to cause weird behaviour with SDE samplers. (Upstream bug?)
 
-### JinjaRender
-Renders a String with Jinja2. See below for details
-
 ## Older nodes
 
 - `EditableCLIPEncode`: A combination of `PromptToSchedule` and `ScheduleToCond`
 - `LoRAScheduler`: A combination of `PromptToSchedule`, `FilterSchedule` and `ScheduleToModel`
-
-## Utility nodes
-### StringConcat
-Concatenates the input strings into one string. All inputs default to the empty string if not specified
-
-### ConditioningCutoff
-Removes conditionings from the input whose timestep range ends before the cutoff and extends the remaining conds to cover the missing part. For example, set the cutoff to 1.0 to only leave the last prompt. This can be useful for HR passes.
-
-# Experiments
 
 ## Cutoff node integration
 
@@ -189,33 +178,6 @@ If `strict_mask`, `start_from_masked` or `padding_token` are specified in more t
 ## Prompt interpolation
 
 `a red [INT:dog:cat:0.2,0.8:0.05]` will attempt to interpolate the tensors for `a red dog` and `a red cat` between the specified range in as many steps of 0.05 as will fit.
-
-## Jinja2
-You can use the `JinjaRender` node to evaluate a string as a Jinja2 template. Note, however, that because ComfyUI's frontend uses `{}` for syntax, There are the following modifications to Jinja syntax:
-
-- `{% %}` becomes `<% %>`
-- `{{ }}` becomes `<= =>`
-- `{# #}` becomes `<# #>`
-
-Jinja stuff is experimental.
-
-### Functions in Jinja templates
-
-The following functions and constants are available:
-
-- `pi`
-- `min`, `max`, `clamp(minimum, value, maximum)`,
-- `abs`, `round`, `ceil`, `floor`
-- `sqrt` `sin`, `cos`, `tan`, `asin`, `acos`, `atan`. These functions are rounded to two decimals
-
-
-In addition, a special `steps` function exists.
-
-The `steps` function will generate a list of steps for iterating. 
-
-You can call it either as `steps(end)`, `steps(end, step=0.1)` or `steps(start, end, step)`. `step` is an optional parameter that defaults to `0.1`. It'll return steps *inclusive* of start and end as long as step doesn't go past the end. 
-
-The second form is equivalent to `steps(step, end, step)`. i.e. it starts at the first step.
 
 # Known issues
 
