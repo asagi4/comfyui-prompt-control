@@ -16,7 +16,7 @@ scheduled: "[" [prompt ":"] [prompt] ":" _WS? NUMBER ["," NUMBER] "]"
         | "[" [prompt ":"] [prompt] ":" _WS? TAG "]"
 sequence:  "[SEQ" ":" [prompt] ":" NUMBER (":" [prompt] ":" NUMBER)+ "]"
 interpolate.100: "[INT" ":" interp_prompts ":" interp_steps "]"
-interp_prompts: prompt (":" prompt)+
+interp_prompts: prompt (":" [prompt])+
 interp_steps: NUMBER ("," NUMBER)+ [":" NUMBER]
 alternate: "[" [prompt] ("|" [prompt])+ [":" NUMBER] "]"
 loraspec.99: "<lora:" FILENAME (":" _WS? NUMBER)~1..2 ">"
@@ -188,7 +188,7 @@ def at_step(step, filters, tree):
             return list(args)
 
         def interp_prompts(self, args):
-            return ["".join(flatten(a)) for a in args]
+            return ["".join(flatten(a or [])) for a in args]
 
         def alternate(self, args):
             step_size = args[-1]
