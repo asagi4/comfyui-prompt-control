@@ -1,6 +1,5 @@
 from .node_clip import control_to_clip_common
 from .node_lora import schedule_lora_common
-from .node_other import render_jinja
 from .parser import parse_prompt_schedules
 
 
@@ -29,10 +28,10 @@ class PromptControlSimple:
     def apply(self, model, clip, positive, negative, tags="", start=0.0, end=1.0):
         lora_cache = {}
         cond_cache = {}
-        pos_sched = parse_prompt_schedules(render_jinja(positive))
+        pos_sched = parse_prompt_schedules(positive)
         pos_cond = pos_filtered = control_to_clip_common(self, clip, pos_sched, lora_cache, cond_cache)
 
-        neg_sched = parse_prompt_schedules(render_jinja(negative))
+        neg_sched = parse_prompt_schedules(negative)
         neg_cond = neg_filtered = control_to_clip_common(self, clip, neg_sched, lora_cache, cond_cache)
 
         new_model = model_filtered = schedule_lora_common(model, pos_sched, lora_cache)
