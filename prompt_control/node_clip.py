@@ -387,13 +387,6 @@ def do_encode(clip, text):
     style, normalization, text = get_style(text)
     text, mask_size = get_mask_size(text)
     prompts = [p.strip() for p in re.split(r"\bAND\b", text)]
-    if len(prompts) == 1:
-        text = prompts[0]
-        text, noise_w, generator = get_noise(text)
-        cond, pooled = encode_prompt(clip, text, style, normalization)
-        cond = apply_noise(cond, noise_w, generator)
-        pooled = apply_noise(cond, noise_w, generator)
-        return [[cond, {"pooled_output": pooled, "prompt": prompts[0]}]]
 
     def weight(t):
         opts = {}
@@ -420,8 +413,9 @@ def do_encode(clip, text):
         prompt, area = get_area(prompt)
         cond, pooled = encode_prompt(clip, prompt, style, normalization)
         cond = apply_noise(cond, noise_w, generator)
-        pooled = apply_noise(cond, noise_w, generator)
-        settings = {"pooled_output": pooled, "prompt": prompt}
+        pooled = apply_noise(pooled, noise_w, generator)
+
+        settings = {"prompt": prompt}
         if area:
             settings["area"] = area[0]
             settings["strength"] = area[1]
@@ -430,6 +424,8 @@ def do_encode(clip, text):
             settings["mask"] = mask
 
         if mask is not None or area:
+            if pooled is not None:
+                settings["pooled_output"] = pooled
             conds.append([cond, settings])
         else:
             s = opts.get("scale", scale)
@@ -442,7 +438,8 @@ def do_encode(clip, text):
         opts = {}
         if pooleds:
             opts["pooled_output"] = sum(equalize(*pooleds))
-        conds.append([sum(equalize(*sumconds)), opts])
+        sumcond = sum(equalize(*sumconds))
+        conds.append([sumcond, opts])
     return conds
 
 
