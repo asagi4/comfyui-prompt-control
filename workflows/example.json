@@ -1,93 +1,7 @@
 {
   "last_node_id": 51,
-  "last_link_id": 92,
+  "last_link_id": 96,
   "nodes": [
-    {
-      "id": 2,
-      "type": "PrimitiveNode",
-      "pos": [
-        -190,
-        150
-      ],
-      "size": {
-        "0": 300,
-        "1": 160
-      },
-      "flags": {},
-      "order": 0,
-      "mode": 0,
-      "outputs": [
-        {
-          "name": "STRING",
-          "type": "STRING",
-          "links": [
-            2
-          ],
-          "slot_index": 0,
-          "widget": {
-            "name": "text",
-            "config": [
-              "STRING",
-              {
-                "default": "",
-                "multiline": true
-              }
-            ]
-          }
-        }
-      ],
-      "title": "Negative",
-      "properties": {},
-      "widgets_values": [
-        "(quality:1.4)"
-      ],
-      "color": "#322",
-      "bgcolor": "#533",
-      "shape": 1
-    },
-    {
-      "id": 1,
-      "type": "PrimitiveNode",
-      "pos": [
-        -190,
-        -60
-      ],
-      "size": {
-        "0": 300,
-        "1": 160
-      },
-      "flags": {},
-      "order": 1,
-      "mode": 0,
-      "outputs": [
-        {
-          "name": "STRING",
-          "type": "STRING",
-          "links": [
-            1
-          ],
-          "slot_index": 0,
-          "widget": {
-            "name": "text",
-            "config": [
-              "STRING",
-              {
-                "default": "",
-                "multiline": true
-              }
-            ]
-          }
-        }
-      ],
-      "title": "Positive",
-      "properties": {},
-      "widgets_values": [
-        "a masterpiece illustration of a [space:0.3] [dog|[cat:tiger:HR]], [sitting on a bench::0.3] [<lora:vector_revanimated:0.7>:0.2]"
-      ],
-      "color": "#2a363b",
-      "bgcolor": "#3f5159",
-      "shape": 1
-    },
     {
       "id": 26,
       "type": "EmptyLatentImage",
@@ -100,7 +14,7 @@
         "1": 106
       },
       "flags": {},
-      "order": 2,
+      "order": 0,
       "mode": 0,
       "outputs": [
         {
@@ -133,7 +47,7 @@
         26
       ],
       "flags": {},
-      "order": 12,
+      "order": 10,
       "mode": 0,
       "inputs": [
         {
@@ -169,7 +83,7 @@
         26
       ],
       "flags": {},
-      "order": 17,
+      "order": 15,
       "mode": 0,
       "inputs": [
         {
@@ -206,7 +120,7 @@
         26
       ],
       "flags": {},
-      "order": 23,
+      "order": 21,
       "mode": 0,
       "inputs": [
         {
@@ -242,7 +156,7 @@
         "1": 98
       },
       "flags": {},
-      "order": 3,
+      "order": 1,
       "mode": 0,
       "outputs": [
         {
@@ -294,21 +208,15 @@
       "flags": {
         "collapsed": true
       },
-      "order": 13,
+      "order": 11,
       "mode": 0,
       "inputs": [
         {
           "name": "text",
           "type": "STRING",
-          "link": 57,
+          "link": 94,
           "widget": {
-            "name": "text",
-            "config": [
-              "STRING",
-              {
-                "multiline": true
-              }
-            ]
+            "name": "text"
           },
           "slot_index": 0
         }
@@ -328,142 +236,7 @@
         "Node name for S&R": "PromptToSchedule"
       },
       "widgets_values": [
-        ""
-      ]
-    },
-    {
-      "id": 42,
-      "type": "ScheduleToCond",
-      "pos": [
-        405,
-        123
-      ],
-      "size": {
-        "0": 355.20001220703125,
-        "1": 46
-      },
-      "flags": {
-        "collapsed": true
-      },
-      "order": 18,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 92
-        },
-        {
-          "name": "prompt_schedule",
-          "type": "PROMPT_SCHEDULE",
-          "link": 56
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CONDITIONING",
-          "type": "CONDITIONING",
-          "links": [
-            81
-          ],
-          "shape": 3
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "ScheduleToCond"
-      }
-    },
-    {
-      "id": 44,
-      "type": "FilterSchedule",
-      "pos": [
-        401,
-        289
-      ],
-      "size": [
-        393,
-        106
-      ],
-      "flags": {
-        "collapsed": true
-      },
-      "order": 22,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "prompt_schedule",
-          "type": "PROMPT_SCHEDULE",
-          "link": 70,
-          "slot_index": 0
-        },
-        {
-          "name": "tags",
-          "type": "STRING",
-          "link": 64,
-          "widget": {
-            "name": "tags",
-            "config": [
-              "STRING",
-              {
-                "default": ""
-              }
-            ]
-          }
-        },
-        {
-          "name": "start",
-          "type": "FLOAT",
-          "link": 65,
-          "widget": {
-            "name": "start",
-            "config": [
-              "FLOAT",
-              {
-                "min": 0,
-                "max": 1,
-                "default": 0,
-                "step": 0.01
-              }
-            ]
-          }
-        },
-        {
-          "name": "end",
-          "type": "FLOAT",
-          "link": 66,
-          "widget": {
-            "name": "end",
-            "config": [
-              "FLOAT",
-              {
-                "min": 0,
-                "max": 1,
-                "default": 1,
-                "step": 0.01
-              }
-            ]
-          }
-        }
-      ],
-      "outputs": [
-        {
-          "name": "PROMPT_SCHEDULE",
-          "type": "PROMPT_SCHEDULE",
-          "links": [
-            68,
-            69
-          ],
-          "shape": 3,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "FilterSchedule"
-      },
-      "widgets_values": [
-        "HR",
-        0,
-        1
+        "sketch, painting, blurry, text, watermark"
       ]
     },
     {
@@ -480,7 +253,7 @@
       "flags": {
         "collapsed": true
       },
-      "order": 26,
+      "order": 24,
       "mode": 0,
       "inputs": [
         {
@@ -522,7 +295,7 @@
       "flags": {
         "collapsed": true
       },
-      "order": 25,
+      "order": 23,
       "mode": 0,
       "inputs": [
         {
@@ -551,49 +324,6 @@
       }
     },
     {
-      "id": 49,
-      "type": "ScheduleToCond",
-      "pos": [
-        401,
-        466
-      ],
-      "size": {
-        "0": 355.20001220703125,
-        "1": 46
-      },
-      "flags": {
-        "collapsed": true
-      },
-      "order": 19,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 76,
-          "slot_index": 0
-        },
-        {
-          "name": "prompt_schedule",
-          "type": "PROMPT_SCHEDULE",
-          "link": 75
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CONDITIONING",
-          "type": "CONDITIONING",
-          "links": [
-            90
-          ],
-          "shape": 3
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "ScheduleToCond"
-      }
-    },
-    {
       "id": 11,
       "type": "Reroute",
       "pos": [
@@ -605,7 +335,7 @@
         26
       ],
       "flags": {},
-      "order": 10,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
@@ -631,56 +361,6 @@
       }
     },
     {
-      "id": 48,
-      "type": "PromptToSchedule",
-      "pos": [
-        401,
-        425
-      ],
-      "size": [
-        210,
-        34
-      ],
-      "flags": {
-        "collapsed": true
-      },
-      "order": 14,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "text",
-          "type": "STRING",
-          "link": 73,
-          "widget": {
-            "name": "text",
-            "config": [
-              "STRING",
-              {
-                "multiline": true
-              }
-            ]
-          }
-        }
-      ],
-      "outputs": [
-        {
-          "name": "PROMPT_SCHEDULE",
-          "type": "PROMPT_SCHEDULE",
-          "links": [
-            75
-          ],
-          "shape": 3,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "PromptToSchedule"
-      },
-      "widgets_values": [
-        ""
-      ]
-    },
-    {
       "id": 39,
       "type": "ScheduleToCond",
       "pos": [
@@ -694,7 +374,7 @@
       "flags": {
         "collapsed": true
       },
-      "order": 20,
+      "order": 18,
       "mode": 0,
       "inputs": [
         {
@@ -736,7 +416,7 @@
       "flags": {
         "collapsed": true
       },
-      "order": 21,
+      "order": 19,
       "mode": 0,
       "inputs": [
         {
@@ -765,83 +445,28 @@
       }
     },
     {
-      "id": 43,
-      "type": "PromptToSchedule",
-      "pos": [
-        401,
-        246
-      ],
-      "size": [
-        400,
-        200
-      ],
-      "flags": {
-        "collapsed": true
-      },
-      "order": 16,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "text",
-          "type": "STRING",
-          "link": 74,
-          "widget": {
-            "name": "text",
-            "config": [
-              "STRING",
-              {
-                "multiline": true
-              }
-            ]
-          }
-        }
-      ],
-      "outputs": [
-        {
-          "name": "PROMPT_SCHEDULE",
-          "type": "PROMPT_SCHEDULE",
-          "links": [
-            70
-          ],
-          "shape": 3
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "PromptToSchedule"
-      },
-      "widgets_values": [
-        ""
-      ]
-    },
-    {
       "id": 38,
       "type": "PromptToSchedule",
       "pos": [
         405,
         -54
       ],
-      "size": [
-        210,
-        46.000009536743164
-      ],
+      "size": {
+        "0": 210,
+        "1": 46.00000762939453
+      },
       "flags": {
         "collapsed": true
       },
-      "order": 15,
+      "order": 13,
       "mode": 0,
       "inputs": [
         {
           "name": "text",
           "type": "STRING",
-          "link": 53,
+          "link": 93,
           "widget": {
-            "name": "text",
-            "config": [
-              "STRING",
-              {
-                "multiline": true
-              }
-            ]
+            "name": "text"
           },
           "slot_index": 0
         }
@@ -862,7 +487,7 @@
         "Node name for S&R": "PromptToSchedule"
       },
       "widgets_values": [
-        ""
+        "[<lora:vector_revanimated:0.5>::0.5]a [multicolored:red:0.2,0.7] space [[cat:dog:0.5]:anthropomorphic tiger:HR] [AND MASK(0 1,0 0.5):,:0.5] sunglasses"
       ]
     },
     {
@@ -879,7 +504,7 @@
       "flags": {
         "collapsed": true
       },
-      "order": 27,
+      "order": 25,
       "mode": 0,
       "inputs": [
         {
@@ -915,12 +540,12 @@
         629,
         -207
       ],
-      "size": [
-        215.84753417968773,
-        446
-      ],
+      "size": {
+        "0": 215.8475341796875,
+        "1": 446
+      },
       "flags": {},
-      "order": 24,
+      "order": 22,
       "mode": 0,
       "inputs": [
         {
@@ -952,15 +577,7 @@
           "type": "INT",
           "link": 83,
           "widget": {
-            "name": "seed",
-            "config": [
-              "INT",
-              {
-                "default": 0,
-                "min": 0,
-                "max": 18446744073709552000
-              }
-            ]
+            "name": "seed"
           },
           "slot_index": 4
         }
@@ -981,7 +598,7 @@
         "Node name for S&R": "KSampler"
       },
       "widgets_values": [
-        744189450576017,
+        1,
         "randomize",
         20,
         8,
@@ -1004,7 +621,7 @@
       "flags": {
         "collapsed": true
       },
-      "order": 31,
+      "order": 29,
       "mode": 0,
       "inputs": [
         {
@@ -1045,7 +662,7 @@
         26
       ],
       "flags": {},
-      "order": 11,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
@@ -1073,89 +690,18 @@
       }
     },
     {
-      "id": 31,
-      "type": "PreviewImage",
-      "pos": [
-        1180,
-        -200
-      ],
-      "size": {
-        "0": 210,
-        "1": 250
-      },
-      "flags": {},
-      "order": 29,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 45
-        }
-      ],
-      "title": "First pass",
-      "properties": {
-        "Node name for S&R": "PreviewImage"
-      }
-    },
-    {
-      "id": 24,
-      "type": "PrimitiveNode",
-      "pos": [
-        -182,
-        -340
-      ],
-      "size": [
-        311.00371044921894,
-        82
-      ],
-      "flags": {},
-      "order": 4,
-      "mode": 0,
-      "outputs": [
-        {
-          "name": "INT",
-          "type": "INT",
-          "links": [
-            83,
-            91
-          ],
-          "slot_index": 0,
-          "widget": {
-            "name": "seed",
-            "config": [
-              "INT",
-              {
-                "default": 0,
-                "min": 0,
-                "max": 18446744073709552000
-              }
-            ]
-          }
-        }
-      ],
-      "title": "Seed",
-      "properties": {},
-      "widgets_values": [
-        5,
-        "fixed"
-      ],
-      "color": "#233",
-      "bgcolor": "#355"
-    },
-    {
       "id": 28,
       "type": "LatentUpscaleBy",
       "pos": [
         619,
         297
       ],
-      "size": [
-        239.46753417968762,
-        82
-      ],
+      "size": {
+        "0": 239.467529296875,
+        "1": 82
+      },
       "flags": {},
-      "order": 28,
+      "order": 26,
       "mode": 0,
       "inputs": [
         {
@@ -1195,7 +741,7 @@
         "1": 58
       },
       "flags": {},
-      "order": 5,
+      "order": 2,
       "mode": 0,
       "outputs": [
         {
@@ -1206,18 +752,14 @@
           ],
           "slot_index": 0,
           "widget": {
-            "name": "tags",
-            "config": [
-              "STRING",
-              {
-                "default": ""
-              }
-            ]
+            "name": "tags"
           }
         }
       ],
       "title": "Second pass tag",
-      "properties": {},
+      "properties": {
+        "Run widget replace on values": false
+      },
       "widgets_values": [
         "HR"
       ]
@@ -1234,7 +776,7 @@
         "1": 82
       },
       "flags": {},
-      "order": 6,
+      "order": 3,
       "mode": 0,
       "outputs": [
         {
@@ -1245,21 +787,14 @@
           ],
           "slot_index": 0,
           "widget": {
-            "name": "end",
-            "config": [
-              "FLOAT",
-              {
-                "min": 0,
-                "max": 1,
-                "default": 1,
-                "step": 0.01
-              }
-            ]
+            "name": "end"
           }
         }
       ],
       "title": "2nd pass remove after",
-      "properties": {},
+      "properties": {
+        "Run widget replace on values": false
+      },
       "widgets_values": [
         1,
         "fixed"
@@ -1279,7 +814,7 @@
       "flags": {
         "collapsed": false
       },
-      "order": 7,
+      "order": 4,
       "mode": 0,
       "outputs": [
         {
@@ -1290,143 +825,351 @@
           ],
           "slot_index": 0,
           "widget": {
-            "name": "start",
-            "config": [
-              "FLOAT",
-              {
-                "min": 0,
-                "max": 1,
-                "default": 0,
-                "step": 0.01
-              }
-            ]
+            "name": "start"
           }
         }
       ],
       "title": "2nd pass remove before",
-      "properties": {},
+      "properties": {
+        "Run widget replace on values": false
+      },
       "widgets_values": [
         0,
         "fixed"
       ]
     },
     {
-      "id": 4,
-      "type": "JinjaRender",
+      "id": 44,
+      "type": "FilterSchedule",
       "pos": [
-        205,
-        107
+        401,
+        289
       ],
       "size": {
-        "0": 210,
-        "1": 46
+        "0": 393,
+        "1": 106
       },
       "flags": {
         "collapsed": true
       },
-      "order": 8,
+      "order": 20,
       "mode": 0,
       "inputs": [
         {
-          "name": "text",
+          "name": "prompt_schedule",
+          "type": "PROMPT_SCHEDULE",
+          "link": 70,
+          "slot_index": 0
+        },
+        {
+          "name": "tags",
           "type": "STRING",
-          "link": 2,
+          "link": 64,
           "widget": {
-            "name": "text",
-            "config": [
-              "STRING",
-              {
-                "default": "",
-                "multiline": true
-              }
-            ]
+            "name": "tags"
+          }
+        },
+        {
+          "name": "start",
+          "type": "FLOAT",
+          "link": 65,
+          "widget": {
+            "name": "start"
+          }
+        },
+        {
+          "name": "end",
+          "type": "FLOAT",
+          "link": 66,
+          "widget": {
+            "name": "end"
           }
         }
       ],
       "outputs": [
         {
-          "name": "STRING",
-          "type": "STRING",
+          "name": "PROMPT_SCHEDULE",
+          "type": "PROMPT_SCHEDULE",
           "links": [
-            57,
-            73
+            68,
+            69
           ],
           "shape": 3,
           "slot_index": 0
         }
       ],
       "properties": {
-        "Node name for S&R": "JinjaRender"
+        "Node name for S&R": "FilterSchedule"
       },
       "widgets_values": [
-        "(quality:1.4)"
+        "HR",
+        0,
+        1
       ]
     },
     {
-      "id": 3,
-      "type": "JinjaRender",
+      "id": 24,
+      "type": "PrimitiveNode",
       "pos": [
-        207,
-        -4
+        -182,
+        -340
       ],
       "size": {
         "0": 210,
+        "1": 82
+      },
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            83,
+            91
+          ],
+          "slot_index": 0,
+          "widget": {
+            "name": "seed"
+          }
+        }
+      ],
+      "title": "Seed",
+      "properties": {
+        "Run widget replace on values": false
+      },
+      "widgets_values": [
+        1,
+        "fixed"
+      ],
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 42,
+      "type": "ScheduleToCond",
+      "pos": [
+        408,
+        122
+      ],
+      "size": {
+        "0": 355.20001220703125,
         "1": 46
       },
       "flags": {
         "collapsed": true
       },
-      "order": 9,
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 92
+        },
+        {
+          "name": "prompt_schedule",
+          "type": "PROMPT_SCHEDULE",
+          "link": 56
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            81
+          ],
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ScheduleToCond"
+      }
+    },
+    {
+      "id": 49,
+      "type": "ScheduleToCond",
+      "pos": [
+        398,
+        469
+      ],
+      "size": {
+        "0": 355.20001220703125,
+        "1": 46
+      },
+      "flags": {
+        "collapsed": true
+      },
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 76,
+          "slot_index": 0
+        },
+        {
+          "name": "prompt_schedule",
+          "type": "PROMPT_SCHEDULE",
+          "link": 75
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            90
+          ],
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ScheduleToCond"
+      }
+    },
+    {
+      "id": 48,
+      "type": "PromptToSchedule",
+      "pos": [
+        392,
+        422
+      ],
+      "size": {
+        "0": 210,
+        "1": 34
+      },
+      "flags": {
+        "collapsed": true
+      },
+      "order": 12,
       "mode": 0,
       "inputs": [
         {
           "name": "text",
           "type": "STRING",
-          "link": 1,
+          "link": 95,
           "widget": {
-            "name": "text",
-            "config": [
-              "STRING",
-              {
-                "default": "",
-                "multiline": true
-              }
-            ]
+            "name": "text"
           }
         }
       ],
       "outputs": [
         {
-          "name": "STRING",
-          "type": "STRING",
+          "name": "PROMPT_SCHEDULE",
+          "type": "PROMPT_SCHEDULE",
           "links": [
-            53,
-            74
+            75
           ],
           "shape": 3,
           "slot_index": 0
         }
       ],
       "properties": {
-        "Node name for S&R": "JinjaRender"
+        "Node name for S&R": "PromptToSchedule"
       },
       "widgets_values": [
-        "a masterpiece illustration of a [space:0.3] [dog|[cat:tiger:HR]], [sitting on a bench::0.3] [<lora:vector_revanimated:0.7>:0.2]"
+        "sketch, painting, blurry, text, watermark"
       ]
+    },
+    {
+      "id": 43,
+      "type": "PromptToSchedule",
+      "pos": [
+        392,
+        247
+      ],
+      "size": {
+        "0": 400,
+        "1": 200
+      },
+      "flags": {
+        "collapsed": true
+      },
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 96,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "PROMPT_SCHEDULE",
+          "type": "PROMPT_SCHEDULE",
+          "links": [
+            70
+          ],
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PromptToSchedule"
+      },
+      "widgets_values": [
+        "a [multicolored:red:0.2,0.7] space [[cat:dog:0.5]:anthropomorphic tiger:HR] [AND MASK(0 1,0 0.5):,:0.5] sunglasses"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "PrimitiveNode",
+      "pos": [
+        -190,
+        150
+      ],
+      "size": {
+        "0": 300,
+        "1": 160
+      },
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            94,
+            95
+          ],
+          "slot_index": 0,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "title": "Negative",
+      "properties": {
+        "Run widget replace on values": false
+      },
+      "widgets_values": [
+        "sketch, painting, blurry, text, watermark"
+      ],
+      "color": "#322",
+      "bgcolor": "#533",
+      "shape": 1
     },
     {
       "id": 51,
       "type": "KSampler",
       "pos": [
         917,
-        -203
+        -204
       ],
-      "size": [
-        215.8475341796875,
-        446
-      ],
+      "size": {
+        "0": 215.8475341796875,
+        "1": 446
+      },
       "flags": {},
-      "order": 30,
+      "order": 28,
       "mode": 0,
       "inputs": [
         {
@@ -1458,15 +1201,7 @@
           "type": "INT",
           "link": 91,
           "widget": {
-            "name": "seed",
-            "config": [
-              "INT",
-              {
-                "default": 0,
-                "min": 0,
-                "max": 18446744073709552000
-              }
-            ]
+            "name": "seed"
           },
           "slot_index": 4
         }
@@ -1487,7 +1222,7 @@
         "Node name for S&R": "KSampler"
       },
       "widgets_values": [
-        590405639165905,
+        1,
         "randomize",
         20,
         8,
@@ -1500,15 +1235,15 @@
       "id": 33,
       "type": "PreviewImage",
       "pos": [
-        1160,
-        140
+        1162,
+        138
       ],
-      "size": [
-        320,
-        340
-      ],
+      "size": {
+        "0": 320,
+        "1": 340
+      },
       "flags": {},
-      "order": 32,
+      "order": 30,
       "mode": 0,
       "inputs": [
         {
@@ -1521,25 +1256,74 @@
       "properties": {
         "Node name for S&R": "PreviewImage"
       }
+    },
+    {
+      "id": 31,
+      "type": "PreviewImage",
+      "pos": [
+        1180,
+        -200
+      ],
+      "size": {
+        "0": 210,
+        "1": 250
+      },
+      "flags": {},
+      "order": 27,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 45
+        }
+      ],
+      "title": "First pass",
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      }
+    },
+    {
+      "id": 1,
+      "type": "PrimitiveNode",
+      "pos": [
+        -190,
+        -60
+      ],
+      "size": {
+        "0": 300,
+        "1": 160
+      },
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            93,
+            96
+          ],
+          "slot_index": 0,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "title": "Positive",
+      "properties": {
+        "Run widget replace on values": false
+      },
+      "widgets_values": [
+        "a [multicolored:red:0.2,0.7] space [[cat:dog:0.5]:anthropomorphic tiger:HR] [AND MASK(0 1,0 0.5):,:0.5] sunglasses"
+      ],
+      "color": "#2a363b",
+      "bgcolor": "#3f5159",
+      "shape": 1
     }
   ],
   "links": [
-    [
-      1,
-      1,
-      0,
-      3,
-      0,
-      "STRING"
-    ],
-    [
-      2,
-      2,
-      0,
-      4,
-      0,
-      "STRING"
-    ],
     [
       9,
       10,
@@ -1613,14 +1397,6 @@
       "VAE"
     ],
     [
-      53,
-      3,
-      0,
-      38,
-      0,
-      "STRING"
-    ],
-    [
       54,
       38,
       0,
@@ -1643,14 +1419,6 @@
       42,
       1,
       "PROMPT_SCHEDULE"
-    ],
-    [
-      57,
-      4,
-      0,
-      41,
-      0,
-      "STRING"
     ],
     [
       60,
@@ -1715,22 +1483,6 @@
       44,
       0,
       "PROMPT_SCHEDULE"
-    ],
-    [
-      73,
-      4,
-      0,
-      48,
-      0,
-      "STRING"
-    ],
-    [
-      74,
-      3,
-      0,
-      43,
-      0,
-      "STRING"
     ],
     [
       75,
@@ -1875,6 +1627,38 @@
       42,
       0,
       "CLIP"
+    ],
+    [
+      93,
+      1,
+      0,
+      38,
+      0,
+      "STRING"
+    ],
+    [
+      94,
+      2,
+      0,
+      41,
+      0,
+      "STRING"
+    ],
+    [
+      95,
+      2,
+      0,
+      48,
+      0,
+      "STRING"
+    ],
+    [
+      96,
+      1,
+      0,
+      43,
+      0,
+      "STRING"
     ]
   ],
   "groups": [
@@ -1886,7 +1670,9 @@
         190,
         269
       ],
-      "color": "#8A8"
+      "color": "#8A8",
+      "font_size": 24,
+      "locked": false
     },
     {
       "title": "Second pass",
@@ -1896,7 +1682,9 @@
         190,
         309
       ],
-      "color": "#3f789e"
+      "color": "#3f789e",
+      "font_size": 24,
+      "locked": false
     },
     {
       "title": "Filtering",
@@ -1906,7 +1694,9 @@
         227,
         387
       ],
-      "color": "#3f789e"
+      "color": "#3f789e",
+      "font_size": 24,
+      "locked": false
     }
   ],
   "config": {},
