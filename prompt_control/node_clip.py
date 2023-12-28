@@ -317,7 +317,7 @@ def get_mask(text, size):
     # TODO: combine multiple masks
     text, masks = get_function(text, "MASK", ["0 1", "0 1", "1"])
     if not masks:
-        return text, None
+        return text, None, None
 
     args = masks[0]
     x1, x2 = parse_floats(args[0], [0.0, 1.0], split_re="\s+")
@@ -345,11 +345,10 @@ def get_mask(text, size):
 
     log.info("Mask xs, ys: (%s, %s)", ys, xs)
 
-    mask = torch.full((h, w), 0, dtype=torch.float32, device="cpu")
-    mask[ys[0] : ys[1], xs[0] : xs[1]] = 1 * weight
-    mask = torch.clamp(mask, 0.0, 1.0)
+    mask = torch.full((1, h, w), 0, dtype=torch.float32, device="cpu")
+    mask[ys[0] : ys[1], xs[0] : xs[1]] = 1
 
-    return text, mask
+    return text, mask, weight
 
 
 def get_noise(text):
@@ -405,7 +404,7 @@ def do_encode(clip, text):
     res = []
     scale = sum(abs(weight(p)[0]) for p in prompts if not ("AREA(" in p or "MASK(" in p))
     for prompt in prompts:
-        prompt, mask = get_mask(prompt, mask_size)
+        prompt, mask, mask_weight = get_mask(prompt, mask_size)
         w, opts, prompt = weight(prompt)
         text, noise_w, generator = get_noise(text)
         if not w:
@@ -422,6 +421,7 @@ def do_encode(clip, text):
             settings["set_area_to_bounds"] = False
         if mask is not None:
             settings["mask"] = mask
+            settings["mask_strength"] = mask_weight
 
         if mask is not None or area:
             if pooled is not None:
