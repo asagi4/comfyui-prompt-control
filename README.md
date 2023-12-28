@@ -6,7 +6,7 @@ The generated schedules depend on ComfyUI's timestep range feature unless you us
 
 The basic nodes should now be stable, though I won't make interface guarantees quite yet.
 
-[This example workflow](workflows/example.json) implements a two-pass workflow illustrating most features.
+[This example workflow](workflows/example.json) implements a two-pass workflow illustrating most scheduling features.
 
 ## Requirements
 
@@ -23,6 +23,7 @@ Then restart ComfyUI afterwards.
 
 I try to avoid behavioural changes that break old prompts, but they may happen occasionally.
 
+- 2023-12-28 MASK now uses ComfyUI's `mask_strength` attribute instead of calculating it on its own. This changes its behaviour slightly.
 - 2023-12-06: Removed `JinjaRender`, `SimpleWildcard`, `ConditioningCutoff`, `CondLinearInterpolate` and `StringConcat`. For the first two, see [this repository](https://github.com/asagi4/comfyui-utility-nodes) for mostly-compatible implementations.
 - 2023-10-04: `STYLE:...` syntax changed to `STYLE(...)`
 
@@ -34,7 +35,7 @@ Currently there doesn't seem to be a good way to change this.
 
 You can try using the `PCSplitSampling` node to enable an alternative method of sampling.
 
-## Syntax
+## Scheduling syntax
 
 Syntax is like A1111 for now, but only fractions are supported for steps.
 
@@ -74,11 +75,11 @@ a [black:blue:X] [cat:dog:Y] [walking:running:Z] in space
 ```
 with `tags` `x,z` would result in the prompt `a blue cat running in space`
 
-### Other syntax:
+## Other syntax:
 
 - `<emb:xyz>` is alternative syntax for `embedding:xyz` to work around a syntax conflict with `[embedding:xyz:0.5]` which is parsed as a schedule that switches from `embedding` to `xyz`.
 
-- The keyword `BREAK` causes the prompt to be tokenized in separate chunks, which results in each chunk being individually padded to the text encoder's maximum token length.
+- The keyword `BREAK` causes the prompt to be tokenized in separate chunks, which results in each chunk being individually padded to the text encoder's maximum token length. This is mostly equivalent to the `ConditioningConcat` node.
 
 ## Combining prompts
 `AND` can be used to combine prompts. You can also use a weight at the end. It does a weighted sum of each prompt,
@@ -87,24 +88,28 @@ cat :1 AND dog :2
 ```
 The weight defaults to 1 and are normalized so that `a:2 AND b:2` is equal to `a AND b`. `AND` is processed after schedule parsing, so you can change the weight mid-prompt: `cat:[1:2:0.5] AND dog`
 
-## NOISE
+## Functions
+
+There are some "functions" that can be included in a prompt to do various things. 
+
+Like `AND`, these functions are parsed after regular scheduling syntax has been expanded, allowing things like `[AREA:MASK:0.3](...)`, in case that's somehow useful.
+
+### NOISE
 
 The function `NOISE(weight, seed)` adds some random noise into the prompt. The seed is optional, and if not specified, the global RNG is used. `weight` should be between 0 and 1.
 
-## MASK and AREA
+### MASK and AREA
 You can use `MASK(x1 x2, y1 y2, weight)` to specify a region mask for a prompt. The values are specified as a percentage with a float between `0` and `1`, or as absolute pixel values (these can't be mixed). `1` will be interpreted as a percentage instead of a pixel value.
 
 Masks assume a size of `(512, 512)`, and pixel values will be relative to that. ComfyUI will scale the mask to match the image resolution, but you can change it manually by using `MASK_SIZE(width, height)` anywhere in the prompt,
+
+These are handled per `AND`-ed prompt, so in `prompt1 AND MASK(...) prompt2`, the mask will only affect prompt2.
 
 The default values are `MASK(0 1, 0 1, 1)` and you can omit unnecessary ones, that is, `MASK(0 0.5, 0.3)` is `MASK(0 0.5, 0.3 1, 1)`
 
 Note that because the default values are percentages, `MASK(0 256, 64 512)` is valid, but `MASK(0 200)` will raise an error.
 
 Similarly, you can use `AREA(x1 x2, y1 y2, weight)` to specify an area for the prompt (see ComfyUI's area composition examples). The area is calculated by ComfyUI relative to your latent size.
-
-These are handled per `AND`-ed prompt, so in `prompt1 AND MASK(...) prompt2`, the mask will only affect prompt2.
-
-Like `AND`, these functions are parsed after regular scheduling syntax has been expanded, allowing things like `[AREA:MASK:0.3](...)`, in case that's somehow useful.
 
 Masking does not affect LoRA scheduling unless you set unet weights to 0 for a LoRA.
 
