@@ -114,18 +114,18 @@ Similarly, you can use `AREA(x1 x2, y1 y2, weight)` to specify an area for the p
 Masking does not affect LoRA scheduling unless you set unet weights to 0 for a LoRA.
 
 ## Schedulable LoRAs
-The `ScheduleToModel` node patches a model such that when sampling, it'll switch LoRAs between steps. You can apply the LoRA's effect separately to CLIP conditioning and the unet (model)
+The `ScheduleToModel` node patches a model such that when sampling, it'll switch LoRAs between steps. You can apply the LoRA's effect separately to CLIP conditioning and the unet (model).
 
 For me this seems to be quite slow without the --highvram switch because ComfyUI will shuffle things between the CPU and GPU. YMMV. When things stay on the GPU, it's quite fast.
 
 ## AITemplate support
-Note: The old AITemplate project is unmaintaned. I have a fork at https://github.com/asagi4/AIT that I'll keep on minimal life support until I can fix https://github.com/asagi4/comfyui-prompt-control/issues/15
+Note: Instead of AITemplate, try using [ComfyUI_stable_fast](https://github.com/gameltb/ComfyUI_stable_fast). It seems to work correctly when applied *before* `ScheduleToModel`.
+
+The old AITemplate project is unmaintaned. I have a fork at https://github.com/asagi4/AIT that I'll keep on minimal life support until I can fix https://github.com/asagi4/comfyui-prompt-control/issues/15
 
 LoRA scheduling supports AITemplate.
 
 Due to sampler patching, your AITemplate nodes must be cloned to a directory called `AIT` under `custom_nodes` or the hijack won't find it.
-
-AITemplate sometimes breaks because ComfyUI creates batches larger than what AITemplate can handle. You can apply [this patch](0001-Limit-batch-chunk-size-to-2.patch) to ComfyUI to make AITemplate more reliable. The patch is a hack though, and may slightly deoptimize non-AIT sampling
 
 ## Advanced CLIP encoding
 You can use the syntax `STYLE(weight_interpretation, normalization)` in a prompt to affect how prompts are interpreted.
