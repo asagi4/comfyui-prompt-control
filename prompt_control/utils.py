@@ -42,6 +42,8 @@ def parse_floats(string, defaults, split_re=","):
 
 
 def parse_strings(string, defaults, split_re=","):
+    if defaults is None:
+        return string
     spec = [(lambda x: x, d) for d in defaults]
     return parse_args(re.split(split_re, string.strip()), spec)
 

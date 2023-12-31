@@ -75,6 +75,15 @@ a [black:blue:X] [cat:dog:Y] [walking:running:Z] in space
 ```
 with `tags` `x,z` would result in the prompt `a blue cat running in space`
 
+
+## SDXL
+
+You can use the function `SDXL(width height, target_width target_height, crop_w crop_h)` to set SDXL prompt parameters. `SDXL()` is equivalent to `SDXL(1024 1024, 1024 1024, 0 0)`
+
+To set the `clip_l` prompt, as with `CLIPTextEncodeSDXL`, use the function `CLIP_L(prompt text goes here)`. multiple instances of `CLIP_L` are concatenated, and `BREAK` isn't supported in it. It has no effect on SD 1.5. The rest of the prompt becomes the `clip_g` prompt.
+
+if there is no `CLIP_L`, the prompts will work as with `CLIPTextEncode`.
+
 ## Other syntax:
 
 - `<emb:xyz>` is alternative syntax for `embedding:xyz` to work around a syntax conflict with `[embedding:xyz:0.5]` which is parsed as a schedule that switches from `embedding` to `xyz`.
@@ -87,6 +96,8 @@ with `tags` `x,z` would result in the prompt `a blue cat running in space`
 cat :1 AND dog :2
 ```
 The weight defaults to 1 and are normalized so that `a:2 AND b:2` is equal to `a AND b`. `AND` is processed after schedule parsing, so you can change the weight mid-prompt: `cat:[1:2:0.5] AND dog`
+
+if there is `COMFYAND()` in the prompt, the behaviour of `AND` will change to work like `ConditioningCombine`, but in practice this seems to be just slower while producing the same output.
 
 ## Functions
 

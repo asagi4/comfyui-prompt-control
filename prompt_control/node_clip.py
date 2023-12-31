@@ -159,6 +159,25 @@ class EditableCLIPEncode:
         return (control_to_clip_common(self, clip, parsed),)
 
 
+def get_sdxl(text):
+    text, sdxl = get_function(text, "SDXL", ["", "1024 1024", "1024 1024", "0 0"])
+    if not sdxl:
+        return text, {}
+    args = sdxl[0]
+    w, h = parse_floats(args[0], [1024, 1024], split_re="\s+")
+    tw, th = parse_floats(args[1], [1024, 1024], split_re="\s+")
+    cropw, croph = parse_floats(args[2], [0, 0], split_re="\s+")
+    opts = {
+        "width": int(w),
+        "height": int(h),
+        "target_width": int(tw),
+        "target_height": int(tw),
+        "crop_w": int(cropw),
+        "crop_h": int(croph),
+    }
+    return text, opts
+
+
 def get_style(text, default_style="comfy", default_normalization="none"):
     text, styles = get_function(text, "STYLE", [default_style, default_normalization])
     if not styles:
@@ -216,6 +235,8 @@ def encode_regions(clip, tokens, regions, weight_interpretation="comfy", token_n
 def encode_prompt(clip, text, default_style="comfy", default_normalization="none"):
     style, normalization, text = get_style(text, default_style, default_normalization)
     text, regions = parse_cuts(text)
+    # defaults=None means there is no argument parsing at all
+    text, l_prompts = get_function(text, "CLIP_L", defaults=None)
     chunks = re.split(r"\bBREAK\b", text)
     token_chunks = []
     for c in chunks:
@@ -225,12 +246,23 @@ def encode_prompt(clip, text, default_style="comfy", default_normalization="none
         token_chunks.append(t)
     tokens = token_chunks[0]
     for c in token_chunks[1:]:
-        if isinstance(tokens, list):
-            tokens.extend(c)
-        else:
-            # dict, SDXL
-            for key in tokens:
-                tokens[key].extend(c[key])
+        for key in tokens:
+            tokens[key].extend(c[key])
+
+    # Non-SDXL has only "l"
+    if "g" in tokens and l_prompts:
+        text_l = "".join(l_prompts)
+        log.info("Encoded SDXL CLIP_L prompt: %s", text_l)
+        tokens["l"] = clip.tokenize(
+            text_l, return_word_ids=len(regions) > 0 or (have_advanced_encode and style != "perp")
+        )["l"]
+
+    if "g" in tokens and len(tokens["l"]) != len(tokens["g"]):
+        empty = clip.tokenize(text_l, return_word_ids=len(regions) > 0 or (have_advanced_encode and style != "perp"))
+        while len(tokens["l"]) < len(tokens["g"]):
+            tokens["l"] += empty["l"]
+        while len(tokens["l"]) > len(tokens["g"]):
+            tokens["g"] += empty["g"]
 
     if len(regions) > 0:
         return encode_regions(clip, tokens, regions, style, normalization)
@@ -385,7 +417,15 @@ def do_encode(clip, text):
     # First style modifier applies to ANDed prompts too unless overridden
     style, normalization, text = get_style(text)
     text, mask_size = get_mask_size(text)
+
+    # Don't sum ANDs if this is in prompt
+    alt_method = "COMFYAND()" in text
+    text = text.replace("COMFYAND()", "")
+
     prompts = [p.strip() for p in re.split(r"\bAND\b", text)]
+
+    p, sdxl_opts = get_sdxl(prompts[0])
+    prompts[0] = p
 
     def weight(t):
         opts = {}
@@ -410,11 +450,17 @@ def do_encode(clip, text):
         if not w:
             continue
         prompt, area = get_area(prompt)
+        prompt, local_sdxl_opts = get_sdxl(p)
         cond, pooled = encode_prompt(clip, prompt, style, normalization)
         cond = apply_noise(cond, noise_w, generator)
         pooled = apply_noise(pooled, noise_w, generator)
 
         settings = {"prompt": prompt}
+        if alt_method:
+            settings["strength"] = w
+        prompt, local_sdxl_opts = get_sdxl(p)
+        settings.update(sdxl_opts)
+        settings.update(local_sdxl_opts)
         if area:
             settings["area"] = area[0]
             settings["strength"] = area[1]
@@ -423,7 +469,7 @@ def do_encode(clip, text):
             settings["mask"] = mask
             settings["mask_strength"] = mask_weight
 
-        if mask is not None or area:
+        if mask is not None or area or alt_method or local_sdxl_opts:
             if pooled is not None:
                 settings["pooled_output"] = pooled
             conds.append([cond, settings])
@@ -435,7 +481,7 @@ def do_encode(clip, text):
     pooleds = [r[1] for r in res if r[1] is not None]
 
     if len(res) > 0:
-        opts = {}
+        opts = sdxl_opts
         if pooleds:
             opts["pooled_output"] = sum(equalize(*pooleds))
         sumcond = sum(equalize(*sumconds))
