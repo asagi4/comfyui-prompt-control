@@ -6,7 +6,7 @@ The generated schedules depend on ComfyUI's timestep range feature unless you us
 
 The basic nodes should now be stable, though I won't make interface guarantees quite yet.
 
-[This example workflow](workflows/example.json) implements a two-pass workflow illustrating most scheduling features.
+[This example workflow](workflows/example.json?raw=1) implements a two-pass workflow illustrating most scheduling features.
 
 ## Requirements
 
