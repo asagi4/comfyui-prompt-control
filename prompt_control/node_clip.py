@@ -375,10 +375,10 @@ def get_mask(text, size):
             f"MASK specified with invalid size {x1} {x2}, {y1} {y2}. They must either all be percentages between 0 and 1 or positive integer pixel values excluding 1"
         )
 
-    log.info("Mask xs, ys: (%s, %s)", ys, xs)
-
-    mask = torch.full((1, h, w), 0, dtype=torch.float32, device="cpu")
-    mask[ys[0] : ys[1], xs[0] : xs[1]] = 1
+    mask = torch.full((h, w), 0, dtype=torch.float32, device="cpu")
+    mask[ys[0] : ys[1], xs[0] : xs[1]] = 1.0
+    mask = mask.unsqueeze(0)
+    log.info("Mask xs=%s, ys=%s, shape=%s, weight=%s", xs, ys, mask.shape, weight)
 
     return text, mask, weight
 
@@ -450,7 +450,7 @@ def do_encode(clip, text):
         if not w:
             continue
         prompt, area = get_area(prompt)
-        prompt, local_sdxl_opts = get_sdxl(p)
+        prompt, local_sdxl_opts = get_sdxl(prompt)
         cond, pooled = encode_prompt(clip, prompt, style, normalization)
         cond = apply_noise(cond, noise_w, generator)
         pooled = apply_noise(pooled, noise_w, generator)
@@ -458,7 +458,6 @@ def do_encode(clip, text):
         settings = {"prompt": prompt}
         if alt_method:
             settings["strength"] = w
-        prompt, local_sdxl_opts = get_sdxl(p)
         settings.update(sdxl_opts)
         settings.update(local_sdxl_opts)
         if area:
