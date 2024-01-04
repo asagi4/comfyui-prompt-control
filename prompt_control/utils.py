@@ -17,12 +17,32 @@ from os import environ
 log = logging.getLogger("comfyui-prompt-control")
 
 
+def find_closing_paren(text, start):
+    stack = 1
+    for i, char in enumerate(text[start:]):
+        if char == ")":
+            stack -= 1
+        elif char == "(":
+            stack += 1
+        if stack == 0:
+            return start + i
+    # Implicit closing paren after end
+    return len(text)
+
+
 def get_function(text, func, defaults):
-    rex = re.compile(rf"\b{func}\((.*?)\)", re.MULTILINE)
-    instances = rex.findall(text)
+    rex = re.compile(rf"\b{func}\(", re.MULTILINE)
+    instances = []
+    match = rex.search(text)
+    while match:
+        # Match start, content start
+        start, after_first_paren = match.span()
+        end = find_closing_paren(text, after_first_paren)
+        instances.append(text[after_first_paren:end])
+        text = text[:start] + text[end + 1 :]
+        match = rex.search(text)
     if not instances:
         return text, []
-    text = rex.sub("", text)
     return text, [parse_strings(i, defaults) for i in instances]
 
 
