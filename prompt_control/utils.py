@@ -41,8 +41,6 @@ def get_function(text, func, defaults):
         instances.append(text[after_first_paren:end])
         text = text[:start] + text[end + 1 :]
         match = rex.search(text)
-    if not instances:
-        return text, []
     return text, [parse_strings(i, defaults) for i in instances]
 
 
