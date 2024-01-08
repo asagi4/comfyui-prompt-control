@@ -133,7 +133,7 @@ def clone_model(model):
     if not model:
         return None
     model = model.clone()
-    if environ.get("PC_INPLACE_UPDATE"):
+    if not environ.get("PC_NO_INPLACE_UPDATE"):
         model.weight_inplace_update = True
     return model
 
