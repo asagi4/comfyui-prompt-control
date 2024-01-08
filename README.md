@@ -2,9 +2,16 @@
 
 Nodes for convenient prompt editing. The aim is to make basic generations in ComfyUI completely prompt-controllable.
 
-The generated schedules depend on ComfyUI's timestep range feature unless you use the `PCSplitSampling` node.
-
 The basic nodes should now be stable, though I won't make interface guarantees quite yet.
+
+## What can it do?
+
+Things you can control via the prompt:
+- Prompt editing and filtering without multiple samplers
+- LoRA loading and scheduling (including LoRA block weights)
+- Prompt masking and area control, combining prompts and interpolation
+- SDXL parameters
+- Other miscellaneous things
 
 [This example workflow](workflows/example.json?raw=1) implements a two-pass workflow illustrating most scheduling features.
 
