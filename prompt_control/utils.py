@@ -199,28 +199,31 @@ def lora_name_to_file(name):
     return None
 
 
-LBW_CLASS = None
+def load_lbw():
+    return nodes.NODE_CLASS_MAPPINGS.get("LoraLoaderBlockWeight //Inspire")
 
+def make_loader(filename, lbw):
+    if not lbw:
+        l = nodes.LoraLoader()
+        def loader(model, clip, model_weight, clip_weight, lbw):
+            return suppress_print(lambda: l.load_lora(model, clip, filename, model_weight, clip_weight))
+    else:
+        # This is already checked before calling make_loader
+        l = load_lbw()()
+        def loader(model, clip, model_weight, clip_weight, lbw):
+            spec = lbw["LBW"]
+            lbw_a = safe_float(lbw.get("A"), 4.0)
+            lbw_b = safe_float(lbw.get("B"), 1.0)
+            m = model or DUMMY_MODEL
+            c = clip or DUMMY_MODEL
+            m, c, _ = suppress_print(lambda: l.doit(m, c, filename, model_weight, clip_weight, False, 0, lbw_a, lbw_b, "", spec))
+            if m is DUMMY_MODEL:
+                m = None
+            if c is DUMMY_MODEL:
+                c = None
+            return m, c
 
-def has_lbw():
-    global LBW_CLASS
-    LBW_CLASS = nodes.NODE_CLASS_MAPPINGS.get("LoraLoaderBlockWeight //Inspire")
-    return LBW_CLASS
-
-
-def load_lbw_lora(filename, model, clip, model_weight, clip_weight, lbw):
-    global LBW_CLASS
-    spec = lbw["LBW"]
-    lbw_a = safe_float(lbw.get("A"), 4.0)
-    lbw_b = safe_float(lbw.get("B"), 1.0)
-    m = model or DUMMY_MODEL
-    c = clip or DUMMY_MODEL
-    m, c, _ = LBW_CLASS().doit(m, c, filename, model_weight, clip_weight, False, 0, lbw_a, lbw_b, "", spec)
-    if m is DUMMY_MODEL:
-        m = None
-    if c is DUMMY_MODEL:
-        c = None
-    return m, c
+    return loader
 
 
 def apply_loras_from_spec(loraspec, model=None, clip=None, orig_model=None, orig_clip=None, patch=False, cache=None):
@@ -242,32 +245,25 @@ def apply_loras_from_spec(loraspec, model=None, clip=None, orig_model=None, orig
             m = None
         if w_clip == 0:
             c = None
-        # All this iffing is quite icky...
-        comfy_load = False
-        if "lbw" in params and "LBW" in params["lbw"]:
-            if has_lbw():
-                log.info("Using LoraBlockWeight loader with lbw=%s", params["lbw"])
-                f = lora_name_to_file(name)
-                if not f:
-                    continue
-                m, c = suppress_print(lambda: load_lbw_lora(f, m, c, w, w_clip, params["lbw"]))
-            else:
-                log.warning("LoraBlockWeight not available, ignoring LBW parameters")
-                comfy_load = True
-        else:
-            comfy_load = True
+        if not w and not c:
+            continue
 
-        if comfy_load:
-            # Regular LoRA loading:
-            lora = cache.get(name)
-            if not lora:
-                f = lora_name_to_file(name)
-                if not f:
-                    continue
-                f = folder_paths.get_full_path("loras", f)
-                lora = comfy.utils.load_torch_file(f, safe_load=True)
-                cache[name] = lora
-            m, c = suppress_print(lambda: comfy.sd.load_lora_for_models(m, c, lora, w, w_clip))
+        lbw = params.get('lbw')
+        if lbw and not load_lbw():
+            log.warning("LoraBlockWeight not available, ignoring LBW parameters")
+            lbw = None
+
+        # Cache the loader instance so that it doesn't reload the LoRA from disk all the time
+        cache_key = name, bool(lbw)
+        loader = cache.get(cache_key)
+        if not loader:
+            f = lora_name_to_file(name)
+            if not f:
+                continue
+            loader = make_loader(f, bool(lbw))
+            cache[cache_key] = loader
+
+        m, c = loader(m, c, w, w_clip, lbw)
         model = m or model
         clip = c or clip
         if model:
