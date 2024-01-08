@@ -174,15 +174,6 @@ def set_callback(model, cb):
     model.model_options["prompt_control_callback"] = cb
 
 
-def get_lora_keymap(model=None, clip=None):
-    key_map = {}
-    if model:
-        key_map = comfy.lora.model_lora_keys_unet(model.model)
-    if clip:
-        key_map = comfy.lora.model_lora_keys_clip(clip.cond_stage_model, key_map)
-    return key_map
-
-
 # Hack to temporarily override printing to stdout to stop log spam
 def suppress_print(f):
     def noop(*args):
@@ -197,14 +188,6 @@ def suppress_print(f):
         raise
     __builtins__["print"] = p
     return x
-
-
-def load_lora(model, lora, weight, key_map, clone=True):
-    loaded = suppress_print(lambda: comfy.lora.load_lora(lora, key_map))
-    if clone:
-        model = clone_model(model)
-    add_patches(model, loaded, weight)
-    return model
 
 
 def lora_name_to_file(name):
@@ -297,33 +280,6 @@ def apply_loras_from_spec(loraspec, model=None, clip=None, orig_model=None, orig
     return model, clip
 
 
-def apply_loras_to_model(model, orig_model, lora_specs, loaded_loras, patch=True):
-    keymap = get_lora_keymap(model=model)
-    if patch:
-        unpatch_model(model)
-        model = clone_model(orig_model)
-
-    for name, params in lora_specs.items():
-        if name not in loaded_loras or params["weight"] == 0:
-            continue
-        model = load_lora(model, loaded_loras[name], params["weight"], keymap)
-        log.info("Loaded LoRA %s:%s", name, params["weight"])
-
-    if patch:
-        patch_model(model)
-
-    return model
-
-
-def load_loras_from_schedule(schedules, loaded_loras):
-    lora_specs = {}
-    for step, sched in schedules:
-        if sched["loras"]:
-            lora_specs.update(sched["loras"])
-    loaded_loras = load_loras(lora_specs, loaded_loras)
-    return loaded_loras
-
-
 class Timer(object):
     def __init__(self, name):
         self.name = name
@@ -335,21 +291,3 @@ class Timer(object):
         elapsed = time.time() - self.start
         if environ.get("COMFYUI_PC_TIMING"):
             log.info(f"Executed {self.name} in {elapsed} seconds")
-
-
-def load_loras(lora_specs, loaded_loras=None):
-    loaded_loras = loaded_loras if loaded_loras is not None else {}
-    filenames = [Path(f) for f in folder_paths.get_filename_list("loras")]
-    for name in lora_specs.keys():
-        if name in loaded_loras:
-            continue
-        found = False
-        for f in filenames:
-            if f.stem == name:
-                full_path = folder_paths.get_full_path("loras", str(f))
-                loaded_loras[name] = comfy.utils.load_torch_file(full_path, safe_load=True)
-                found = True
-                break
-        if not found:
-            log.warning("Lora %s not found", name)
-    return loaded_loras
