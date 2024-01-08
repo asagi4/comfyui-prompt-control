@@ -267,9 +267,9 @@ def apply_loras_from_spec(loraspec, model=None, clip=None, orig_model=None, orig
         model = m or model
         clip = c or clip
         if model:
-            log.info("LoRA applied: %s:%s", name, params["weight"])
+            log.info("LoRA applied: %s:%s, LBW=%s", name, params["weight"], bool(lbw))
         if clip:
-            log.info("CLIP LoRA applied: %s:%s", name, params["weight_clip"])
+            log.info("CLIP LoRA applied: %s:%s, LBW=%s", name, params["weight_clip"], bool(lbw))
     if patch:
         patch_model(model)
         patch_model(clip)
