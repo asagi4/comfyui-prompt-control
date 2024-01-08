@@ -184,7 +184,7 @@ If `strict_mask`, `start_from_masked` or `padding_token` are specified in more t
 
 ## Stable-Fast
 
-The prompt control node works well with [ComfyUI_stable_fast](https://github.com/gameltb/ComfyUI_stable_fast). However, you should apply `ScheduleToModel` **after** applying `Apply StableFast Unet` to prevent constant recompilations to prevent constant recompilations.
+The prompt control node works well with [ComfyUI_stable_fast](https://github.com/gameltb/ComfyUI_stable_fast). However, you should apply `ScheduleToModel` **after** applying `Apply StableFast Unet` to prevent constant recompilations.
 
 # Nodes
 
