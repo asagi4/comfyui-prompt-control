@@ -131,7 +131,7 @@ For me this seems to be quite slow without the --highvram switch because ComfyUI
 
 # LoRA Block Weight
 
-If you have [ComfyUI Inspire Pack]() installed, you can use its Lora Block Weight syntax, for example:
+If you have [ComfyUI Inspire Pack](https://github.com/ltdrdata/ComfyUI-Inspire-Pack) installed, you can use its Lora Block Weight syntax, for example:
 
 ```
 a prompt <lora:cars:1:LBW=SD-OUTALL;A=1.0;B=0.0;>
