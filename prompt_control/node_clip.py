@@ -513,7 +513,7 @@ def control_to_clip_common(self, clip, schedules, lora_cache=None, cond_cache=No
         for k in sorted(loras.keys()):
             r.append(k)
             r.append(loras[k]["weight_clip"])
-            for lbw, val in loras[k].get('lbw', {}).items():
+            for lbw, val in loras[k].get("lbw", {}).items():
                 r.append(lbw)
                 r.append(val)
         return "".join(str(i) for i in r)

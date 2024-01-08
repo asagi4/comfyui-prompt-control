@@ -3,11 +3,6 @@ from math import lcm
 import time
 import re
 
-import comfy.sample
-import comfy.samplers
-import comfy.utils
-import comfy.sd
-import comfy.lora
 import folder_paths
 
 import logging
@@ -202,21 +197,27 @@ def lora_name_to_file(name):
 def load_lbw():
     return nodes.NODE_CLASS_MAPPINGS.get("LoraLoaderBlockWeight //Inspire")
 
+
 def make_loader(filename, lbw):
     if not lbw:
         l = nodes.LoraLoader()
+
         def loader(model, clip, model_weight, clip_weight, lbw):
             return suppress_print(lambda: l.load_lora(model, clip, filename, model_weight, clip_weight))
+
     else:
         # This is already checked before calling make_loader
         l = load_lbw()()
+
         def loader(model, clip, model_weight, clip_weight, lbw):
             spec = lbw["LBW"]
             lbw_a = safe_float(lbw.get("A"), 4.0)
             lbw_b = safe_float(lbw.get("B"), 1.0)
             m = model or DUMMY_MODEL
             c = clip or DUMMY_MODEL
-            m, c, _ = suppress_print(lambda: l.doit(m, c, filename, model_weight, clip_weight, False, 0, lbw_a, lbw_b, "", spec))
+            m, c, _ = suppress_print(
+                lambda: l.doit(m, c, filename, model_weight, clip_weight, False, 0, lbw_a, lbw_b, "", spec)
+            )
             if m is DUMMY_MODEL:
                 m = None
             if c is DUMMY_MODEL:
@@ -248,7 +249,7 @@ def apply_loras_from_spec(loraspec, model=None, clip=None, orig_model=None, orig
         if not w and not c:
             continue
 
-        lbw = params.get('lbw')
+        lbw = params.get("lbw")
         if lbw and not load_lbw():
             log.warning("LoraBlockWeight not available, ignoring LBW parameters")
             lbw = None

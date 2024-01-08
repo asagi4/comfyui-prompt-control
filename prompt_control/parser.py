@@ -21,8 +21,7 @@ interp_steps: NUMBER ("," NUMBER)+ [":" NUMBER]
 alternate: "[" [prompt] ("|" [prompt])+ [":" NUMBER] "]"
 loraspec.99: "<lora:" FILENAME lora_weights [lora_block_weights] ">"
 lora_weights: (":" _WS? NUMBER)~1..2
-lora_block_weights.10: ":" lbw (";" lbw)*
-lbw: TAG "=" PLAIN
+lora_block_weights: ":" PLAIN
 embedding.100: "<emb:" FILENAME ">"
 WHITESPACE: /\s+/
 _WS: WHITESPACE
@@ -238,13 +237,15 @@ def at_step(step, filters, tree):
             return [float(str(a)) for a in args]
 
         def lora_block_weights(self, args):
+            vals = args[0].split(";")
             r = {}
-            for k, v in [args[0]] + args[1:]:
+            for v in vals:
+                x = v.split("=", 2)
+                if len(x) != 2:
+                    continue
+                k, v = x[0].strip().upper(), x[1].strip()
                 r[k] = v
             return r
-
-        def lbw(self, args):
-            return [str(a) for a in args]
 
         def loraspec(self, args):
             name = args[0]

@@ -129,6 +129,16 @@ The `ScheduleToModel` node patches a model such that when sampling, it'll switch
 
 For me this seems to be quite slow without the --highvram switch because ComfyUI will shuffle things between the CPU and GPU. YMMV. When things stay on the GPU, it's quite fast.
 
+# LoRA Block Weight
+
+If you have [ComfyUI Inspire Pack]() installed, you can use its Lora Block Weight syntax, for example:
+
+```
+a prompt <lora:cars:1:LBW=SD-OUTALL;A=1.0;B=0.0;>
+```
+The `;` is optional if there is only 1 parameter.
+The syntax is the same as in the `ImpactWildcard` node, documented [here](https://github.com/ltdrdata/ComfyUI-extension-tutorials/blob/Main/ComfyUI-Impact-Pack/tutorial/ImpactWildcard.md)
+
 ## AITemplate support
 Note: Instead of AITemplate, try using [ComfyUI_stable_fast](https://github.com/gameltb/ComfyUI_stable_fast). It seems to work correctly when applied *before* `ScheduleToModel`.
 
