@@ -1,4 +1,4 @@
-from .utils import unpatch_model, clone_model, set_callback, apply_loras_to_model
+from .utils import unpatch_model, clone_model, set_callback, apply_loras_from_spec
 from .parser import parse_prompt_schedules
 from .hijack import do_hijack
 
@@ -11,7 +11,9 @@ log = logging.getLogger("comfyui-prompt-control")
 def schedule_lora_common(model, schedules, lora_cache=None):
     do_hijack()
     orig_model = clone_model(model)
-    loaded_loras = schedules.load_loras(lora_cache)
+
+    if lora_cache is None:
+        lora_cache = {}
 
     def sampler_cb(orig_sampler, *args, **kwargs):
         split_sampling = args[0].model_options.get("pc_split_sampling")
@@ -31,7 +33,10 @@ def schedule_lora_common(model, schedules, lora_cache=None):
 
             if state["applied_loras"] != lora_spec:
                 log.debug("At step %s, applying lora_spec %s", step, lora_spec)
-                state["model"] = apply_loras_to_model(state["model"], orig_model, lora_spec, loaded_loras, patch)
+                m, _ = apply_loras_from_spec(
+                    lora_spec, model=state["model"], orig_model=orig_model, cache=lora_cache, patch=patch
+                )
+                state["model"] = m
                 state["applied_loras"] = lora_spec
 
         def step_callback(*args, **kwargs):

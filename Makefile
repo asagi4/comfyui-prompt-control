@@ -1,4 +1,4 @@
-all: check format
+all: format check
 	@echo "Done"
 check:
 	pyflakes *.py */*.py

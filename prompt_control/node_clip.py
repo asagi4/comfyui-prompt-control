@@ -501,24 +501,11 @@ def debug_conds(conds):
 def control_to_clip_common(self, clip, schedules, lora_cache=None, cond_cache=None):
     orig_clip = clip.clone()
     current_loras = {}
-    loaded_loras = schedules.load_loras(lora_cache)
+    if lora_cache is None:
+        lora_cache = {}
     start_pct = 0.0
     conds = []
     cond_cache = cond_cache if cond_cache is not None else {}
-
-    def load_clip_lora(clip, loraspec):
-        if not loraspec:
-            return clip
-        key_map = utils.get_lora_keymap(clip=clip)
-        for name, params in loraspec.items():
-            if name not in loaded_loras:
-                log.warn("%s not loaded, skipping", name)
-                continue
-            if params["weight_clip"] == 0:
-                continue
-            clip = utils.load_lora(clip, loaded_loras[name], params["weight_clip"], key_map, clone=False)
-            log.info("CLIP LoRA applied: %s:%s", name, params["weight_clip"])
-        return clip
 
     def c_str(c):
         r = [c["prompt"]]
@@ -537,7 +524,7 @@ def control_to_clip_common(self, clip, schedules, lora_cache=None, cond_cache=No
         cond = cond_cache.get(cachekey)
         if cond is None:
             if loras != current_loras:
-                clip = load_clip_lora(orig_clip.clone(), loras)
+                _, clip = utils.apply_loras_from_spec(loras, clip=orig_clip, cache=lora_cache)
                 current_loras = loras
             cond_cache[cachekey] = do_encode(clip, prompt)
         return cond_cache[cachekey]

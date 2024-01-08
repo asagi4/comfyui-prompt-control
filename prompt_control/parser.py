@@ -19,7 +19,10 @@ interpolate.100: "[INT" ":" interp_prompts ":" interp_steps "]"
 interp_prompts: prompt (":" [prompt])+
 interp_steps: NUMBER ("," NUMBER)+ [":" NUMBER]
 alternate: "[" [prompt] ("|" [prompt])+ [":" NUMBER] "]"
-loraspec.99: "<lora:" FILENAME (":" _WS? NUMBER)~1..2 ">"
+loraspec.99: "<lora:" FILENAME lora_weights [lora_block_weights] ">"
+lora_weights: (":" _WS? NUMBER)~1..2
+lora_block_weights.10: ":" lbw (";" lbw)*
+lbw: TAG "=" PLAIN
 embedding.100: "<emb:" FILENAME ">"
 WHITESPACE: /\s+/
 _WS: WHITESPACE
@@ -212,7 +215,10 @@ def at_step(step, filters, tree):
                         "weight": round(e.get("weight", 0.0) + w, 2),
                         "weight_clip": round(e.get("weight_clip", 0.0) + w_clip, 2),
                     }
-                    if loraspecs[n]["weight"] == 0 and loraspecs[n]["weight_clip"] == 0:
+                    lbw = a[2]
+                    if lbw:
+                        loraspecs[n]["lbw"] = lbw
+                    if loraspecs[n]["weight"] == 0 and loraspecs[n]["weight_clip"] == 0 and not lbw:
                         del loraspecs[n]
                 else:
                     pass
@@ -222,13 +228,30 @@ def at_step(step, filters, tree):
         def PLAIN(self, args):
             return args.replace("\\:", ":")
 
+        def FILENAME(self, value):
+            return str(value)
+
         def embedding(self, args):
             return "embedding:" + args[0].value
 
+        def lora_weights(self, args):
+            return [float(str(a)) for a in args]
+
+        def lora_block_weights(self, args):
+            r = {}
+            for k, v in [args[0]] + args[1:]:
+                r[k] = v
+            return r
+
+        def lbw(self, args):
+            return [str(a) for a in args]
+
         def loraspec(self, args):
-            name = "".join(flatten(args[0]))
-            params = [float(p) for p in args[1:]]
-            return name, params
+            name = args[0]
+            params = args[1]
+            lbw = args[2]
+
+            return name, params, lbw
 
         def __default__(self, data, children, meta):
             for child in children:

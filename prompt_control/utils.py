@@ -13,8 +13,49 @@ import folder_paths
 import logging
 import sys
 from os import environ
+from collections import namedtuple
+import nodes
 
 log = logging.getLogger("comfyui-prompt-control")
+
+
+# Minimal Modelpatcher that doesn't do anything, for LoRA loading when not
+# interested in either CLIP or unet
+class DummyModelPatcher:
+    class DummyTorchModel:
+        def __init__(self):
+            dummyconf = {
+                "num_res_blocks": [],
+                "channel_mult": [],
+                "transformer_depth": [],
+                "transformer_depth_output": [],
+                "transformer_depth_middle": 0,
+            }
+            self.model_config = namedtuple("DummyConfig", ["unet_config"])(dummyconf)
+
+        def state_dict(self):
+            return {}
+
+    def __init__(self):
+        self.model = self.DummyTorchModel()
+        self.cond_stage_model = self.DummyTorchModel()
+        self.weight_inplace_update = True
+        self.model_options = {}
+
+    def add_patches(self, patches, *args, **kwargs):
+        return []
+
+    def patch_model(self):
+        pass
+
+    def unpatch_model(self):
+        pass
+
+    def clone(self):
+        return self
+
+
+DUMMY_MODEL = DummyModelPatcher()
 
 
 def find_closing_paren(text, start):
@@ -76,6 +117,8 @@ def equalize(*tensors):
 
 
 def safe_float(f, default):
+    if f is None:
+        return default
     try:
         return round(float(f), 2)
     except ValueError:
@@ -87,10 +130,13 @@ def get_aitemplate_module():
 
 
 def unpatch_model(model):
-    model.unpatch_model()
+    if model:
+        model.unpatch_model()
 
 
 def clone_model(model):
+    if not model:
+        return None
     model = model.clone()
     if environ.get("PC_INPLACE_UPDATE"):
         model.weight_inplace_update = True
@@ -102,6 +148,8 @@ def add_patches(model, patches, weight):
 
 
 def patch_model(model):
+    if not model:
+        return None
     if "aitemplate_keep_loaded" in model.model_options:
         model.patch_model()
         mod = get_aitemplate_module()
@@ -135,19 +183,118 @@ def get_lora_keymap(model=None, clip=None):
     return key_map
 
 
-def load_lora(model, lora, weight, key_map, clone=True):
-    # Hack to temporarily override printing to stdout to stop log spam
+# Hack to temporarily override printing to stdout to stop log spam
+def suppress_print(f):
     def noop(*args):
         pass
 
     p = print
     __builtins__["print"] = noop
-    loaded = comfy.lora.load_lora(lora, key_map)
+    try:
+        x = f()
+    except:
+        __builtins__["print"] = p
+        raise
     __builtins__["print"] = p
+    return x
+
+
+def load_lora(model, lora, weight, key_map, clone=True):
+    loaded = suppress_print(lambda: comfy.lora.load_lora(lora, key_map))
     if clone:
         model = clone_model(model)
     add_patches(model, loaded, weight)
     return model
+
+
+def lora_name_to_file(name):
+    filenames = [Path(f) for f in folder_paths.get_filename_list("loras")]
+    for f in filenames:
+        if f.stem == name:
+            return str(f)
+    log.warning("Lora %s not found", name)
+    return None
+
+
+LBW_CLASS = None
+
+
+def has_lbw():
+    global LBW_CLASS
+    LBW_CLASS = nodes.NODE_CLASS_MAPPINGS.get("LoraLoaderBlockWeight //Inspire")
+    return LBW_CLASS
+
+
+def load_lbw_lora(filename, model, clip, model_weight, clip_weight, lbw):
+    global LBW_CLASS
+    spec = lbw["LBW"]
+    lbw_a = safe_float(lbw.get("A"), 4.0)
+    lbw_b = safe_float(lbw.get("B"), 1.0)
+    m = model or DUMMY_MODEL
+    c = clip or DUMMY_MODEL
+    m, c, _ = LBW_CLASS().doit(m, c, filename, model_weight, clip_weight, False, 0, lbw_a, lbw_b, "", spec)
+    if m is DUMMY_MODEL:
+        m = None
+    if c is DUMMY_MODEL:
+        c = None
+    return m, c
+
+
+def apply_loras_from_spec(loraspec, model=None, clip=None, orig_model=None, orig_clip=None, patch=False, cache=None):
+    if patch:
+        unpatch_model(model)
+        model = clone_model(orig_model or model)
+        unpatch_model(clip)
+        clip = clone_model(orig_clip or clip)
+
+    if cache is None:
+        cache = {}
+    if not loraspec:
+        return model, clip
+
+    for name, params in loraspec.items():
+        m, c = model, clip
+        w, w_clip = params["weight"], params["weight_clip"]
+        if w == 0:
+            m = None
+        if w_clip == 0:
+            c = None
+        # All this iffing is quite icky...
+        comfy_load = False
+        if "lbw" in params and "LBW" in params["lbw"]:
+            if has_lbw():
+                log.info("Using LoraBlockWeight loader with lbw=%s", params["lbw"])
+                f = lora_name_to_file(name)
+                if not f:
+                    continue
+                m, c = suppress_print(lambda: load_lbw_lora(f, m, c, w, w_clip, params["lbw"]))
+            else:
+                log.warning("LoraBlockWeight not available, ignoring LBW parameters")
+                comfy_load = True
+        else:
+            comfy_load = True
+
+        if comfy_load:
+            # Regular LoRA loading:
+            lora = cache.get(name)
+            if not lora:
+                f = lora_name_to_file(name)
+                if not f:
+                    continue
+                f = folder_paths.get_full_path("loras", f)
+                lora = comfy.utils.load_torch_file(f, safe_load=True)
+                cache[name] = lora
+            m, c = suppress_print(lambda: comfy.sd.load_lora_for_models(m, c, lora, w, w_clip))
+        model = m or model
+        clip = c or clip
+        if model:
+            log.info("LoRA applied: %s:%s", name, params["weight"])
+        if clip:
+            log.info("CLIP LoRA applied: %s:%s", name, params["weight_clip"])
+    if patch:
+        patch_model(model)
+        patch_model(clip)
+    return model, clip
 
 
 def apply_loras_to_model(model, orig_model, lora_specs, loaded_loras, patch=True):
