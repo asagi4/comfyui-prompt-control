@@ -3,7 +3,12 @@ import sys
 import logging
 
 log = logging.getLogger("comfyui-prompt-control")
-logging.basicConfig()
+log.propagate = False
+if not log.handlers:
+    h = logging.StreamHandler(sys.stdout)
+    h.setFormatter(logging.Formatter("[%(levelname)s] PromptControl: %(message)s"))
+    log.addHandler(h)
+
 if os.environ.get("COMFYUI_PC_DEBUG"):
     log.setLevel(logging.DEBUG)
 else:
