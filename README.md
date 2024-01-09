@@ -29,8 +29,9 @@ Then restart ComfyUI afterwards.
 ## Notable changes
 
 I try to avoid behavioural changes that break old prompts, but they may happen occasionally.
+
+- 2024-01-09 AITemplate support dropped. I don't recommend or test AITemplate anymore. Use Stable-Fast instead (see below for info)
 - 2024-01-08 Prompt control now enables in-place weight updates on the model. This shouldn't affect anything, but increases performance slightly. You can disable this by setting the environment variable `PC_NO_INPLACE_UPDATE` to any non-empty value.
-- 2024-01-08 I don't recommend or test AITemplate anymore. Use Stable-Fast instead
 - 2023-12-28 MASK now uses ComfyUI's `mask_strength` attribute instead of calculating it on its own. This changes its behaviour slightly.
 - 2023-12-06: Removed `JinjaRender`, `SimpleWildcard`, `ConditioningCutoff`, `CondLinearInterpolate` and `StringConcat`. For the first two, see [this repository](https://github.com/asagi4/comfyui-utility-nodes) for mostly-compatible implementations.
 - 2023-10-04: `STYLE:...` syntax changed to `STYLE(...)`

@@ -1,15 +1,15 @@
 from pathlib import Path
 from math import lcm
+from os import environ
+from collections import namedtuple
+
 import time
 import re
 
+import nodes
 import folder_paths
 
 import logging
-import sys
-from os import environ
-from collections import namedtuple
-import nodes
 
 log = logging.getLogger("comfyui-prompt-control")
 
@@ -120,10 +120,6 @@ def safe_float(f, default):
         return default
 
 
-def get_aitemplate_module():
-    return sys.modules["AIT.AITemplate.AITemplate"]
-
-
 def unpatch_model(model):
     if model:
         model.unpatch_model()
@@ -145,20 +141,7 @@ def add_patches(model, patches, weight):
 def patch_model(model):
     if not model:
         return None
-    if "aitemplate_keep_loaded" in model.model_options:
-        model.patch_model()
-        mod = get_aitemplate_module()
-        l = mod.AITemplate.loader
-        if hasattr(l, "pc_applied_module"):
-            log.info("Applying AITemplate unet")
-            l.apply_unet(
-                aitemplate_module=l.pc_applied_module,
-                unet=l.compvis_unet(model.model.state_dict()),
-                in_channels=model.model.diffusion_model.in_channels,
-                conv_in_key="conv_in_weight",
-            )
-    else:
-        model.patch_model()
+    model.patch_model()
 
 
 def get_callback(model):

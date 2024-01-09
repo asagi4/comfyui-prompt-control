@@ -140,27 +140,8 @@ def hijack_browniannoisesampler(module, cls):
     hijack(mod, cls, PCBrownianTreeNoiseSampler)
 
 
-def hijack_aitemplate():
-    try:
-        AITLoader = sys.modules["AIT.AITemplate.ait.load"].AITLoader
-        orig_apply_unet = AITLoader.apply_unet
-        if has_hijack(orig_apply_unet):
-            return
-        log.info("AITemplate detected, hijacking...")
-
-        def apply_unet(self, *args, **kwargs):
-            setattr(self, "pc_applied_module", kwargs["aitemplate_module"])
-            return orig_apply_unet(self, *args, **kwargs)
-
-        hijack(AITLoader, "apply_unet", apply_unet)
-        log.info("AITemplate hijack complete")
-    except Exception:
-        log.info("AITemplate hijack failed or not necessary")
-
-
 def do_hijack():
     hijack_browniannoisesampler("comfy.k_diffusion.sampling", "BrownianTreeNoiseSampler")
     hijack_sampler("comfy.sample", "sample")
     hijack_sampler("comfy.sample", "sample_custom")
-    hijack_aitemplate()
     hijack_ksampler("comfy.samplers", "KSampler")
