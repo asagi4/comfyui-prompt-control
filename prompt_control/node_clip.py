@@ -251,7 +251,7 @@ def encode_prompt(clip, text, default_style="comfy", default_normalization="none
 
     # Non-SDXL has only "l"
     if "g" in tokens and l_prompts:
-        text_l = "".join(l_prompts)
+        text_l = " ".join(l_prompts)
         log.info("Encoded SDXL CLIP_L prompt: %s", text_l)
         tokens["l"] = clip.tokenize(
             text_l, return_word_ids=len(regions) > 0 or (have_advanced_encode and style != "perp")

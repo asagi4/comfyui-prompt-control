@@ -30,6 +30,7 @@ Then restart ComfyUI afterwards.
 
 I try to avoid behavioural changes that break old prompts, but they may happen occasionally.
 
+- 2024-01-14 Multiple `CLIP_L` instances are now joined with a space separator instead of concatenated.
 - 2024-01-09 AITemplate support dropped. I don't recommend or test AITemplate anymore. Use Stable-Fast instead (see below for info)
 - 2024-01-08 Prompt control now enables in-place weight updates on the model. This shouldn't affect anything, but increases performance slightly. You can disable this by setting the environment variable `PC_NO_INPLACE_UPDATE` to any non-empty value.
 - 2023-12-28 MASK now uses ComfyUI's `mask_strength` attribute instead of calculating it on its own. This changes its behaviour slightly.
@@ -93,7 +94,13 @@ with `tags` `x,z` would result in the prompt `a blue cat running in space`
 
 You can use the function `SDXL(width height, target_width target_height, crop_w crop_h)` to set SDXL prompt parameters. `SDXL()` is equivalent to `SDXL(1024 1024, 1024 1024, 0 0)`
 
-To set the `clip_l` prompt, as with `CLIPTextEncodeSDXL`, use the function `CLIP_L(prompt text goes here)`. multiple instances of `CLIP_L` are concatenated, and `BREAK` isn't supported in it. It has no effect on SD 1.5. The rest of the prompt becomes the `clip_g` prompt.
+To set the `clip_l` prompt, as with `CLIPTextEncodeSDXL`, use the function `CLIP_L(prompt text goes here)`.
+Things to note:
+- Multiple instances of `CLIP_L` are joined with a space. That is, `CLIP_L(foo)CLIP_L(bar)` is the same as `CLIP_L(foo bar)`
+- Using `BREAK` isn't supported in it; it'll just parse as the plain word BREAK.
+- similarly, `AND` inside `CLIP_L` does not do anything sensible; `CLIP_L(foo AND bar)` will parse as two prompts `CLIP_L(foo` and `bar)`
+- It has no effect on SD 1.5.
+- The rest of the prompt becomes the `clip_g` prompt.
 
 if there is no `CLIP_L`, the prompts will work as with `CLIPTextEncode`.
 
