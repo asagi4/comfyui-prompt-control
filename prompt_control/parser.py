@@ -231,7 +231,7 @@ def at_step(step, filters, tree):
             return str(value)
 
         def embedding(self, args):
-            return "embedding:" + args[0].value
+            return "embedding:" + str(args[0])
 
         def lora_weights(self, args):
             return [float(str(a)) for a in args]
