@@ -71,7 +71,7 @@ Might be useful with Jinja templating (see https://github.com/asagi4/comfyui-uti
 generates a LoRA schedule based on a sinewave
 
 ## Tag selection
-Instead of step percentages, you can use a *tag* to select part of an input:
+Using the `FilterSchedule`Instead of step percentages, you can use a *tag* to select part of an input:
 ```
 a large [dog:cat<lora:catlora:0.5>:SECOND_PASS]
 ```
@@ -92,17 +92,19 @@ with `tags` `x,z` would result in the prompt `a blue cat running in space`
 
 ## SDXL
 
+The nodes do not treat SDXL models specially, but there are some utilities that enable SDXL specific functionality.
+
 You can use the function `SDXL(width height, target_width target_height, crop_w crop_h)` to set SDXL prompt parameters. `SDXL()` is equivalent to `SDXL(1024 1024, 1024 1024, 0 0)`
 
 To set the `clip_l` prompt, as with `CLIPTextEncodeSDXL`, use the function `CLIP_L(prompt text goes here)`.
+
 Things to note:
 - Multiple instances of `CLIP_L` are joined with a space. That is, `CLIP_L(foo)CLIP_L(bar)` is the same as `CLIP_L(foo bar)`
 - Using `BREAK` isn't supported in it; it'll just parse as the plain word BREAK.
 - similarly, `AND` inside `CLIP_L` does not do anything sensible; `CLIP_L(foo AND bar)` will parse as two prompts `CLIP_L(foo` and `bar)`
-- It has no effect on SD 1.5.
+- `CLIP_L` and `SDXL` have no effect on SD 1.5.
 - The rest of the prompt becomes the `clip_g` prompt.
-
-if there is no `CLIP_L`, the prompts will work as with `CLIPTextEncode`.
+- If there is no `CLIP_L` or `SDXL`, the prompts will work as with `CLIPTextEncode`.
 
 # Other syntax:
 
@@ -201,7 +203,11 @@ The prompt control node works well with [ComfyUI_stable_fast](https://github.com
 Parses a schedule from a text prompt. A schedule is essentially an array of `(valid_until, prompt)` pairs that the other nodes can use.
 
 ## FilterSchedule
-Filters a schedule according to its parameters, removing any *changes* that do not occur within `[start, end)` as well as doing tag filtering. Always returns at least the last prompt in the schedule if everything would otherwise be filtered.
+Filters a schedule according to its parameters, removing any *changes* that do not occur within `[start, end)`.
+
+The node also does tag filtering if any tags are specified.
+
+Always returns at least the last prompt in the schedule if everything would otherwise be filtered.
 
 `start=0, end=0` returns the prompt at the start and `start=1.0, end=1.0` returns the prompt at the end.
 
@@ -215,6 +221,11 @@ This depends on a callback handled by a monkeypatch of the ComfyUI sampler funct
 
 ## PCSplitSampling
 Causes sampling to be split into multiple sampler calls instead of relying on timesteps for scheduling. This makes the schedules more accurate, but seems to cause weird behaviour with SDE samplers. (Upstream bug?)
+
+## PromptControlSimple
+This node exists purely for convenience. It's a combination of `PromptToSchedule`, `ScheduleToPrompt`, `ScheduleToModel` and `FilterSchedule` such that it provides as output a model, positive conds and negative conds, both with and without any specified filters applied.
+
+This makes it handy for quick one- or two-pass workflows.
 
 ## Older nodes
 
