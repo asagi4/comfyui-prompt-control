@@ -71,11 +71,11 @@ Might be useful with Jinja templating (see https://github.com/asagi4/comfyui-uti
 generates a LoRA schedule based on a sinewave
 
 ## Tag selection
-Using the `FilterSchedule`Instead of step percentages, you can use a *tag* to select part of an input:
+Using the `FilterSchedule` node, in addition to step percentages, you can use a *tag* to select part of an input:
 ```
 a large [dog:cat<lora:catlora:0.5>:SECOND_PASS]
 ```
-You can then use the `tags` parameter in the `FilterSchedule` node to filter the prompt. If the tag matches any tag `tags` (comma-separated), the second option is returned (`cat`, in this case, with the LoRA). Otherwise, the first option is chosen (`dog`, without LoRA).
+Set the `tags` parameter in the `FilterSchedule` node to filter the prompt. If the tag matches any tag `tags` (comma-separated), the second option is returned (`cat`, in this case, with the LoRA). Otherwise, the first option is chosen (`dog`, without LoRA).
 
 the values in `tags` are case-insensitive, but the tags in the input **must** be uppercase A-Z and underscores only, or they won't be recognized. That is, `[dog:cat:hr]` will not work.
 
