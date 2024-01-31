@@ -1,6 +1,6 @@
 {
-  "last_node_id": 52,
-  "last_link_id": 102,
+  "last_node_id": 59,
+  "last_link_id": 111,
   "nodes": [
     {
       "id": 18,
@@ -77,8 +77,8 @@
       "id": 29,
       "type": "VAEDecode",
       "pos": [
-        98,
-        51
+        92.00001525878905,
+        55.80000152587891
       ],
       "size": {
         "0": 210,
@@ -87,7 +87,7 @@
       "flags": {
         "collapsed": true
       },
-      "order": 25,
+      "order": 30,
       "mode": 0,
       "inputs": [
         {
@@ -130,7 +130,7 @@
       "flags": {
         "collapsed": true
       },
-      "order": 29,
+      "order": 34,
       "mode": 0,
       "inputs": [
         {
@@ -171,7 +171,7 @@
         26
       ],
       "flags": {},
-      "order": 18,
+      "order": 20,
       "mode": 0,
       "inputs": [
         {
@@ -240,12 +240,12 @@
         303,
         52
       ],
-      "size": [
-        210,
-        82
-      ],
+      "size": {
+        "0": 210,
+        "1": 82
+      },
       "flags": {},
-      "order": 26,
+      "order": 31,
       "mode": 0,
       "inputs": [
         {
@@ -276,41 +276,6 @@
       "bgcolor": "#653"
     },
     {
-      "id": 26,
-      "type": "EmptyLatentImage",
-      "pos": [
-        -196,
-        53
-      ],
-      "size": [
-        210,
-        106
-      ],
-      "flags": {},
-      "order": 2,
-      "mode": 0,
-      "outputs": [
-        {
-          "name": "LATENT",
-          "type": "LATENT",
-          "links": [
-            82
-          ],
-          "shape": 3
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "EmptyLatentImage"
-      },
-      "widgets_values": [
-        512,
-        512,
-        1
-      ],
-      "color": "#432",
-      "bgcolor": "#653"
-    },
-    {
       "id": 20,
       "type": "PrimitiveNode",
       "pos": [
@@ -324,7 +289,7 @@
       "flags": {
         "collapsed": false
       },
-      "order": 3,
+      "order": 2,
       "mode": 0,
       "outputs": [
         {
@@ -352,15 +317,15 @@
       "id": 50,
       "type": "KSampler",
       "pos": [
-        22,
-        85
+        16.00001525878906,
+        89.80000152587888
       ],
       "size": {
         "0": 215.8475341796875,
         "1": 446
       },
       "flags": {},
-      "order": 22,
+      "order": 27,
       "mode": 0,
       "inputs": [
         {
@@ -431,12 +396,12 @@
         144,
         -401
       ],
-      "size": [
-        280,
-        357
-      ],
+      "size": {
+        "0": 280,
+        "1": 357
+      },
       "flags": {},
-      "order": 27,
+      "order": 32,
       "mode": 0,
       "inputs": [
         {
@@ -451,45 +416,6 @@
       },
       "color": "#232",
       "bgcolor": "#353"
-    },
-    {
-      "id": 2,
-      "type": "PrimitiveNode",
-      "pos": [
-        -273,
-        -239
-      ],
-      "size": [
-        404,
-        200
-      ],
-      "flags": {},
-      "order": 4,
-      "mode": 0,
-      "outputs": [
-        {
-          "name": "STRING",
-          "type": "STRING",
-          "links": [
-            94,
-            95
-          ],
-          "slot_index": 0,
-          "widget": {
-            "name": "text"
-          }
-        }
-      ],
-      "title": "Negative",
-      "properties": {
-        "Run widget replace on values": false
-      },
-      "widgets_values": [
-        "toddler,sketch, painting, blurry, text, watermark, figurine, [3d:0.2], multiple glasses\n\n[everything that works in the positive prompt applies here too. Note that the LoRA doesn't get applied to the negative part because it's not mentioned here:1]"
-      ],
-      "color": "#322",
-      "bgcolor": "#533",
-      "shape": 1
     },
     {
       "id": 12,
@@ -529,95 +455,6 @@
         "showOutputText": false,
         "horizontal": false
       }
-    },
-    {
-      "id": 24,
-      "type": "PrimitiveNode",
-      "pos": [
-        -268,
-        -377
-      ],
-      "size": {
-        "0": 210,
-        "1": 82
-      },
-      "flags": {},
-      "order": 5,
-      "mode": 0,
-      "outputs": [
-        {
-          "name": "INT",
-          "type": "INT",
-          "links": [
-            83,
-            91
-          ],
-          "slot_index": 0,
-          "widget": {
-            "name": "seed"
-          }
-        }
-      ],
-      "title": "Seed",
-      "properties": {
-        "Run widget replace on values": false
-      },
-      "widgets_values": [
-        5,
-        "fixed"
-      ],
-      "color": "#233",
-      "bgcolor": "#355"
-    },
-    {
-      "id": 10,
-      "type": "CheckpointLoaderSimple",
-      "pos": [
-        -805,
-        -404
-      ],
-      "size": [
-        411.7600830078125,
-        106.08646850585939
-      ],
-      "flags": {},
-      "order": 6,
-      "mode": 0,
-      "outputs": [
-        {
-          "name": "MODEL",
-          "type": "MODEL",
-          "links": [
-            102
-          ],
-          "shape": 3,
-          "slot_index": 0
-        },
-        {
-          "name": "CLIP",
-          "type": "CLIP",
-          "links": [
-            11
-          ],
-          "shape": 3,
-          "slot_index": 1
-        },
-        {
-          "name": "VAE",
-          "type": "VAE",
-          "links": [
-            101
-          ],
-          "shape": 3,
-          "slot_index": 2
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CheckpointLoaderSimple"
-      },
-      "widgets_values": [
-        "revanimated_v122-0900-0868-0708.safetensors"
-      ]
     },
     {
       "id": 11,
@@ -663,12 +500,12 @@
         -574,
         161
       ],
-      "size": [
-        210,
-        127.78641967773444
-      ],
+      "size": {
+        "0": 210,
+        "1": 127.78642272949219
+      },
       "flags": {},
-      "order": 7,
+      "order": 3,
       "mode": 0,
       "properties": {
         "text": ""
@@ -680,128 +517,18 @@
       "bgcolor": "#653"
     },
     {
-      "id": 44,
-      "type": "FilterSchedule",
-      "pos": [
-        333,
-        330
-      ],
-      "size": {
-        "0": 393,
-        "1": 106
-      },
-      "flags": {
-        "collapsed": true
-      },
-      "order": 21,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "prompt_schedule",
-          "type": "PROMPT_SCHEDULE",
-          "link": 70,
-          "slot_index": 0
-        },
-        {
-          "name": "tags",
-          "type": "STRING",
-          "link": 64,
-          "widget": {
-            "name": "tags"
-          }
-        },
-        {
-          "name": "start",
-          "type": "FLOAT",
-          "link": 65,
-          "widget": {
-            "name": "start"
-          }
-        },
-        {
-          "name": "end",
-          "type": "FLOAT",
-          "link": 66,
-          "widget": {
-            "name": "end"
-          }
-        }
-      ],
-      "outputs": [
-        {
-          "name": "PROMPT_SCHEDULE",
-          "type": "PROMPT_SCHEDULE",
-          "links": [
-            68,
-            69
-          ],
-          "shape": 3,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "FilterSchedule"
-      },
-      "widgets_values": [
-        "HR",
-        1,
-        1
-      ],
-      "color": "#233",
-      "bgcolor": "#355"
-    },
-    {
-      "id": 1,
-      "type": "PrimitiveNode",
-      "pos": [
-        -807,
-        -248
-      ],
-      "size": [
-        522,
-        322
-      ],
-      "flags": {},
-      "order": 8,
-      "mode": 0,
-      "outputs": [
-        {
-          "name": "STRING",
-          "type": "STRING",
-          "links": [
-            93,
-            96
-          ],
-          "slot_index": 0,
-          "widget": {
-            "name": "text"
-          }
-        }
-      ],
-      "title": "Positive",
-      "properties": {
-        "Run widget replace on values": false
-      },
-      "widgets_values": [
-        "[Set weight style to A1111. SDXL and CLIP_L get ignored if an SDXL model is not in use. This text gets effectively ignored because the schedule starts at 1. Check the README for all the details:1]\nSTYLE(A1111) SDXL(width height, target_width target_height, crop_w crop_h) CLIP_L(artistic, cartoon)\n\n[basics. LoRA and prompt scheduling:1]\n[<lora:vector_revanimated:0.5>::0.5] summer, outdoors, ([by ilya kuvshinov:by akira toriyama:0.5]:1.1) BREAK\n\n[tag selection with the HR tag for the second pass:1]\na [multicolored:red, retro,:0.2,0.7] [(pastel cartoon:1.2):ultra realistic, hdr, 8k:HR], woman, cowboy shot, [smile::0.15] \n\n[More advanced features. NOISE adds some randomness to the prompt which can have interesting effects:1]\n[NOISE(0.3)::0.15]\n[AND MASK(0 1,0 0.5, 1):,:0.5] sunbeam AND MASK(0 1, 0.5 1, 1.2) t-shirt, logo on shirt,"
-      ],
-      "color": "#223",
-      "bgcolor": "#335",
-      "shape": 1
-    },
-    {
       "id": 51,
       "type": "KSampler",
       "pos": [
         534,
         82
       ],
-      "size": [
-        210,
-        446
-      ],
+      "size": {
+        "0": 210,
+        "1": 446
+      },
       "flags": {},
-      "order": 28,
+      "order": 33,
       "mode": 0,
       "inputs": [
         {
@@ -866,34 +593,6 @@
       "bgcolor": "#535"
     },
     {
-      "id": 33,
-      "type": "PreviewImage",
-      "pos": [
-        430,
-        -411
-      ],
-      "size": [
-        426,
-        369
-      ],
-      "flags": {},
-      "order": 30,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 48
-        }
-      ],
-      "title": "Second pass",
-      "properties": {
-        "Node name for S&R": "PreviewImage"
-      },
-      "color": "#323",
-      "bgcolor": "#535"
-    },
-    {
       "id": 43,
       "type": "PromptToSchedule",
       "pos": [
@@ -907,7 +606,7 @@
       "flags": {
         "collapsed": true
       },
-      "order": 15,
+      "order": 19,
       "mode": 0,
       "inputs": [
         {
@@ -933,7 +632,7 @@
         "Node name for S&R": "PromptToSchedule"
       },
       "widgets_values": [
-        "[Set weight style to A1111. SDXL and CLIP_L get ignored if an SDXL model is not in use. This text gets effectively ignored because the schedule starts at 1. Check the README for all the details:1]\nSTYLE(A1111) SDXL(width height, target_width target_height, crop_w crop_h) CLIP_L(artistic, cartoon)\n\n[basics. LoRA and prompt scheduling:1]\n[<lora:vector_revanimated:0.5>::0.5] summer, outdoors, ([by ilya kuvshinov:by akira toriyama:0.5]:1.1) BREAK\n\n[tag selection with the HR tag for the second pass:1]\na [multicolored:red, retro,:0.2,0.7] [(pastel cartoon:1.2):ultra realistic, hdr, 8k:HR], woman, cowboy shot, [smile::0.15] \n\n[More advanced features. NOISE adds some randomness to the prompt which can have interesting effects:1]\n[NOISE(0.3)::0.15]\n[AND MASK(0 1,0 0.5, 1):,:0.5] sunbeam AND MASK(0 1, 0.5 1, 1.2) t-shirt, logo on shirt,"
+        "[Set weight style to A1111. SDXL and CLIP_L get ignored if an SDXL model is not in use. This text gets effectively ignored because the schedule starts at 1. Check the README for all the details:1]\nSTYLE(A1111) SDXL(width height, target_width target_height, crop_w crop_h)\nCLIP_L(artistic, cartoon)\n\n[basics. LoRA and prompt scheduling:1]\n[<lora:vector_revanimated:0.5>::0.5] summer, outdoors, ([by ilya kuvshinov:by akira toriyama:0.5]:1.1) BREAK\n\n[tag selection with the HR tag for the second pass:1]\na [multicolored:red, retro,:0.2,0.7] [(pastel cartoon:1.2):ultra realistic, hdr, 8k:HR], woman, cowboy shot, [smile::0.15] \n\n[More advanced features. NOISE adds some randomness to the prompt which can have interesting effects:1]\n[NOISE(0.3)::0.15]\n[AND MASK(0 1,0 0.5, 1):,:0.5] sunbeam AND MASK(0 1, 0.5 1, 1.2) t-shirt, logo on shirt,"
       ],
       "color": "#223",
       "bgcolor": "#335"
@@ -942,8 +641,8 @@
       "id": 41,
       "type": "PromptToSchedule",
       "pos": [
-        -185,
-        488
+        -190.99998474121094,
+        492.800001525879
       ],
       "size": {
         "0": 210,
@@ -952,7 +651,7 @@
       "flags": {
         "collapsed": true
       },
-      "order": 9,
+      "order": 14,
       "mode": 0,
       "inputs": [
         {
@@ -999,7 +698,7 @@
       "flags": {
         "collapsed": true
       },
-      "order": 10,
+      "order": 15,
       "mode": 0,
       "inputs": [
         {
@@ -1045,7 +744,7 @@
       "flags": {
         "collapsed": true
       },
-      "order": 23,
+      "order": 28,
       "mode": 0,
       "inputs": [
         {
@@ -1089,7 +788,7 @@
       "flags": {
         "collapsed": true
       },
-      "order": 24,
+      "order": 29,
       "mode": 0,
       "inputs": [
         {
@@ -1133,7 +832,7 @@
       "flags": {
         "collapsed": true
       },
-      "order": 16,
+      "order": 22,
       "mode": 0,
       "inputs": [
         {
@@ -1168,8 +867,8 @@
       "id": 42,
       "type": "ScheduleToCond",
       "pos": [
-        -180,
-        534
+        -185.99998474121094,
+        538.800001525879
       ],
       "size": {
         "0": 355.20001220703125,
@@ -1178,7 +877,7 @@
       "flags": {
         "collapsed": true
       },
-      "order": 17,
+      "order": 21,
       "mode": 0,
       "inputs": [
         {
@@ -1209,50 +908,46 @@
       "bgcolor": "#533"
     },
     {
-      "id": 38,
-      "type": "PromptToSchedule",
+      "id": 40,
+      "type": "ScheduleToModel",
       "pos": [
-        -196,
-        353
+        -192.99998474121094,
+        402.800001525879
       ],
       "size": {
-        "0": 210,
-        "1": 46.00000762939453
+        "0": 267,
+        "1": 46
       },
       "flags": {
         "collapsed": true
       },
-      "order": 14,
+      "order": 24,
       "mode": 0,
       "inputs": [
         {
-          "name": "text",
-          "type": "STRING",
-          "link": 93,
-          "widget": {
-            "name": "text"
-          },
-          "slot_index": 0
+          "name": "model",
+          "type": "MODEL",
+          "link": 61
+        },
+        {
+          "name": "prompt_schedule",
+          "type": "PROMPT_SCHEDULE",
+          "link": 55
         }
       ],
       "outputs": [
         {
-          "name": "PROMPT_SCHEDULE",
-          "type": "PROMPT_SCHEDULE",
+          "name": "MODEL",
+          "type": "MODEL",
           "links": [
-            54,
-            55
+            79
           ],
-          "shape": 3,
-          "slot_index": 0
+          "shape": 3
         }
       ],
       "properties": {
-        "Node name for S&R": "PromptToSchedule"
+        "Node name for S&R": "ScheduleToModel"
       },
-      "widgets_values": [
-        "[Set weight style to A1111. SDXL and CLIP_L get ignored if an SDXL model is not in use. This text gets effectively ignored because the schedule starts at 1. Check the README for all the details:1]\nSTYLE(A1111) SDXL(width height, target_width target_height, crop_w crop_h) CLIP_L(artistic, cartoon)\n\n[basics. LoRA and prompt scheduling:1]\n[<lora:vector_revanimated:0.5>::0.5] summer, outdoors, ([by ilya kuvshinov:by akira toriyama:0.5]:1.1) BREAK\n\n[tag selection with the HR tag for the second pass:1]\na [multicolored:red, retro,:0.2,0.7] [(pastel cartoon:1.2):ultra realistic, hdr, 8k:HR], woman, cowboy shot, [smile::0.15] \n\n[More advanced features. NOISE adds some randomness to the prompt which can have interesting effects:1]\n[NOISE(0.3)::0.15]\n[AND MASK(0 1,0 0.5, 1):,:0.5] sunbeam AND MASK(0 1, 0.5 1, 1.2) t-shirt, logo on shirt,"
-      ],
       "color": "#223",
       "bgcolor": "#335"
     },
@@ -1260,8 +955,8 @@
       "id": 39,
       "type": "ScheduleToCond",
       "pos": [
-        -185,
-        442
+        -190.99998474121094,
+        446.800001525879
       ],
       "size": {
         "0": 355.20001220703125,
@@ -1270,7 +965,7 @@
       "flags": {
         "collapsed": true
       },
-      "order": 19,
+      "order": 23,
       "mode": 0,
       "inputs": [
         {
@@ -1301,48 +996,603 @@
       "bgcolor": "#335"
     },
     {
-      "id": 40,
-      "type": "ScheduleToModel",
+      "id": 38,
+      "type": "PromptToSchedule",
       "pos": [
-        -187,
-        398
+        -199.99998474121094,
+        321.800001525879
       ],
       "size": {
-        "0": 267,
-        "1": 46
+        "0": 210,
+        "1": 46.00000762939453
       },
       "flags": {
         "collapsed": true
       },
-      "order": 20,
+      "order": 18,
       "mode": 0,
       "inputs": [
         {
-          "name": "model",
-          "type": "MODEL",
-          "link": 61
-        },
-        {
-          "name": "prompt_schedule",
-          "type": "PROMPT_SCHEDULE",
-          "link": 55
+          "name": "text",
+          "type": "STRING",
+          "link": 93,
+          "widget": {
+            "name": "text"
+          },
+          "slot_index": 0
         }
       ],
+      "outputs": [
+        {
+          "name": "PROMPT_SCHEDULE",
+          "type": "PROMPT_SCHEDULE",
+          "links": [
+            54,
+            55,
+            103
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PromptToSchedule"
+      },
+      "widgets_values": [
+        "[Set weight style to A1111. SDXL and CLIP_L get ignored if an SDXL model is not in use. This text gets effectively ignored because the schedule starts at 1. Check the README for all the details:1]\nSTYLE(A1111) SDXL(width height, target_width target_height, crop_w crop_h)\nCLIP_L(artistic, cartoon)\n\n[basics. LoRA and prompt scheduling:1]\n[<lora:vector_revanimated:0.5>::0.5] summer, outdoors, ([by ilya kuvshinov:by akira toriyama:0.5]:1.1) BREAK\n\n[tag selection with the HR tag for the second pass:1]\na [multicolored:red, retro,:0.2,0.7] [(pastel cartoon:1.2):ultra realistic, hdr, 8k:HR], woman, cowboy shot, [smile::0.15] \n\n[More advanced features. NOISE adds some randomness to the prompt which can have interesting effects:1]\n[NOISE(0.3)::0.15]\n[AND MASK(0 1,0 0.5, 1):,:0.5] sunbeam AND MASK(0 1, 0.5 1, 1.2) t-shirt, logo on shirt,"
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 10,
+      "type": "CheckpointLoaderSimple",
+      "pos": [
+        -711,
+        -399
+      ],
+      "size": {
+        "0": 411.76007080078125,
+        "1": 106.08647155761719
+      },
+      "flags": {},
+      "order": 4,
+      "mode": 0,
       "outputs": [
         {
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            79
+            102
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            11
+          ],
+          "shape": 3,
+          "slot_index": 1
+        },
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            101
+          ],
+          "shape": 3,
+          "slot_index": 2
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CheckpointLoaderSimple"
+      },
+      "widgets_values": [
+        "revanimated_v122-0900-0868-0708.safetensors"
+      ]
+    },
+    {
+      "id": 44,
+      "type": "FilterSchedule",
+      "pos": [
+        333,
+        330
+      ],
+      "size": {
+        "0": 393,
+        "1": 106
+      },
+      "flags": {
+        "collapsed": true
+      },
+      "order": 26,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prompt_schedule",
+          "type": "PROMPT_SCHEDULE",
+          "link": 70,
+          "slot_index": 0
+        },
+        {
+          "name": "tags",
+          "type": "STRING",
+          "link": 64,
+          "widget": {
+            "name": "tags"
+          }
+        },
+        {
+          "name": "start",
+          "type": "FLOAT",
+          "link": 65,
+          "widget": {
+            "name": "start"
+          }
+        },
+        {
+          "name": "end",
+          "type": "FLOAT",
+          "link": 66,
+          "widget": {
+            "name": "end"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "PROMPT_SCHEDULE",
+          "type": "PROMPT_SCHEDULE",
+          "links": [
+            68,
+            69
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "FilterSchedule"
+      },
+      "widgets_values": [
+        "HR",
+        1,
+        1
+      ],
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 53,
+      "type": "PCApplySettings",
+      "pos": [
+        -193.99998474121094,
+        358.800001525879
+      ],
+      "size": {
+        "0": 393,
+        "1": 46
+      },
+      "flags": {
+        "collapsed": true
+      },
+      "order": 25,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prompt_schedule",
+          "type": "PROMPT_SCHEDULE",
+          "link": 103,
+          "slot_index": 0
+        },
+        {
+          "name": "settings",
+          "type": "SCHEDULE_SETTINGS",
+          "link": 111,
+          "slot_index": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "PROMPT_SCHEDULE",
+          "type": "PROMPT_SCHEDULE",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PCApplySettings"
+      },
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 24,
+      "type": "PrimitiveNode",
+      "pos": [
+        -276,
+        -396
+      ],
+      "size": {
+        "0": 210,
+        "1": 82
+      },
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            83,
+            91
+          ],
+          "slot_index": 0,
+          "widget": {
+            "name": "seed"
+          }
+        }
+      ],
+      "title": "Seed",
+      "properties": {
+        "Run widget replace on values": false
+      },
+      "widgets_values": [
+        5,
+        "fixed"
+      ],
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 26,
+      "type": "EmptyLatentImage",
+      "pos": [
+        -201.99998474121094,
+        57.80000152587891
+      ],
+      "size": [
+        210,
+        78
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "width",
+          "type": "INT",
+          "link": 105,
+          "widget": {
+            "name": "width"
+          },
+          "slot_index": 0
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "link": 106,
+          "widget": {
+            "name": "height"
+          },
+          "slot_index": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            82
           ],
           "shape": 3
         }
       ],
       "properties": {
-        "Node name for S&R": "ScheduleToModel"
+        "Node name for S&R": "EmptyLatentImage"
       },
+      "widgets_values": [
+        512,
+        640,
+        1
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 2,
+      "type": "PrimitiveNode",
+      "pos": [
+        -273,
+        -239
+      ],
+      "size": {
+        "0": 404,
+        "1": 200
+      },
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            94,
+            95
+          ],
+          "slot_index": 0,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "title": "Negative",
+      "properties": {
+        "Run widget replace on values": false
+      },
+      "widgets_values": [
+        "toddler,sketch, painting, blurry, text, watermark, figurine, [3d:0.2], multiple glasses\n\n[everything that works in the positive prompt applies here too. Note that the LoRA doesn't get applied to the negative part because it's not mentioned here:1]"
+      ],
+      "color": "#322",
+      "bgcolor": "#533",
+      "shape": 1
+    },
+    {
+      "id": 56,
+      "type": "PrimitiveNode",
+      "pos": [
+        -1050,
+        -300
+      ],
+      "size": [
+        210,
+        82
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            106,
+            108,
+            110
+          ],
+          "widget": {
+            "name": "height"
+          },
+          "slot_index": 0
+        }
+      ],
+      "title": "Height",
+      "properties": {
+        "Run widget replace on values": false
+      },
+      "widgets_values": [
+        640,
+        "fixed"
+      ],
+      "color": "#432",
+      "bgcolor": "#653",
+      "shape": 1
+    },
+    {
+      "id": 55,
+      "type": "PrimitiveNode",
+      "pos": [
+        -1050,
+        -430
+      ],
+      "size": {
+        "0": 210,
+        "1": 82
+      },
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            105,
+            107,
+            109
+          ],
+          "widget": {
+            "name": "width"
+          },
+          "slot_index": 0
+        }
+      ],
+      "title": "Width",
+      "properties": {
+        "Run widget replace on values": false
+      },
+      "widgets_values": [
+        512,
+        "fixed"
+      ],
+      "color": "#432",
+      "bgcolor": "#653",
+      "shape": 1
+    },
+    {
+      "id": 57,
+      "type": "PCScheduleSettings",
+      "pos": [
+        -1090,
+        230
+      ],
+      "size": [
+        262,
+        249
+      ],
+      "flags": {
+        "collapsed": false
+      },
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "mask_width",
+          "type": "INT",
+          "link": 107,
+          "widget": {
+            "name": "mask_width"
+          },
+          "slot_index": 0
+        },
+        {
+          "name": "mask_height",
+          "type": "INT",
+          "link": 108,
+          "widget": {
+            "name": "mask_height"
+          },
+          "slot_index": 1
+        },
+        {
+          "name": "sdxl_target_w",
+          "type": "INT",
+          "link": 109,
+          "widget": {
+            "name": "sdxl_target_w"
+          }
+        },
+        {
+          "name": "sdxl_target_h",
+          "type": "INT",
+          "link": 110,
+          "widget": {
+            "name": "sdxl_target_h"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SCHEDULE_SETTINGS",
+          "type": "SCHEDULE_SETTINGS",
+          "links": [
+            111
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PCScheduleSettings"
+      },
+      "widgets_values": [
+        0,
+        512,
+        640,
+        1024,
+        1024,
+        512,
+        640,
+        0,
+        0
+      ],
       "color": "#223",
       "bgcolor": "#335"
+    },
+    {
+      "id": 59,
+      "type": "Note",
+      "pos": [
+        -1100,
+        -170
+      ],
+      "size": [
+        277.907958984375,
+        359.69843139648435
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "This sets default values for MASK, AREA and SDXL functions. \"steps\" is currently unused, but it exists for future functionality.\n\nNOTE: You still need to have the function call in the prompt! \n\nIf you set the defaults with this, you won't need MASK_SIZE(), and you can call SDXL() without parameters.\n\nFor sdxl, target_w and target_h should match your generation size (the SDXL aspect ratio bucket) and sdxl_width / sdxl_height should be what the image's size \"should be\" if it weren't scaled down (or up) to an SDXL-compatible size.\n\nIt's complicated. Play around with them.\n\nDepending on the model, you can even get better results by not setting these options at all (ie. omit the SDXL() call from the prompt.)"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 33,
+      "type": "PreviewImage",
+      "pos": [
+        430,
+        -411
+      ],
+      "size": {
+        "0": 426,
+        "1": 369
+      },
+      "flags": {},
+      "order": 35,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 48
+        }
+      ],
+      "title": "Second pass",
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 1,
+      "type": "PrimitiveNode",
+      "pos": [
+        -807,
+        -248
+      ],
+      "size": {
+        "0": 522,
+        "1": 322
+      },
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            93,
+            96
+          ],
+          "slot_index": 0,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "title": "Positive",
+      "properties": {
+        "Run widget replace on values": false
+      },
+      "widgets_values": [
+        "[Set weight style to A1111. SDXL and CLIP_L get ignored if an SDXL model is not in use. This text gets effectively ignored because the schedule starts at 1. Check the README for all the details:1]\nSTYLE(A1111) SDXL(width height, target_width target_height, crop_w crop_h)\nCLIP_L(artistic, cartoon)\n\n[basics. LoRA and prompt scheduling:1]\n[<lora:vector_revanimated:0.5>::0.5] summer, outdoors, ([by ilya kuvshinov:by akira toriyama:0.5]:1.1) BREAK\n\n[tag selection with the HR tag for the second pass:1]\na [multicolored:red, retro,:0.2,0.7] [(pastel cartoon:1.2):ultra realistic, hdr, 8k:HR], woman, cowboy shot, [smile::0.15] \n\n[More advanced features. NOISE adds some randomness to the prompt which can have interesting effects:1]\n[NOISE(0.3)::0.15]\n[AND MASK(0 1,0 0.5, 1):,:0.5] sunbeam AND MASK(0 1, 0.5 1, 1.2) t-shirt, logo on shirt,"
+      ],
+      "color": "#223",
+      "bgcolor": "#335",
+      "shape": 1
     }
   ],
   "links": [
@@ -1673,14 +1923,78 @@
       11,
       0,
       "*"
+    ],
+    [
+      103,
+      38,
+      0,
+      53,
+      0,
+      "PROMPT_SCHEDULE"
+    ],
+    [
+      105,
+      55,
+      0,
+      26,
+      0,
+      "INT"
+    ],
+    [
+      106,
+      56,
+      0,
+      26,
+      1,
+      "INT"
+    ],
+    [
+      107,
+      55,
+      0,
+      57,
+      0,
+      "INT"
+    ],
+    [
+      108,
+      56,
+      0,
+      57,
+      1,
+      "INT"
+    ],
+    [
+      109,
+      55,
+      0,
+      57,
+      2,
+      "INT"
+    ],
+    [
+      110,
+      56,
+      0,
+      57,
+      3,
+      "INT"
+    ],
+    [
+      111,
+      57,
+      0,
+      53,
+      1,
+      "SCHEDULE_SETTINGS"
     ]
   ],
   "groups": [
     {
       "title": "First pass",
       "bounding": [
-        -204,
-        -23,
+        -210,
+        -18,
         452,
         567
       ],
