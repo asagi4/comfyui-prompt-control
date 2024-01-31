@@ -94,7 +94,7 @@ with `tags` `x,z` would result in the prompt `a blue cat running in space`
 
 The nodes do not treat SDXL models specially, but there are some utilities that enable SDXL specific functionality.
 
-You can use the function `SDXL(width height, target_width target_height, crop_w crop_h)` to set SDXL prompt parameters. `SDXL()` is equivalent to `SDXL(1024 1024, 1024 1024, 0 0)`
+You can use the function `SDXL(width height, target_width target_height, crop_w crop_h)` to set SDXL prompt parameters. `SDXL()` is equivalent to `SDXL(1024 1024, 1024 1024, 0 0)` unless the default values have been overridden by `PCScheduleSettings`.
 
 To set the `clip_l` prompt, as with `CLIPTextEncodeSDXL`, use the function `CLIP_L(prompt text goes here)`.
 
@@ -134,7 +134,7 @@ The function `NOISE(weight, seed)` adds some random noise into the prompt. The s
 ### MASK and AREA
 You can use `MASK(x1 x2, y1 y2, weight)` to specify a region mask for a prompt. The values are specified as a percentage with a float between `0` and `1`, or as absolute pixel values (these can't be mixed). `1` will be interpreted as a percentage instead of a pixel value.
 
-Masks assume a size of `(512, 512)`, and pixel values will be relative to that. ComfyUI will scale the mask to match the image resolution, but you can change it manually by using `MASK_SIZE(width, height)` anywhere in the prompt,
+Masks assume a size of `(512, 512)`, unless overridden with `PCScheduleSettings` and pixel values will be relative to that. ComfyUI will scale the mask to match the image resolution. You can change it manually by using `MASK_SIZE(width, height)` anywhere in the prompt,
 
 These are handled per `AND`-ed prompt, so in `prompt1 AND MASK(...) prompt2`, the mask will only affect prompt2.
 
@@ -221,6 +221,14 @@ This depends on a callback handled by a monkeypatch of the ComfyUI sampler funct
 
 ## PCSplitSampling
 Causes sampling to be split into multiple sampler calls instead of relying on timesteps for scheduling. This makes the schedules more accurate, but seems to cause weird behaviour with SDE samplers. (Upstream bug?)
+
+## PCScheduleSettings
+Returns an object representing **default values** for the `SDXL` function and allows configuring `MASK_SIZE` outside the prompt. You need to apply them to a schedule with `PCApplySettings`. Note that for the SDXL settings to apply, you still need to have `SDXL()` in the prompt.
+
+The "steps" parameter currently does nothing; it's for future features.
+
+## PCApplySettings
+Applies the give default values from `PCScheduleSettings` to a schedule
 
 ## PromptControlSimple
 This node exists purely for convenience. It's a combination of `PromptToSchedule`, `ScheduleToPrompt`, `ScheduleToModel` and `FilterSchedule` such that it provides as output a model, positive conds and negative conds, both with and without any specified filters applied.

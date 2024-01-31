@@ -21,6 +21,8 @@ from .prompt_control.node_lora import LoRAScheduler, ScheduleToModel, PCSplitSam
 from .prompt_control.node_other import (
     PromptToSchedule,
     FilterSchedule,
+    PCScheduleSettings,
+    PCApplySettings,
 )
 from .prompt_control.node_aio import PromptControlSimple
 
@@ -29,6 +31,8 @@ NODE_CLASS_MAPPINGS = {
     "PromptControlSimple": PromptControlSimple,
     "PromptToSchedule": PromptToSchedule,
     "PCSplitSampling": PCSplitSampling,
+    "PCScheduleSettings": PCScheduleSettings,
+    "PCApplySettings": PCApplySettings,
     "FilterSchedule": FilterSchedule,
     "ScheduleToCond": ScheduleToCond,
     "ScheduleToModel": ScheduleToModel,

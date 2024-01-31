@@ -262,13 +262,18 @@ def at_step(step, filters, tree):
 
 
 class PromptSchedule(object):
-    def __init__(self, prompt, filters="", start=0.0, end=1.0):
+    def __init__(self, prompt, filters="", start=0.0, end=1.0, defaults=None):
         self.filters = filters
         self.start = start
         self.end = end
         self.prompt = prompt.strip()
+        self.defaults = {}
+        if defaults:
+            self.defaults = defaults
         self.loaded_loras = {}
 
+        self.interpolations = None
+        self.parsed_prompt = None
         self.interpolations, self.parsed_prompt = self._parse()
 
     def __iter__(self):
@@ -332,14 +337,14 @@ class PromptSchedule(object):
 
         return interpolations, res
 
-    def with_filters(self, filters=None, start=None, end=None):
+    def with_filters(self, filters=None, start=None, end=None, defaults=None):
         p = PromptSchedule(
             self.prompt,
-            filters or self.filters,
-            start if start is not None else self.start,
-            end if end is not None else self.end,
+            filters=filters or self.filters,
+            start=start or self.start,
+            end=end or self.end,
+            defaults=defaults or self.defaults,
         )
-        p.loaded_loras = self.loaded_loras
         return p
 
     def at_step(self, step, total_steps=1):

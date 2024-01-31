@@ -127,7 +127,9 @@ def linear_interpolator(control_points, step, start_pct, end_pct):
 class ScheduleToCond:
     @classmethod
     def INPUT_TYPES(s):
-        return {"required": {"clip": ("CLIP",), "prompt_schedule": ("PROMPT_SCHEDULE",)}}
+        return {
+            "required": {"clip": ("CLIP",), "prompt_schedule": ("PROMPT_SCHEDULE",)},
+        }
 
     RETURN_TYPES = ("CONDITIONING",)
     CATEGORY = "promptcontrol"
@@ -159,14 +161,17 @@ class EditableCLIPEncode:
         return (control_to_clip_common(self, clip, parsed),)
 
 
-def get_sdxl(text):
-    text, sdxl = get_function(text, "SDXL", ["", "1024 1024", "1024 1024", "0 0"])
+def get_sdxl(text, defaults):
+    # Defaults fail to parse and get looked up from the defaults dict
+    text, sdxl = get_function(text, "SDXL", ["none", "none", "none"])
     if not sdxl:
         return text, {}
     args = sdxl[0]
-    w, h = parse_floats(args[0], [1024, 1024], split_re="\s+")
-    tw, th = parse_floats(args[1], [1024, 1024], split_re="\s+")
-    cropw, croph = parse_floats(args[2], [0, 0], split_re="\s+")
+    d = defaults
+    w, h = parse_floats(args[0], [d.get("sdxl_width", 1024), d.get("sdxl_height", 1024)], split_re="\s+")
+    tw, th = parse_floats(args[1], [d.get("sdxl_twidth", 1024), d.get("sdxl_theight", 1024)], split_re="\s+")
+    cropw, croph = parse_floats(args[2], [d.get("sdxl_cwidth", 0), d.get("sdxl_cheight", 0)], split_re="\s+")
+
     opts = {
         "width": int(w),
         "height": int(h),
@@ -336,10 +341,10 @@ def get_area(text):
     return text, (area, weight)
 
 
-def get_mask_size(text):
+def get_mask_size(text, defaults):
     text, sizes = get_function(text, "MASK_SIZE", ["512", "512"])
     if not sizes:
-        return text, (512, 512)
+        return text, (defaults.get("mask_width", 512), defaults.get("mask_height", 512))
     w, h = sizes[0]
     return text, (int(w), int(h))
 
@@ -413,10 +418,10 @@ def apply_noise(cond, weight, gen):
     return cond * (1 - weight) + n * weight
 
 
-def do_encode(clip, text):
+def do_encode(clip, text, defaults):
     # First style modifier applies to ANDed prompts too unless overridden
     style, normalization, text = get_style(text)
-    text, mask_size = get_mask_size(text)
+    text, mask_size = get_mask_size(text, defaults)
 
     # Don't sum ANDs if this is in prompt
     alt_method = "COMFYAND()" in text
@@ -424,7 +429,7 @@ def do_encode(clip, text):
 
     prompts = [p.strip() for p in re.split(r"\bAND\b", text)]
 
-    p, sdxl_opts = get_sdxl(prompts[0])
+    p, sdxl_opts = get_sdxl(prompts[0], defaults)
     prompts[0] = p
 
     def weight(t):
@@ -450,7 +455,7 @@ def do_encode(clip, text):
         if not w:
             continue
         prompt, area = get_area(prompt)
-        prompt, local_sdxl_opts = get_sdxl(prompt)
+        prompt, local_sdxl_opts = get_sdxl(prompt, defaults)
         cond, pooled = encode_prompt(clip, prompt, style, normalization)
         cond = apply_noise(cond, noise_w, generator)
         pooled = apply_noise(pooled, noise_w, generator)
@@ -529,7 +534,7 @@ def control_to_clip_common(self, clip, schedules, lora_cache=None, cond_cache=No
             if loras != current_loras:
                 _, clip = utils.apply_loras_from_spec(loras, clip=orig_clip, cache=lora_cache)
                 current_loras = loras
-            cond_cache[cachekey] = do_encode(clip, prompt)
+            cond_cache[cachekey] = do_encode(clip, prompt, schedules.defaults)
         return cond_cache[cachekey]
 
     for end_pct, c in schedules:
