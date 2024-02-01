@@ -2,6 +2,9 @@ from .utils import get_callback, unpatch_model
 import sys
 
 import logging
+import gc
+import comfy.model_management
+import os
 
 log = logging.getLogger("comfyui-prompt-control")
 
@@ -32,9 +35,19 @@ def hijack_sampler(module, function):
         )
         if cb:
             try:
-                r = cb(orig_sampler, *args, **kwargs)
+                try:
+                    r = cb(orig_sampler, *args, **kwargs)
+                except comfy.model_management.OOM_EXCEPTION:
+                    if not os.environ.get("PC_RETRY_ON_OOM"):
+                        raise
+                    log.error("Got OOM while sampling, freeing memory and retrying once...")
+                    unpatch_model(model)
+                    BrownianTreeNoiseSampler.pc_reset(False)
+                    gc.collect()
+                    comfy.model_management.soft_empty_cache()
+                    r = cb(orig_sampler, *args, **kwargs)
             except Exception:
-                log.info("Exception occurred during callback, unpatching model...")
+                log.error("Exception occurred during callback, unpatching model.")
                 unpatch_model(model)
                 BrownianTreeNoiseSampler.pc_reset(False)
                 raise

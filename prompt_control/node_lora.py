@@ -34,7 +34,12 @@ def schedule_lora_common(model, schedules, lora_cache=None):
             if state["applied_loras"] != lora_spec:
                 log.debug("At step %s, applying lora_spec %s", step, lora_spec)
                 m, _ = apply_loras_from_spec(
-                    lora_spec, model=state["model"], orig_model=orig_model, cache=lora_cache, patch=patch
+                    lora_spec,
+                    model=state["model"],
+                    orig_model=orig_model,
+                    cache=lora_cache,
+                    patch=patch,
+                    applied_loras=state["applied_loras"],
                 )
                 state["model"] = m
                 state["applied_loras"] = lora_spec
@@ -47,8 +52,7 @@ def schedule_lora_common(model, schedules, lora_cache=None):
 
         kwargs["callback"] = step_callback
 
-        # First step of sampler applies patch
-        apply_lora_for_step(start_step, patch=False)
+        apply_lora_for_step(start_step)
 
         def filter_conds(conds, t, start_t, end_t):
             r = []

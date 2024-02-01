@@ -2,6 +2,7 @@ from pathlib import Path
 from math import lcm
 from os import environ
 from collections import namedtuple
+import torch
 
 import time
 import re
@@ -10,8 +11,11 @@ import nodes
 import folder_paths
 
 import logging
+import comfy.model_management
 
 log = logging.getLogger("comfyui-prompt-control")
+
+FORCE_CPU_OFFLOAD = False
 
 
 # Minimal Modelpatcher that doesn't do anything, for LoRA loading when not
@@ -122,10 +126,11 @@ def safe_float(f, default):
 
 def unpatch_model(model):
     if model:
+        log.info("Unpatching model")
         model.unpatch_model()
 
 
-def clone_model(model):
+def clone_model(model, keep_backup=False):
     if not model:
         return None
     model = model.clone()
@@ -138,10 +143,34 @@ def add_patches(model, patches, weight):
     model.add_patches(patches, weight)
 
 
-def patch_model(model):
+def patch_model(model, forget=False, orig=None, offload_to_cpu=False):
+    global FORCE_CPU_OFFLOAD
+    try:
+        return _patch_model(model, forget, orig, FORCE_CPU_OFFLOAD)
+    except comfy.model_management.OOM_EXCEPTION:
+        FORCE_CPU_OFFLOAD = True
+        log.error("Ran out of memory while applying LoRAs, Forcing CPU offload from now on")
+        # Unpatch to restore partially applied weights
+        unpatch_model(model)
+        raise
+
+
+def _patch_model(model, forget=False, orig=None, offload_to_cpu=False):
     if not model:
         return None
+    if offload_to_cpu:
+        saved_offload = model.offload_device
+        model.offload_device = torch.device("cpu")
+    log.info("Patching model, cpu_offload=%s", model.offload_device == torch.device("cpu"))
+    if orig:
+        model.backup = orig.backup
     model.patch_model()
+    if offload_to_cpu:
+        model.offload_device = saved_offload
+    if forget:
+        model.patches = {}
+        model.object_patches = {}
+    return model
 
 
 def get_callback(model):
@@ -210,19 +239,36 @@ def make_loader(filename, lbw):
     return loader
 
 
-def apply_loras_from_spec(loraspec, model=None, clip=None, orig_model=None, orig_clip=None, patch=False, cache=None):
-    if patch:
+def apply_loras_from_spec(
+    loraspec, model=None, clip=None, orig_model=None, orig_clip=None, patch=False, cache=None, applied_loras={}
+):
+    actual_loraspec = {}
+    additive = True
+    for key in loraspec:
+        if key in applied_loras and applied_loras[key] == loraspec[key]:
+            continue
+        if key in applied_loras and applied_loras[key] != loraspec[key]:
+            additive = False
+        actual_loraspec[key] = loraspec[key]
+
+    for key in applied_loras:
+        if key not in loraspec:
+            actual_loraspec = loraspec
+            additive = False
+
+    backup_model = model
+    if not additive:
         unpatch_model(model)
-        model = clone_model(orig_model or model)
-        unpatch_model(clip)
-        clip = clone_model(orig_clip or clip)
+        # Reset clip to unpatched
+        if clip:
+            clip = orig_clip or clip
 
     if cache is None:
         cache = {}
     if not loraspec:
         return model, clip
 
-    for name, params in loraspec.items():
+    for name, params in actual_loraspec.items():
         m, c = model, clip
         w, w_clip = params["weight"], params["weight_clip"]
         if w == 0:
@@ -251,12 +297,12 @@ def apply_loras_from_spec(loraspec, model=None, clip=None, orig_model=None, orig
         model = m or model
         clip = c or clip
         if model:
-            log.info("LoRA applied: %s:%s, LBW=%s", name, params["weight"], bool(lbw))
+            log.info("Applying LoRA: %s:%s, LBW=%s, additive=%s", name, params["weight"], bool(lbw), additive)
         if clip:
-            log.info("CLIP LoRA applied: %s:%s, LBW=%s", name, params["weight_clip"], bool(lbw))
-    if patch:
-        patch_model(model)
-        patch_model(clip)
+            log.info("Applying CLIP LoRA: %s:%s, LBW=%s, additive=%s", name, params["weight_clip"], bool(lbw), additive)
+
+    # forget patches so we don't double-patch
+    model = patch_model(model, forget=True, orig=backup_model)
     return model, clip
 
 

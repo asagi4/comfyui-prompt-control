@@ -532,7 +532,9 @@ def control_to_clip_common(self, clip, schedules, lora_cache=None, cond_cache=No
         cond = cond_cache.get(cachekey)
         if cond is None:
             if loras != current_loras:
-                _, clip = utils.apply_loras_from_spec(loras, clip=orig_clip, cache=lora_cache)
+                _, clip = utils.apply_loras_from_spec(
+                    loras, clip=orig_clip, cache=lora_cache, applied_loras=current_loras
+                )
                 current_loras = loras
             cond_cache[cachekey] = do_encode(clip, prompt, schedules.defaults)
         return cond_cache[cachekey]
