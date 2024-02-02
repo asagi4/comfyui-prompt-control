@@ -30,6 +30,7 @@ Then restart ComfyUI afterwards.
 
 I try to avoid behavioural changes that break old prompts, but they may happen occasionally.
 
+- 2024-02-02 The node will now automatically enable offloading LoRA backup weights to the CPU if you run out of memory during LoRA operations, even when `--highvram` is specified. This change persists until ComfyUI is restarted.
 - 2024-01-14 Multiple `CLIP_L` instances are now joined with a space separator instead of concatenated.
 - 2024-01-09 AITemplate support dropped. I don't recommend or test AITemplate anymore. Use Stable-Fast instead (see below for info)
 - 2024-01-08 Prompt control now enables in-place weight updates on the model. This shouldn't affect anything, but increases performance slightly. You can disable this by setting the environment variable `PC_NO_INPLACE_UPDATE` to any non-empty value.
@@ -147,9 +148,13 @@ Similarly, you can use `AREA(x1 x2, y1 y2, weight)` to specify an area for the p
 Masking does not affect LoRA scheduling unless you set unet weights to 0 for a LoRA.
 
 # Schedulable LoRAs
-The `ScheduleToModel` node patches a model such that when sampling, it'll switch LoRAs between steps. You can apply the LoRA's effect separately to CLIP conditioning and the unet (model).
+The `ScheduleToModel` node patches a model so that when sampling, it'll switch LoRAs between steps. You can apply the LoRA's effect separately to CLIP conditioning and the unet (model).
 
-For me this seems to be quite slow without the --highvram switch because ComfyUI will shuffle things between the CPU and GPU. YMMV. When things stay on the GPU, it's quite fast.
+Swapping LoRAs often can be quite slow without the `--highvram` switch because ComfyUI will shuffle things between the CPU and GPU. When things stay on the GPU, it's quite fast.
+
+If you run out of VRAM during a LoRA swap, the node will attempt to save VRAM by enabling CPU offloading for future generations even in highvram mode. This persists until ComfyUI is restarted.
+
+You can also set the `PC_RETRY_ON_OOM` environment variable to any non-empty value to automatically retry sampling once if VRAM runs out.
 
 ## LoRA Block Weight
 
