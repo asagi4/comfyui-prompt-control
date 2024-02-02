@@ -1,8 +1,8 @@
 # ComfyUI prompt control
 
-Nodes for convenient prompt editing. The aim is to make basic generations in ComfyUI completely prompt-controllable.
+Nodes for LoRA and prompt scheduling that make basic operations in ComfyUI completely prompt-controllable.
 
-The basic nodes should now be stable, though I won't make interface guarantees quite yet.
+LoRA and prompt scheduling should produce identical output to the equivalent ComfyUI workflow using multiple samplers or the various conditioning manipulation nodes. If you find situations where this is not the case, please report a bug.
 
 ## What can it do?
 
