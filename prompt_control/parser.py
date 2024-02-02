@@ -20,8 +20,8 @@ interp_prompts: prompt (":" [prompt])+
 interp_steps: NUMBER ("," NUMBER)+ [":" NUMBER]
 alternate: "[" [prompt] ("|" [prompt])+ [":" NUMBER] "]"
 loraspec.99: "<lora:" FILENAME lora_weights [lora_block_weights] ">"
-lora_weights: (":" _WS? NUMBER)~1..2
-lora_block_weights: ":" PLAIN
+lora_weights.1: (":" _WS? NUMBER)~1..2
+lora_block_weights.-1: ":" PLAIN
 embedding.100: "<emb:" FILENAME ">"
 WHITESPACE: /\s+/
 _WS: WHITESPACE
