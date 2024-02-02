@@ -315,5 +315,5 @@ class Timer(object):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         elapsed = time.time() - self.start
-        if environ.get("COMFYUI_PC_TIMING"):
+        if environ.get("PC_SHOW_TIMINGS"):
             log.info(f"Executed {self.name} in {elapsed} seconds")
