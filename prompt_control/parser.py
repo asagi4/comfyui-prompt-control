@@ -7,7 +7,7 @@ log = logging.getLogger("comfyui-prompt-control")
 
 prompt_parser = lark.Lark(
     r"""
-!start: (prompt | /[][():]/+)*
+!start: (prompt | /[][():|]/+)*
 prompt: (emphasized | embedding | scheduled | alternate | sequence | interpolate | loraspec | PLAIN | /</ | />/ | WHITESPACE)+
 !emphasized: "(" prompt? ")"
         | "(" prompt ":" prompt ")"
