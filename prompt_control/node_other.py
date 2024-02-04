@@ -39,7 +39,7 @@ class PCApplySettings:
     FUNCTION = "apply"
 
     def apply(self, prompt_schedule, settings):
-        return (prompt_schedule.with_defaults(settings),)
+        return (prompt_schedule.with_filters(defaults=settings),)
 
 
 class PCScheduleSettings:
