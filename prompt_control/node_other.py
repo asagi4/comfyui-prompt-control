@@ -90,6 +90,28 @@ class PCScheduleSettings:
         return (settings,)
 
 
+class PCPromptFromSchedule:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "prompt_schedule": ("PROMPT_SCHEDULE",),
+                "at": ("FLOAT", {"min": 0.0, "max": 1.0, "step": 0.01}),
+            },
+            "optional": {"tags": ("STRING", {"default": ""})},
+        }
+
+    RETURN_TYPES = ("STRING",)
+    CATEGORY = "promptcontrol"
+    FUNCTION = "apply"
+
+    def apply(self, prompt_schedule, at, tags=""):
+        p = prompt_schedule.with_filters(tags, start=at, end=at).parsed_prompt[-1][1]
+        log.info("Prompt at %s:\n%s", at, p["prompt"])
+        log.info("LoRAs: %s", p["loras"])
+        return (p["prompt"],)
+
+
 class PromptToSchedule:
     @classmethod
     def INPUT_TYPES(s):

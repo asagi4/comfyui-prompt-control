@@ -23,6 +23,7 @@ from .prompt_control.node_other import (
     FilterSchedule,
     PCScheduleSettings,
     PCApplySettings,
+    PCPromptFromSchedule,
 )
 from .prompt_control.node_aio import PromptControlSimple
 
@@ -33,6 +34,7 @@ NODE_CLASS_MAPPINGS = {
     "PCSplitSampling": PCSplitSampling,
     "PCScheduleSettings": PCScheduleSettings,
     "PCApplySettings": PCApplySettings,
+    "PCPromptFromSchedule": PCPromptFromSchedule,
     "FilterSchedule": FilterSchedule,
     "ScheduleToCond": ScheduleToCond,
     "ScheduleToModel": ScheduleToModel,

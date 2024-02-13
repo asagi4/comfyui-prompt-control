@@ -235,6 +235,11 @@ The "steps" parameter currently does nothing; it's for future features.
 ## PCApplySettings
 Applies the give default values from `PCScheduleSettings` to a schedule
 
+## PCPromptFromSchedule
+
+Extracts a text prompt from a schedule; also logs it to the console.
+LoRAs are *not* included in the text prompt, though they are logged.
+
 ## PromptControlSimple
 This node exists purely for convenience. It's a combination of `PromptToSchedule`, `ScheduleToCond`, `ScheduleToModel` and `FilterSchedule` such that it provides as output a model, positive conds and negative conds, both with and without any specified filters applied.
 

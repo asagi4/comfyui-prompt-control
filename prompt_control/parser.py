@@ -338,12 +338,15 @@ class PromptSchedule(object):
         return interpolations, res
 
     def with_filters(self, filters=None, start=None, end=None, defaults=None):
+        def ifspecified(x, defval):
+            return x if x is not None else defval
+
         p = PromptSchedule(
             self.prompt,
-            filters=filters or self.filters,
-            start=start or self.start,
-            end=end or self.end,
-            defaults=defaults or self.defaults,
+            filters=ifspecified(filters, self.filters),
+            start=ifspecified(start, self.start),
+            end=ifspecified(end, self.end),
+            defaults=ifspecified(defaults, self.defaults),
         )
         return p
 
