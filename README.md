@@ -236,7 +236,7 @@ The "steps" parameter currently does nothing; it's for future features.
 Applies the give default values from `PCScheduleSettings` to a schedule
 
 ## PromptControlSimple
-This node exists purely for convenience. It's a combination of `PromptToSchedule`, `ScheduleToPrompt`, `ScheduleToModel` and `FilterSchedule` such that it provides as output a model, positive conds and negative conds, both with and without any specified filters applied.
+This node exists purely for convenience. It's a combination of `PromptToSchedule`, `ScheduleToCond`, `ScheduleToModel` and `FilterSchedule` such that it provides as output a model, positive conds and negative conds, both with and without any specified filters applied.
 
 This makes it handy for quick one- or two-pass workflows.
 
