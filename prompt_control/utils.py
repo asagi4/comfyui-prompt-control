@@ -198,11 +198,13 @@ def suppress_print(f):
 
 
 def lora_name_to_file(name):
-    filenames = [Path(f) for f in folder_paths.get_filename_list("loras")]
-    for f in filenames:
-        if f.stem == name:
-            return str(f)
-    log.warning("Lora %s not found", name)
+    filenames = folder_paths.get_filename_list("loras")
+    # Some autocompletion scripts replace _ with spaces
+    for n in [name, name.replace(" ", "_")]:
+        for f in filenames:
+            p = Path(f).with_suffix("")
+            if p.stem == n or str(p) == n:
+                return f
     return None
 
 
@@ -289,7 +291,9 @@ def apply_loras_from_spec(
         if not loader:
             f = lora_name_to_file(name)
             if not f:
+                log.warning("Lora %s not found", name)
                 continue
+            log.info("Loading LoRA: %s", f)
             loader = make_loader(f, bool(lbw))
             cache[cache_key] = loader
 

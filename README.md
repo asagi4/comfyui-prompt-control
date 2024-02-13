@@ -57,6 +57,15 @@ a [large::0.1] [cat|dog:0.05] [<lora:somelora:0.5:0.6>::0.5]
 
 You can also use `a [b:c:0.3,0.7]` as a shortcut. The prompt be `a` until 0.3, `a b` until 0.7, and then `c`. `[a:0.1,0.4]` is equivalent to `[a::0.1,0.4]`
 
+## LoRA loading
+
+LoRAs can be loaded by referring to the filename without extension and subdirectories will also be searched. For example, `<lora:cats:1>`. will match both `cats.safetensors` and `sd15/animals/cats.safetensors`. If there are multiple LoRAs with the same name, the first match will be loaded.
+
+Alternatively, the name can include the full directory path relative to ComfyUI's search paths: `<lora:XL/sdxllora:0.5>`. In this case, the *full* path must match.
+
+If no match is found, the node will try to replace spaces with underscores and search again. That is, `<lora:cats and dogs:1>` will find `cats_and_dogs.safetensors`. This helps with some autocompletion scripts that replace underscores with spaces.
+
+
 ## Alternating
 
 Alternating syntax is `[a|b:pct_steps]`, causing the prompt to alternate every `pct_steps`. `pct_steps` defaults to 0.1 if not specified. You can also have more than two options.

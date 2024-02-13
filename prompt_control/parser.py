@@ -26,7 +26,7 @@ embedding.100: "<emb:" FILENAME ">"
 WHITESPACE: /\s+/
 _WS: WHITESPACE
 PLAIN: /([^<>\\\[\]():|]|\\.)+/
-FILENAME: /[^<>:\/\\]+/
+FILENAME: /[^<>:]+/
 TAG: /[A-Z_]+/
 %import common.SIGNED_NUMBER -> NUMBER
 """,
