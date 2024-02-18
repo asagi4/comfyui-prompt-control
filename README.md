@@ -135,7 +135,36 @@ if there is `COMFYAND()` in the prompt, the behaviour of `AND` will change to wo
 
 There are some "functions" that can be included in a prompt to do various things. 
 
+Functions have the form `FUNCNAME(param1, param2, ...)`. How parameters are interpreted is up to the function.
+Note: Whitespace is *not* stripped from string parameters by default. Commas can be escaped with `\,`
+
 Like `AND`, these functions are parsed after regular scheduling syntax has been expanded, allowing things like `[AREA:MASK:0.3](...)`, in case that's somehow useful.
+
+### SHUFFLE and SHIFT
+
+Default parameters: `SHUFFLE(seed=0, separator=,, joiner=,)`, `SHIFT(steps=0, separator=,, joiner=,)`
+
+`SHIFT` moves elements to the left by `steps`. The default is 0 so `SHIFT()` does nothing
+`SHUFFLE` generates a random permutation with `seed` as its seed.
+
+These functions are applied to each prompt chunk **after** `BREAK`, `AND` etc. have been parsed. The prompt is split by `separator`, the operation is applied, and it's then joined back by `joiner`.
+
+Multiple instances of these functions are applied in the order they appear in the prompt.
+
+**NOTE:** These functions are *not* smart about syntax and will break emphasis if the separator occurs inside parentheses. I might fix this at some point, but for now, keep this in mind.
+
+For example:
+- `SHIFT(1) cat, dog, tiger, mouse` does a shift and results in `dog, tiger, mouse, cat`. (whitespace may vary)
+- `SHIFT(1,;) cat, dog ; tiger, mouse` results in `tiger, mouse, cat, dog`
+- `SHUFFLE() cat, dog, tiger, mouse` results in `cat, dog, mouse, tiger`
+- `SHUFFLE() SHIFT(1) cat, dog, tiger, mouse` results in `dog, mouse, tiger, cat`
+
+- `SHIFT(1) cat,dog BREAK tiger,mouse` results in `dog,cat BREAK tiger,mouse`
+- `SHIFT(1) cat, dog AND SHIFT(1) tiger, mouse` results in `dog, cat BREAK mouse, tiger`
+
+Whitespace is *not* stripped and may also be used as a joiner or separator
+- `SHIFT(1,, ) cat,dog` results in `dog cat`
+
 
 ### NOISE
 

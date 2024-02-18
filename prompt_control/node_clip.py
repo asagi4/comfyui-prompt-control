@@ -237,6 +237,42 @@ def encode_regions(clip, tokens, regions, weight_interpretation="comfy", token_n
     return cond, pooled
 
 
+SHUFFLE_GEN = torch.Generator(device="cpu")
+
+
+def shuffle_chunk(shuffle, c):
+    func, shuffle = shuffle
+    shuffle_count = int(safe_float(shuffle[0], 0))
+    _, separator, joiner = shuffle
+    if separator == "default":
+        separator = ","
+
+    if not separator:
+        separator = ","
+
+    joiner = {
+        "default": ",",
+        "separator": separator,
+    }.get(joiner, joiner)
+
+    log.info("%s arg=%s sep=%s join=%s", func, shuffle_count, separator, joiner)
+    separated = c.split(separator)
+    if func == "SHIFT":
+        shuffle_count = shuffle_count % len(separated)
+        permutation = separated[shuffle_count:] + separated[:shuffle_count]
+    elif func == "SHUFFLE":
+        SHUFFLE_GEN.manual_seed(shuffle_count)
+        permutation = [separated[i] for i in torch.randperm(len(separated), generator=SHUFFLE_GEN)]
+    else:
+        # ??? should never get here
+        permutation = separated
+
+    permutation = [p for p in permutation if p.strip()]
+    if permutation != separated:
+        c = joiner.join(permutation)
+    return c
+
+
 def encode_prompt(clip, text, default_style="comfy", default_normalization="none"):
     style, normalization, text = get_style(text, default_style, default_normalization)
     text, regions = parse_cuts(text)
@@ -245,7 +281,13 @@ def encode_prompt(clip, text, default_style="comfy", default_normalization="none
     chunks = re.split(r"\bBREAK\b", text)
     token_chunks = []
     for c in chunks:
-        c = c.strip()
+        c, shuffles = get_function(c.strip(), "(SHIFT|SHUFFLE)", ["0", "default", "default"], return_func_name=True)
+        r = c
+        for s in shuffles:
+            r = shuffle_chunk(s, r)
+        if r != c:
+            log.info("Shuffled prompt chunk to %s", r)
+            c = r
         # Tokenizer returns padded results
         t = clip.tokenize(c, return_word_ids=len(regions) > 0 or (have_advanced_encode and style != "perp"))
         token_chunks.append(t)

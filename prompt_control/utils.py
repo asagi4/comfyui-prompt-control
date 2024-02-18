@@ -70,25 +70,33 @@ def find_closing_paren(text, start):
     return len(text)
 
 
-def get_function(text, func, defaults):
+def get_function(text, func, defaults, return_func_name=False):
     rex = re.compile(rf"\b{func}\(", re.MULTILINE)
     instances = []
     match = rex.search(text)
     while match:
         # Match start, content start
         start, after_first_paren = match.span()
+        funcname = text[start : after_first_paren - 1]
         end = find_closing_paren(text, after_first_paren)
-        instances.append(text[after_first_paren:end])
+        args = parse_strings(text[after_first_paren:end], defaults)
+        if return_func_name:
+            instances.append((funcname, args))
+        else:
+            instances.append(args)
+
         text = text[:start] + text[end + 1 :]
         match = rex.search(text)
-    return text, [parse_strings(i, defaults) for i in instances]
+    return text, instances
 
 
-def parse_args(strings, arg_spec):
+def parse_args(strings, arg_spec, strip=True):
     args = [s[1] for s in arg_spec]
     for i, spec in list(enumerate(arg_spec))[: len(strings)]:
         try:
-            args[i] = spec[0](strings[i].strip())
+            if strip:
+                strings[i] = strings[i].strip()
+            args[i] = spec[0](strings[i])
         except ValueError:
             pass
     return args
@@ -103,11 +111,11 @@ def parse_strings(string, defaults, split_re=r"(?<!\\),", replace=(r"\,", ",")):
     if defaults is None:
         return string
     spec = [(lambda x: x, d) for d in defaults]
-    splits = re.split(split_re, string.strip())
+    splits = re.split(split_re, string)
     if replace:
         f, t = replace
         splits = [s.replace(f, t) for s in splits]
-    return parse_args(splits, spec)
+    return parse_args(splits, spec, strip=False)
 
 
 def equalize(*tensors):
