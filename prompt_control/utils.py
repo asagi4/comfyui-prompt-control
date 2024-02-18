@@ -211,6 +211,9 @@ def suppress_print(f):
 
 def lora_name_to_file(name):
     filenames = folder_paths.get_filename_list("loras")
+    # Return exact matches as is
+    if name in filenames:
+        return name
     # Some autocompletion scripts replace _ with spaces
     for n in [name, name.replace(" ", "_")]:
         for f in filenames:

@@ -15,6 +15,8 @@ Things you can control via the prompt:
 
 [This example workflow](workflows/example.json?raw=1) implements a two-pass workflow illustrating most scheduling features.
 
+The tools in this repository combine well with the macro and wildcard functionality in [comfyui-utility-nodes](https://github.com/asagi4/comfyui-utility-nodes)
+
 ## Requirements
 
 You need to have `lark` installed in your Python environment for parsing to work (If you reuse A1111's venv, it'll already be there)
@@ -61,9 +63,11 @@ You can also use `a [b:c:0.3,0.7]` as a shortcut. The prompt be `a` until 0.3, `
 
 LoRAs can be loaded by referring to the filename without extension and subdirectories will also be searched. For example, `<lora:cats:1>`. will match both `cats.safetensors` and `sd15/animals/cats.safetensors`. If there are multiple LoRAs with the same name, the first match will be loaded.
 
-Alternatively, the name can include the full directory path relative to ComfyUI's search paths: `<lora:XL/sdxllora:0.5>`. In this case, the *full* path must match.
+Alternatively, the name can include the full directory path relative to ComfyUI's search paths, without extension: `<lora:XL/sdxllora:0.5>`. In this case, the *full* path must match.
 
 If no match is found, the node will try to replace spaces with underscores and search again. That is, `<lora:cats and dogs:1>` will find `cats_and_dogs.safetensors`. This helps with some autocompletion scripts that replace underscores with spaces.
+
+Finally, you can give the exact path (including the extension) as shown in `LoRALoader`.
 
 
 ## Alternating
