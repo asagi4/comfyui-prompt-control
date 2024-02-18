@@ -99,11 +99,15 @@ def parse_floats(string, defaults, split_re=","):
     return parse_args(re.split(split_re, string.strip()), spec)
 
 
-def parse_strings(string, defaults, split_re=","):
+def parse_strings(string, defaults, split_re=r"(?<!\\),", replace=(r"\,", ",")):
     if defaults is None:
         return string
     spec = [(lambda x: x, d) for d in defaults]
-    return parse_args(re.split(split_re, string.strip()), spec)
+    splits = re.split(split_re, string.strip())
+    if replace:
+        f, t = replace
+        splits = [s.replace(f, t) for s in splits]
+    return parse_args(splits, spec)
 
 
 def equalize(*tensors):
