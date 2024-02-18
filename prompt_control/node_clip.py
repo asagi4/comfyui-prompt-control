@@ -1,11 +1,11 @@
+import logging
+import re
 import torch
 from . import utils as utils
 from .parser import parse_prompt_schedules, parse_cuts
 from .utils import Timer, equalize, safe_float, get_function, parse_floats
 from .perp_weight import perp_encode
 
-import logging
-import re
 
 log = logging.getLogger("comfyui-prompt-control")
 
@@ -137,7 +137,7 @@ class ScheduleToCond:
 
     def apply(self, clip, prompt_schedule):
         with Timer("ScheduleToCond"):
-            r = (control_to_clip_common(self, clip, prompt_schedule),)
+            r = (control_to_clip_common(clip, prompt_schedule),)
         return r
 
 
@@ -158,7 +158,7 @@ class EditableCLIPEncode:
 
     def parse(self, clip, text, filter_tags=""):
         parsed = parse_prompt_schedules(text).with_filters(filter_tags)
-        return (control_to_clip_common(self, clip, parsed),)
+        return (control_to_clip_common(clip, parsed),)
 
 
 def get_sdxl(text, defaults):
@@ -168,9 +168,9 @@ def get_sdxl(text, defaults):
         return text, {}
     args = sdxl[0]
     d = defaults
-    w, h = parse_floats(args[0], [d.get("sdxl_width", 1024), d.get("sdxl_height", 1024)], split_re="\s+")
-    tw, th = parse_floats(args[1], [d.get("sdxl_twidth", 1024), d.get("sdxl_theight", 1024)], split_re="\s+")
-    cropw, croph = parse_floats(args[2], [d.get("sdxl_cwidth", 0), d.get("sdxl_cheight", 0)], split_re="\s+")
+    w, h = parse_floats(args[0], [d.get("sdxl_width", 1024), d.get("sdxl_height", 1024)], split_re="\\s+")
+    tw, th = parse_floats(args[1], [d.get("sdxl_twidth", 1024), d.get("sdxl_theight", 1024)], split_re="\\s+")
+    cropw, croph = parse_floats(args[2], [d.get("sdxl_cwidth", 0), d.get("sdxl_cheight", 0)], split_re="\\s+")
 
     opts = {
         "width": int(w),
@@ -361,8 +361,8 @@ def get_area(text):
         return text, None
 
     args = areas[0]
-    x, w = parse_floats(args[0], [0.0, 1.0], split_re="\s+")
-    y, h = parse_floats(args[1], [0.0, 1.0], split_re="\s+")
+    x, w = parse_floats(args[0], [0.0, 1.0], split_re="\\s+")
+    y, h = parse_floats(args[1], [0.0, 1.0], split_re="\\s+")
     weight = safe_float(args[2], 1.0)
 
     def is_pct(f):
@@ -399,8 +399,8 @@ def get_mask(text, size):
         return text, None, None
 
     args = masks[0]
-    x1, x2 = parse_floats(args[0], [0.0, 1.0], split_re="\s+")
-    y1, y2 = parse_floats(args[1], [0.0, 1.0], split_re="\s+")
+    x1, x2 = parse_floats(args[0], [0.0, 1.0], split_re="\\s+")
+    y1, y2 = parse_floats(args[1], [0.0, 1.0], split_re="\\s+")
     weight = safe_float(args[2], 1.0)
 
     def is_pct(f):
@@ -545,7 +545,7 @@ def debug_conds(conds):
     return r
 
 
-def control_to_clip_common(self, clip, schedules, lora_cache=None, cond_cache=None):
+def control_to_clip_common(clip, schedules, lora_cache=None, cond_cache=None):
     orig_clip = clip.clone()
     current_loras = {}
     if lora_cache is None:

@@ -1,16 +1,16 @@
-from pathlib import Path
-from math import lcm
-from os import environ
 from collections import namedtuple
+from os import environ
+from pathlib import Path
+import re
+from math import lcm
+import time
+import logging
 import torch
 
-import time
-import re
 
 import nodes
 import folder_paths
 
-import logging
 import comfy.model_management
 
 log = logging.getLogger("comfyui-prompt-control")
@@ -142,7 +142,7 @@ def unpatch_model(model):
         model.unpatch_model()
 
 
-def clone_model(model, keep_backup=False):
+def clone_model(model):
     if not model:
         return None
     model = model.clone()
@@ -155,7 +155,7 @@ def add_patches(model, patches, weight):
     model.add_patches(patches, weight)
 
 
-def patch_model(model, forget=False, orig=None, offload_to_cpu=False):
+def patch_model(model, forget=False, orig=None):
     global FORCE_CPU_OFFLOAD
     try:
         return _patch_model(model, forget, orig, FORCE_CPU_OFFLOAD)
@@ -202,7 +202,7 @@ def suppress_print(f):
     __builtins__["print"] = noop
     try:
         x = f()
-    except:
+    except BaseException:
         __builtins__["print"] = p
         raise
     __builtins__["print"] = p
@@ -254,8 +254,10 @@ def make_loader(filename, lbw):
 
 
 def apply_loras_from_spec(
-    loraspec, model=None, clip=None, orig_model=None, orig_clip=None, patch=False, cache=None, applied_loras={}
+    loraspec, model=None, clip=None, orig_model=None, orig_clip=None, patch=False, cache=None, applied_loras=None
 ):
+    if applied_loras is None:
+        applied_loras = {}
     actual_loraspec = {}
     additive = True
     for key in loraspec:
@@ -322,9 +324,10 @@ def apply_loras_from_spec(
     return model, clip
 
 
-class Timer(object):
+class Timer:
     def __init__(self, name):
         self.name = name
+        self.start = None
 
     def __enter__(self):
         self.start = time.time()
@@ -332,4 +335,4 @@ class Timer(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         elapsed = time.time() - self.start
         if environ.get("PC_SHOW_TIMINGS"):
-            log.info(f"Executed {self.name} in {elapsed} seconds")
+            log.info("Executed %s in %s seconds", self.name, elapsed)

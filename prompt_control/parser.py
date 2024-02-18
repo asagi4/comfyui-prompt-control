@@ -202,7 +202,7 @@ def at_step(step, filters, tree):
             loraspecs = {}
             args = flatten(args)
             for a in args:
-                if type(a) == str:
+                if isinstance(a, str):
                     prompt.append(a)
                 elif isinstance(a, tuple):
                     # sum identical specs together

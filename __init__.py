@@ -2,6 +2,17 @@ import os
 import sys
 import logging
 
+from .prompt_control.node_clip import EditableCLIPEncode, ScheduleToCond
+from .prompt_control.node_lora import LoRAScheduler, ScheduleToModel, PCSplitSampling
+from .prompt_control.node_other import (
+    PromptToSchedule,
+    FilterSchedule,
+    PCScheduleSettings,
+    PCApplySettings,
+    PCPromptFromSchedule,
+)
+from .prompt_control.node_aio import PromptControlSimple
+
 log = logging.getLogger("comfyui-prompt-control")
 log.propagate = False
 if not log.handlers:
@@ -15,17 +26,6 @@ else:
     log.setLevel(logging.INFO)
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "comfy"))
-
-from .prompt_control.node_clip import EditableCLIPEncode, ScheduleToCond
-from .prompt_control.node_lora import LoRAScheduler, ScheduleToModel, PCSplitSampling
-from .prompt_control.node_other import (
-    PromptToSchedule,
-    FilterSchedule,
-    PCScheduleSettings,
-    PCApplySettings,
-    PCPromptFromSchedule,
-)
-from .prompt_control.node_aio import PromptControlSimple
 
 
 NODE_CLASS_MAPPINGS = {
