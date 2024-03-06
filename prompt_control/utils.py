@@ -218,7 +218,7 @@ def lora_name_to_file(name):
     for n in [name, name.replace(" ", "_")]:
         for f in filenames:
             p = Path(f).with_suffix("")
-            if p.stem == n or str(p) == n:
+            if p.name == n or str(p) == n:
                 return f
     return None
 
