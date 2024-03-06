@@ -176,7 +176,7 @@ def get_sdxl(text, defaults):
         "width": int(w),
         "height": int(h),
         "target_width": int(tw),
-        "target_height": int(tw),
+        "target_height": int(th),
         "crop_w": int(cropw),
         "crop_h": int(croph),
     }
