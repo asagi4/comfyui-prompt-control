@@ -200,12 +200,17 @@ def suppress_print(f):
 
     p = print
     __builtins__["print"] = noop
+    rootlogger = logging.getLogger()
+    oldlevel = rootlogger.level
     try:
+        rootlogger.setLevel(logging.ERROR)
         x = f()
     except BaseException:
         __builtins__["print"] = p
+        rootlogger.setLevel(oldlevel)
         raise
     __builtins__["print"] = p
+    rootlogger.setLevel(oldlevel)
     return x
 
 
