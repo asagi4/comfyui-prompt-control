@@ -1,5 +1,6 @@
 import logging
 import torch
+import inspect
 
 from .utils import unpatch_model, clone_model, set_callback, apply_loras_from_spec
 from .parser import parse_prompt_schedules
@@ -19,7 +20,15 @@ def schedule_lora_common(model, schedules, lora_cache=None):
     def sampler_cb(orig_sampler, *args, **kwargs):
         split_sampling = args[0].model_options.get("pc_split_sampling")
         state = {}
-        steps = args[2]
+        # For custom samplers, sigmas is not a keyword argument. Do the check this way to fall back to old behaviour if other hijacks exist.
+        if "sigmas" in inspect.getfullargspec(orig_sampler).args:
+            steps = len(args[4])
+            log.info(
+                "SamplerCustom detected, number of steps not available. LoRA schedules will be calculated based on the number of sigmas (%s)",
+                steps,
+            )
+        else:
+            steps = args[2]
         start_step = kwargs.get("start_step") or 0
         # The model patcher may change if LoRAs are applied
         state["model"] = args[0]

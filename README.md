@@ -294,6 +294,7 @@ This makes it handy for quick one- or two-pass workflows.
 
 # Known issues
 
+- Workflows using `SamplerCustom` will calculate LoRA schedules based on the number of sigmas given to the sampler instead of the number of steps, since that information isn't available.
 - `CUT` does not work with `STYLE:perp`
 - `PCSplitSampling` overrides ComfyUI's `BrownianTreeNoiseSampler` noise sampling behaviour so that each split segment doesn't add crazy amounts of noise to the result with some samplers.
 - Split sampling may have weird behaviour if your step percentages go below 1 step.
