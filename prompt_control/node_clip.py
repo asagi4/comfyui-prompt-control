@@ -431,10 +431,17 @@ def get_mask(text, size):
     if not masks:
         return text, None, None
 
+    def feather(f, mask):
+        l, t, r, b, *_ = [int(x) for x in parse_floats(f[0], [0, 0, 0, 0], split_re="\\s+")]
+        mask = FeatherMask().feather(mask, l, t, r, b)[0]
+        log.info("FeatherMask l=%s, t=%s, r=%s, b=%s", l, t, r, b)
+        return mask
+
     mask = None
     totalweight = 1.0
     if maskw:
         totalweight = safe_float(maskw[0][0], 1.0)
+    i = 0
     for m in masks:
         weight = safe_float(m[2], 1.0)
         op = m[3]
@@ -444,15 +451,18 @@ def get_mask(text, size):
         else:
             totalweight = weight
         nextmask = make_mask(m, size, value)
+        if i < len(feathers):
+            nextmask = feather(feathers[i], nextmask)
+        i += 1
         if mask is not None:
             log.info("MaskComposite op=%s", op)
             mask = MaskComposite().combine(mask, nextmask, 0, 0, op)[0]
         else:
             mask = nextmask
-    for f in feathers:
-        l, t, r, b, *_ = [int(x) for x in parse_floats(f[0], [0, 0, 0, 0], split_re="\\s+")]
-        mask = FeatherMask().feather(mask, l, t, r, b)[0]
-        log.info("FeatherMask l=%s, t=%s, r=%s, b=%s", l, t, r, b)
+
+    # apply leftover FEATHER() specs to the whole
+    for f in feathers[i:]:
+        mask = feather(f, mask)
 
     return text, mask, totalweight
 
