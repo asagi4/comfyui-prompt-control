@@ -5,6 +5,7 @@ from . import utils as utils
 from .parser import parse_prompt_schedules, parse_cuts
 from .utils import Timer, equalize, safe_float, get_function, parse_floats
 from .perp_weight import perp_encode
+from comfy_extras.nodes_mask import FeatherMask, MaskComposite
 
 
 log = logging.getLogger("comfyui-prompt-control")
@@ -391,17 +392,9 @@ def get_mask_size(text, defaults):
     return text, (int(w), int(h))
 
 
-def get_mask(text, size):
-    """Parse MASK(x1 x2, y1 y2, weight)"""
-    # TODO: combine multiple masks
-    text, masks = get_function(text, "MASK", ["0 1", "0 1", "1"])
-    if not masks:
-        return text, None, None
-
-    args = masks[0]
+def make_mask(args, size, weight):
     x1, x2 = parse_floats(args[0], [0.0, 1.0], split_re="\\s+")
     y1, y2 = parse_floats(args[1], [0.0, 1.0], split_re="\\s+")
-    weight = safe_float(args[2], 1.0)
 
     def is_pct(f):
         return f >= 0.0 and f <= 1.0
@@ -423,11 +416,45 @@ def get_mask(text, size):
         )
 
     mask = torch.full((h, w), 0, dtype=torch.float32, device="cpu")
-    mask[ys[0] : ys[1], xs[0] : xs[1]] = 1.0
+    mask[ys[0] : ys[1], xs[0] : xs[1]] = weight
     mask = mask.unsqueeze(0)
     log.info("Mask xs=%s, ys=%s, shape=%s, weight=%s", xs, ys, mask.shape, weight)
+    return mask
 
-    return text, mask, weight
+
+def get_mask(text, size):
+    """Parse MASK(x1 x2, y1 y2, weight) and FEATHER(left top right bottom)"""
+    # TODO: combine multiple masks
+    text, masks = get_function(text, "MASK", ["0 1", "0 1", "1", "multiply"])
+    text, feathers = get_function(text, "FEATHER", ["0 0 0 0"])
+    text, maskw = get_function(text, "MASKW", ["1.0"])
+    if not masks:
+        return text, None, None
+
+    mask = None
+    totalweight = 1.0
+    if maskw:
+        totalweight = safe_float(maskw[0][0], 1.0)
+    for m in masks:
+        weight = safe_float(m[2], 1.0)
+        op = m[3]
+        value = 1.0
+        if len(masks) > 1:
+            value = weight
+        else:
+            totalweight = weight
+        nextmask = make_mask(m, size, value)
+        if mask is not None:
+            log.info("MaskComposite op=%s", op)
+            mask = MaskComposite().combine(mask, nextmask, 0, 0, op)[0]
+        else:
+            mask = nextmask
+    for f in feathers:
+        l, t, r, b, *_ = [int(x) for x in parse_floats(f[0], [0, 0, 0, 0], split_re="\\s+")]
+        mask = FeatherMask().feather(mask, l, t, r, b)[0]
+        log.info("FeatherMask l=%s, t=%s, r=%s, b=%s", l, t, r, b)
+
+    return text, mask, totalweight
 
 
 def get_noise(text):
