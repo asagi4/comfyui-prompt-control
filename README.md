@@ -311,6 +311,7 @@ This makes it handy for quick one- or two-pass workflows.
 
 # Known issues
 
+- If you use LoRA scheduling in a workflow with `LoRALoader` nodes, you might get inconsistent results. For now, just avoid mixing `ScheduleToModel` or `LoRAScheduler` with `LoRALoader`. See https://github.com/asagi4/comfyui-prompt-control/issues/36
 - Workflows using `SamplerCustom` will calculate LoRA schedules based on the number of sigmas given to the sampler instead of the number of steps, since that information isn't available.
 - `CUT` does not work with `STYLE:perp`
 - `PCSplitSampling` overrides ComfyUI's `BrownianTreeNoiseSampler` noise sampling behaviour so that each split segment doesn't add crazy amounts of noise to the result with some samplers.
