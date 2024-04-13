@@ -1,1 +1,2 @@
-lark
+# 1.1.7 apparently has a bug that breaks things, see https://github.com/asagi4/comfyui-prompt-control/issues/35
+lark >= 1.1.0, != 1.1.7
