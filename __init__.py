@@ -3,7 +3,7 @@ import sys
 import logging
 
 from .prompt_control.node_clip import EditableCLIPEncode, ScheduleToCond
-from .prompt_control.node_lora import LoRAScheduler, ScheduleToModel, PCSplitSampling
+from .prompt_control.node_lora import LoRAScheduler, ScheduleToModel, PCSplitSampling, PCWrapGuider
 from .prompt_control.node_other import (
     PromptToSchedule,
     FilterSchedule,
@@ -35,6 +35,7 @@ NODE_CLASS_MAPPINGS = {
     "PCScheduleSettings": PCScheduleSettings,
     "PCApplySettings": PCApplySettings,
     "PCPromptFromSchedule": PCPromptFromSchedule,
+    "PCWrapGuider": PCWrapGuider,
     "FilterSchedule": FilterSchedule,
     "ScheduleToCond": ScheduleToCond,
     "ScheduleToModel": ScheduleToModel,
