@@ -52,7 +52,7 @@ def schedule_lora_common(model, schedules, lora_cache=None):
         start_step = kwargs.get("start_step") or 0
         # The model patcher may change if LoRAs are applied
         state["model"] = args[0]
-        state["applied_loras"] = []
+        state["applied_loras"] = {}
 
         orig_cb = kwargs["callback"]
 
@@ -64,7 +64,7 @@ def schedule_lora_common(model, schedules, lora_cache=None):
 
         kwargs["callback"] = step_callback
 
-        apply_lora_for_step(start_step)
+        apply_lora_for_step(schedules, start_step, steps, state, orig_model, lora_cache, patch=True)
 
         def filter_conds(conds, t, start_t, end_t):
             r = []
