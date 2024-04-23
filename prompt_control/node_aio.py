@@ -1,9 +1,12 @@
 from .node_clip import control_to_clip_common
 from .node_lora import schedule_lora_common
 from .parser import parse_prompt_schedules
+from .utils import get_cached_model
 
 
 class PromptControlSimple:
+    lora_cache = None
+
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -26,23 +29,26 @@ class PromptControlSimple:
     FUNCTION = "apply"
 
     def apply(self, model, clip, positive, negative, tags="", start=0.0, end=1.0):
-        lora_cache = {}
+        if self.lora_cache is None:
+            self.lora_cache = {}
         cond_cache = {}
         pos_sched = parse_prompt_schedules(positive)
-        pos_cond = pos_filtered = control_to_clip_common(clip, pos_sched, lora_cache, cond_cache)
+        pos_cond = pos_filtered = control_to_clip_common(clip, pos_sched, self.lora_cache, cond_cache)
 
         neg_sched = parse_prompt_schedules(negative)
-        neg_cond = neg_filtered = control_to_clip_common(clip, neg_sched, lora_cache, cond_cache)
+        neg_cond = neg_filtered = control_to_clip_common(clip, neg_sched, self.lora_cache, cond_cache)
 
-        new_model = model_filtered = schedule_lora_common(model, pos_sched, lora_cache)
+        new_model = model_filtered = schedule_lora_common(get_cached_model(model), pos_sched, self.lora_cache)
 
         if [tags.strip(), start, end] != ["", 0.0, 1.0]:
             pos_filtered = control_to_clip_common(
-                clip, pos_sched.with_filters(tags, start, end), lora_cache, cond_cache
+                clip, pos_sched.with_filters(tags, start, end), self.lora_cache, cond_cache
             )
             neg_filtered = control_to_clip_common(
-                clip, neg_sched.with_filters(tags, start, end), lora_cache, cond_cache
+                clip, neg_sched.with_filters(tags, start, end), self.lora_cache, cond_cache
             )
-            model_filtered = schedule_lora_common(model, pos_sched.with_filters(tags, start, end), lora_cache)
+            model_filtered = schedule_lora_common(
+                get_cached_model(model), pos_sched.with_filters(tags, start, end), self.lora_cache
+            )
 
         return (new_model, pos_cond, neg_cond, model_filtered, pos_filtered, neg_filtered)

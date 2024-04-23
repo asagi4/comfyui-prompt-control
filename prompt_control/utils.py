@@ -13,9 +13,39 @@ import folder_paths
 
 import comfy.model_management
 
+from comfy.model_patcher import ModelPatcher
+
 log = logging.getLogger("comfyui-prompt-control")
 
 FORCE_CPU_OFFLOAD = bool(environ.get("COMFYUI_PC_CPU_OFFLOAD"))
+CACHE_MODELS = bool(environ.get("COMFYUI_PC_CACHE_MODEL", False))
+MODEL_STATES = {}
+
+
+def finish_sampling(model):
+    # Hold on to the current model state in case the next gen
+    # doesn't need to apply more LoRAs
+    if not CACHE_MODELS:
+        unpatch_model(model)
+
+
+def set_state(model, key, value):
+    s = get_state(model, None)
+    s[key] = value
+
+
+def get_state(model, key):
+    global MODEL_STATES
+    model_key = id(model.model)
+    state = MODEL_STATES.get(model_key, dict(applied_loras={}))
+    MODEL_STATES[model_key] = state
+    if key is None:
+        return state
+    return state[key]
+
+
+def get_cached_model(model):
+    return clone_model(model)
 
 
 # Minimal Modelpatcher that doesn't do anything, for LoRA loading when not
@@ -136,16 +166,32 @@ def safe_float(f, default):
         return default
 
 
+class PCModelPatcher(ModelPatcher):
+    def unpatch_model(self, device_to=None, unpatch_weights=True, really_unpatch=False):
+        if unpatch_weights and not really_unpatch:
+            log.info("Will prevent model unpatch for performance")
+
+        return super().unpatch_model(device_to=device_to, unpatch_weights=unpatch_weights and really_unpatch)
+
+
 def unpatch_model(model):
     if model:
-        log.info("Unpatching model")
-        model.unpatch_model()
+        if isinstance(model, PCModelPatcher):
+            model.unpatch_model(really_unpatch=True)
+        else:
+            model.unpatch_model()
+        set_state(model, "applied_loras", {})
 
 
 def clone_model(model):
     if not model:
         return None
     model = model.clone()
+    if model.__class__ != PCModelPatcher:
+        log.info("Swapping ModelPatcher class to PCModelPatcher")
+        if model.__class__ != ModelPatcher:
+            log.warning("Model class isn't ModelPatcher, things may break!")
+        model.__class__ = PCModelPatcher
     if not environ.get("PC_NO_INPLACE_UPDATE"):
         model.weight_inplace_update = True
     return model
@@ -155,10 +201,10 @@ def add_patches(model, patches, weight):
     model.add_patches(patches, weight)
 
 
-def patch_model(model, forget=False, orig=None):
+def patch_model(model):
     global FORCE_CPU_OFFLOAD
     try:
-        return _patch_model(model, forget, orig, FORCE_CPU_OFFLOAD)
+        return _patch_model(model, FORCE_CPU_OFFLOAD)
     except comfy.model_management.OOM_EXCEPTION:
         FORCE_CPU_OFFLOAD = True
         log.error("Ran out of memory while applying LoRAs, Forcing CPU offload from now on")
@@ -167,21 +213,16 @@ def patch_model(model, forget=False, orig=None):
         raise
 
 
-def _patch_model(model, forget=False, orig=None, offload_to_cpu=False):
+def _patch_model(model, offload_to_cpu=False):
     if not model:
         return None
     if offload_to_cpu:
         saved_offload = model.offload_device
         model.offload_device = torch.device("cpu")
     log.info("Patching model, model.load_device=%s model.model.device=%s cpu_offload=%s", model.load_device, model.model.device, model.offload_device == torch.device("cpu"))
-    if orig:
-        model.backup = orig.backup
     model.patch_model(device_to=model.load_device)
     if offload_to_cpu:
         model.offload_device = saved_offload
-    if forget:
-        model.patches = {}
-        model.object_patches = {}
     return model
 
 
@@ -277,11 +318,11 @@ def apply_loras_from_spec(
 
     for key in applied_loras:
         if key not in loraspec:
-            actual_loraspec = loraspec
             additive = False
 
-    backup_model = model
     if not additive:
+        # Need to unpatch and reapply all LoRAs
+        actual_loraspec = loraspec
         unpatch_model(model)
         # Reset clip to unpatched
         if clip:
@@ -328,7 +369,7 @@ def apply_loras_from_spec(
             log.info("Applying CLIP LoRA: %s:%s, LBW=%s, additive=%s", name, params["weight_clip"], bool(lbw), additive)
 
     # forget patches so we don't double-patch
-    model = patch_model(model, forget=True, orig=backup_model)
+    model = patch_model(model)
     return model, clip
 
 

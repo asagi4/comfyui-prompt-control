@@ -1,7 +1,15 @@
 import logging
 import torch
 
-from .utils import unpatch_model, clone_model, set_callback, apply_loras_from_spec
+from .utils import (
+    clone_model,
+    set_callback,
+    apply_loras_from_spec,
+    get_cached_model,
+    get_state,
+    set_state,
+    finish_sampling,
+)
 from .parser import parse_prompt_schedules
 from .hijack import do_hijack
 from comfy.samplers import CFGGuider
@@ -9,36 +17,34 @@ from comfy.samplers import CFGGuider
 log = logging.getLogger("comfyui-prompt-control")
 
 
-def apply_lora_for_step(schedules, step, total_steps, state, original_model, lora_cache, patch=True):
+def apply_lora_for_step(model, schedules, step, total_steps, lora_cache):
     # zero-indexed steps, 0 = first step, but schedules are 1-indexed
     sched = schedules.at_step(step + 1, total_steps)
     lora_spec = sched[1]["loras"]
+    applied_loras = get_state(model, "applied_loras")
 
-    if state["applied_loras"] != lora_spec:
+    if applied_loras != lora_spec:
         log.debug("At step %s, applying lora_spec %s", step, lora_spec)
         m, _ = apply_loras_from_spec(
             lora_spec,
-            model=state["model"],
-            orig_model=original_model,
+            model=model,
+            orig_model=model,
             cache=lora_cache,
-            patch=patch,
-            applied_loras=state["applied_loras"],
+            patch=True,
+            applied_loras=applied_loras,
         )
-        state["model"] = m
-        state["applied_loras"] = lora_spec
+        set_state(model, "applied_loras", lora_spec)
 
 
 def schedule_lora_common(model, schedules, lora_cache=None):
     do_hijack()
-    orig_model = clone_model(model)
-    orig_model.model_options["pc_schedules"] = schedules
+    model.model_options["pc_schedules"] = schedules
 
     if lora_cache is None:
         lora_cache = {}
 
     def sampler_cb(orig_sampler, is_custom, *args, **kwargs):
         split_sampling = args[0].model_options.get("pc_split_sampling")
-        state = {}
         if is_custom:
             steps = len(args[4])
             log.info(
@@ -50,20 +56,17 @@ def schedule_lora_common(model, schedules, lora_cache=None):
             steps = args[2]
         start_step = kwargs.get("start_step") or 0
         # The model patcher may change if LoRAs are applied
-        state["model"] = args[0]
-        state["applied_loras"] = {}
-
         orig_cb = kwargs["callback"]
 
         def step_callback(*args, **kwargs):
             current_step = args[0] + start_step
-            apply_lora_for_step(schedules, current_step, steps, state, orig_model, lora_cache, patch=True)
+            apply_lora_for_step(model, schedules, current_step, steps, lora_cache)
             if orig_cb:
                 return orig_cb(*args, **kwargs)
 
         kwargs["callback"] = step_callback
 
-        apply_lora_for_step(schedules, start_step, steps, state, orig_model, lora_cache, patch=True)
+        apply_lora_for_step(model, schedules, start_step, steps, lora_cache)
 
         def filter_conds(conds, t, start_t, end_t):
             r = []
@@ -98,7 +101,6 @@ def schedule_lora_common(model, schedules, lora_cache=None):
                 end_t = round(end_step / steps, 2)
                 new_kwargs = kwargs.copy()
                 new_args = list(args)
-                new_args[0] = state["model"]
                 new_args[6] = filter_conds(new_args[6], "positive", start_t, end_t)
                 new_args[7] = filter_conds(new_args[7], "negative", start_t, end_t)
                 new_args[8] = s
@@ -115,21 +117,23 @@ def schedule_lora_common(model, schedules, lora_cache=None):
                     new_kwargs["disable_noise"] = True
                     new_args[1] = torch.zeros_like(s)
 
-                s = orig_sampler(*new_args, **new_kwargs)
+                try:
+                    s = orig_sampler(*new_args, **new_kwargs)
+                finally:
+                    finish_sampling(model)
                 start_step = end_step
                 first_step = False
         else:
-            args = list(args)
-            args[0] = state["model"]
-            s = orig_sampler(*args, **kwargs)
-
-        unpatch_model(state["model"])
+            try:
+                s = orig_sampler(*args, **kwargs)
+            finally:
+                finish_sampling(model)
 
         return s
 
-    set_callback(orig_model, sampler_cb)
+    set_callback(model, sampler_cb)
 
-    return orig_model
+    return model
 
 
 class PCWrapGuider:
@@ -164,33 +168,31 @@ class PCGuider(CFGGuider):
     def sample(self, *args, **kwargs):
         orig_cb = kwargs["callback"]
         sigmas = args[3]
-        state = {"model": self.guider.model_patcher, "applied_loras": {}}
+        model = self.guider.model_patcher
 
         def step_callback(*args, **kwargs):
             apply_lora_for_step(
+                model,
                 self.schedules,
                 args[0],
                 len(sigmas),
-                state,
-                self.guider.model_patcher,
                 self.lora_cache,
-                patch=True,
             )
             if orig_cb:
                 return orig_cb(*args, **kwargs)
 
         kwargs["callback"] = step_callback
-        apply_lora_for_step(
-            self.schedules, 0, len(sigmas), state, self.guider.model_patcher, self.lora_cache, patch=True
-        )
+        apply_lora_for_step(model, self.schedules, 0, len(sigmas), self.lora_cache)
         try:
             r = self.guider.sample(*args, **kwargs)
         finally:
-            unpatch_model(state["model"])
+            finish_sampling(model)
         return r
 
 
 class ScheduleToModel:
+    lora_cache = None
+
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -205,7 +207,9 @@ class ScheduleToModel:
     FUNCTION = "apply"
 
     def apply(self, model, prompt_schedule):
-        return (schedule_lora_common(model, prompt_schedule),)
+        if self.lora_cache is None:
+            self.lora_cache = {}
+        return (schedule_lora_common(get_cached_model(model), prompt_schedule, lora_cache=self.lora_cache),)
 
 
 class PCSplitSampling:
@@ -229,6 +233,8 @@ class PCSplitSampling:
 
 
 class LoRAScheduler:
+    lora_cache = None
+
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -243,5 +249,7 @@ class LoRAScheduler:
     FUNCTION = "apply"
 
     def apply(self, model, text):
+        if self.lora_cache is None:
+            self.lora_cache = {}
         schedules = parse_prompt_schedules(text)
-        return (schedule_lora_common(model, schedules),)
+        return (schedule_lora_common(get_cached_model(model), schedules, lora_cache=self.lora_cache),)
