@@ -34,7 +34,7 @@ class PromptControlSimple:
         neg_sched = parse_prompt_schedules(negative)
         neg_cond = neg_filtered = control_to_clip_common(clip, neg_sched, lora_cache, cond_cache)
 
-        new_model = model_filtered = schedule_lora_common(model, pos_sched, lora_cache)
+        new_model = model_filtered = schedule_lora_common(model.clone(), pos_sched, lora_cache)
 
         if [tags.strip(), start, end] != ["", 0.0, 1.0]:
             pos_filtered = control_to_clip_common(
@@ -43,6 +43,6 @@ class PromptControlSimple:
             neg_filtered = control_to_clip_common(
                 clip, neg_sched.with_filters(tags, start, end), lora_cache, cond_cache
             )
-            model_filtered = schedule_lora_common(model, pos_sched.with_filters(tags, start, end), lora_cache)
+            model_filtered = schedule_lora_common(model.clone(), pos_sched.with_filters(tags, start, end), lora_cache)
 
         return (new_model, pos_cond, neg_cond, model_filtered, pos_filtered, neg_filtered)

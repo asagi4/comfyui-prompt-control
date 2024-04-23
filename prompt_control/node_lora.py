@@ -29,9 +29,8 @@ def apply_lora_for_step(schedules, step, total_steps, state, original_model, lor
         state["applied_loras"] = lora_spec
 
 
-def schedule_lora_common(model, schedules, lora_cache=None):
+def schedule_lora_common(orig_model, schedules, lora_cache=None):
     do_hijack()
-    orig_model = clone_model(model)
     orig_model.model_options["pc_schedules"] = schedules
 
     if lora_cache is None:
@@ -192,6 +191,10 @@ class PCGuider(CFGGuider):
 
 
 class ScheduleToModel:
+    cached_model = None
+    cached_clone = None
+    lora_cache = None
+
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -206,7 +209,11 @@ class ScheduleToModel:
     FUNCTION = "apply"
 
     def apply(self, model, prompt_schedule):
-        return (schedule_lora_common(model, prompt_schedule),)
+        if model != self.cached_model:
+            self.cached_clone = clone_model(model)
+            self.cached_model = model
+            self.lora_cache = {}
+        return (schedule_lora_common(self.cached_clone, prompt_schedule, lora_cache=self.lora_cache),)
 
 
 class PCSplitSampling:
@@ -245,4 +252,5 @@ class LoRAScheduler:
 
     def apply(self, model, text):
         schedules = parse_prompt_schedules(text)
+        model = model.clone()
         return (schedule_lora_common(model, schedules),)
