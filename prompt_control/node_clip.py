@@ -6,6 +6,7 @@ from .parser import parse_prompt_schedules, parse_cuts
 from .utils import Timer, equalize, safe_float, get_function, parse_floats
 from .perp_weight import perp_encode
 from comfy_extras.nodes_mask import FeatherMask, MaskComposite
+from node_helpers import conditioning_set_values
 
 
 log = logging.getLogger("comfyui-prompt-control")
@@ -654,12 +655,10 @@ def control_to_clip_common(clip, schedules, lora_cache=None, cond_cache=None):
         if start_pct < end_pct:
             cond = encode(c)
             # Node functions return lists of cond
-            for n in cond:
-                n = [n[0], n[1].copy()]
-                n[1]["start_percent"] = round(start_pct, 2)
-                n[1]["end_percent"] = round(end_pct, 2)
-                n[1]["prompt"] = c["prompt"]
-                conds.append(n)
+            cond = conditioning_set_values(
+                cond, {"start_percent": round(start_pct, 2), "end_percent": round(end_pct, 2), "prompt": c["prompt"]}
+            )
+            conds.extend(cond)
 
         start_pct = end_pct
         log.debug("Conds at the end: %s", debug_conds(conds))
