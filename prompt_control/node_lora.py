@@ -10,35 +10,39 @@ from comfy.samplers import CFGGuider
 log = logging.getLogger("comfyui-prompt-control")
 
 
-def apply_lora_for_step(schedules, step, total_steps, state, original_model, lora_cache, patch=True):
+def apply_lora_for_step(model, schedules, step, total_steps, lora_cache):
     # zero-indexed steps, 0 = first step, but schedules are 1-indexed
     sched = schedules.at_step(step + 1, total_steps)
     lora_spec = sched[1]["loras"]
+    # mutable dict
+    state = get_state(model)
 
     if state["applied_loras"] != lora_spec:
         log.debug("At step %s, applying lora_spec %s", step, lora_spec)
         m, _ = apply_loras_from_spec(
             lora_spec,
-            model=state["model"],
-            orig_model=original_model,
+            model=model,
+            orig_model=model,
             cache=lora_cache,
-            patch=patch,
+            patch=True,
             applied_loras=state["applied_loras"],
         )
-        state["model"] = m
+        for k in m.backup.keys():
+            if k not in model.backup:
+                model.backup[k] = m.backup[k]
+        del m
         state["applied_loras"] = lora_spec
 
 
-def schedule_lora_common(orig_model, schedules, lora_cache=None):
+def schedule_lora_common(model, schedules, lora_cache=None):
     do_hijack()
-    orig_model.model_options["pc_schedules"] = schedules
+    model.model_options["pc_schedules"] = schedules
 
     if lora_cache is None:
         lora_cache = {}
 
     def sampler_cb(orig_sampler, *args, **kwargs):
         split_sampling = args[0].model_options.get("pc_split_sampling")
-        state = {}
         # For custom samplers, sigmas is not a keyword argument. Do the check this way to fall back to old behaviour if other hijacks exist.
         if "sigmas" in inspect.getfullargspec(orig_sampler).args:
             steps = len(args[4])
@@ -50,20 +54,17 @@ def schedule_lora_common(orig_model, schedules, lora_cache=None):
             steps = args[2]
         start_step = kwargs.get("start_step") or 0
         # The model patcher may change if LoRAs are applied
-        state["model"] = args[0]
-        state["applied_loras"] = {}
-
         orig_cb = kwargs["callback"]
 
         def step_callback(*args, **kwargs):
             current_step = args[0] + start_step
-            apply_lora_for_step(schedules, current_step, steps, state, orig_model, lora_cache, patch=True)
+            apply_lora_for_step(model, schedules, current_step, steps, lora_cache)
             if orig_cb:
                 return orig_cb(*args, **kwargs)
 
         kwargs["callback"] = step_callback
 
-        apply_lora_for_step(schedules, start_step, steps, state, orig_model, lora_cache, patch=True)
+        apply_lora_for_step(model, schedules, start_step, steps, lora_cache)
 
         def filter_conds(conds, t, start_t, end_t):
             r = []
@@ -98,7 +99,6 @@ def schedule_lora_common(orig_model, schedules, lora_cache=None):
                 end_t = round(end_step / steps, 2)
                 new_kwargs = kwargs.copy()
                 new_args = list(args)
-                new_args[0] = state["model"]
                 new_args[6] = filter_conds(new_args[6], "positive", start_t, end_t)
                 new_args[7] = filter_conds(new_args[7], "negative", start_t, end_t)
                 new_args[8] = s
@@ -119,17 +119,15 @@ def schedule_lora_common(orig_model, schedules, lora_cache=None):
                 start_step = end_step
                 first_step = False
         else:
-            args = list(args)
-            args[0] = state["model"]
             s = orig_sampler(*args, **kwargs)
 
-        unpatch_model(state["model"])
+        unpatch_model(model)
 
         return s
 
-    set_callback(orig_model, sampler_cb)
+    set_callback(model, sampler_cb)
 
-    return orig_model
+    return model
 
 
 class PCWrapGuider:
@@ -149,6 +147,17 @@ class PCWrapGuider:
         return (PCGuider(guider),)
 
 
+# Lambda avoids deepcopy
+def get_state(model):
+    if "pc_model_state" in model.model_options:
+        s = model.model_options["pc_model_state"]()
+        return s
+    # Init missing state
+    x = dict(applied_loras={})
+    model.model_options["pc_model_state"] = lambda: x
+    return get_state(model)
+
+
 class PCGuider(CFGGuider):
     def __init__(self, original_guider):
         if "pc_schedules" not in original_guider.model_patcher.model_options:
@@ -164,29 +173,33 @@ class PCGuider(CFGGuider):
     def sample(self, *args, **kwargs):
         orig_cb = kwargs["callback"]
         sigmas = args[3]
-        state = {"model": self.guider.model_patcher, "applied_loras": {}}
+        model = self.guider.model_patcher
+        state = get_state(model)
+        if "backup" in state:
+            model.backup = state["backup"]
 
         def step_callback(*args, **kwargs):
             apply_lora_for_step(
+                model,
                 self.schedules,
                 args[0],
                 len(sigmas),
-                state,
-                self.guider.model_patcher,
                 self.lora_cache,
-                patch=True,
             )
             if orig_cb:
                 return orig_cb(*args, **kwargs)
 
         kwargs["callback"] = step_callback
-        apply_lora_for_step(
-            self.schedules, 0, len(sigmas), state, self.guider.model_patcher, self.lora_cache, patch=True
-        )
+        apply_lora_for_step(model, self.schedules, 0, len(sigmas), self.lora_cache)
         try:
             r = self.guider.sample(*args, **kwargs)
         finally:
-            unpatch_model(state["model"])
+            # Hold on to the current model state in case the next gen
+            # doesn't need to apply more LoRAs
+            log.info("Preventing ComfyUI model unpatch")
+            state["backup"] = model.backup
+            model.backup = {}
+            pass
         return r
 
 
