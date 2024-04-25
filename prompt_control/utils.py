@@ -138,11 +138,11 @@ def safe_float(f, default):
 
 def unpatch_model(model):
     if model:
-        if 'pc_model_state' in model.model_options:
-            s = model.model_options['pc_model_state']()
-            if 'backup' in s:
-                model.backup = s['backup']
-            del model.model_options['pc_model_state']
+        if "pc_model_state" in model.model_options:
+            s = model.model_options["pc_model_state"]()
+            if "backup" in s:
+                model.backup = s["backup"]
+            del model.model_options["pc_model_state"]
         log.info("Unpatching model")
         model.unpatch_model()
 

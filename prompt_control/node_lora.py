@@ -15,9 +15,9 @@ def apply_lora_for_step(model, schedules, step, total_steps, lora_cache):
     sched = schedules.at_step(step + 1, total_steps)
     lora_spec = sched[1]["loras"]
     # mutable dict
-    state = get_state(model)
+    applied_loras = get_state(model, "applied_loras")
 
-    if state["applied_loras"] != lora_spec:
+    if applied_loras != lora_spec:
         log.debug("At step %s, applying lora_spec %s", step, lora_spec)
         m, _ = apply_loras_from_spec(
             lora_spec,
@@ -25,13 +25,13 @@ def apply_lora_for_step(model, schedules, step, total_steps, lora_cache):
             orig_model=model,
             cache=lora_cache,
             patch=True,
-            applied_loras=state["applied_loras"],
+            applied_loras=applied_loras,
         )
         for k in m.backup.keys():
             if k not in model.backup:
                 model.backup[k] = m.backup[k]
         del m
-        state["applied_loras"] = lora_spec
+        set_state(model, "applied_loras", lora_spec)
 
 
 def schedule_lora_common(model, schedules, lora_cache=None):
@@ -148,14 +148,22 @@ class PCWrapGuider:
 
 
 # Lambda avoids deepcopy
-def get_state(model):
+def get_state(model, key):
     if "pc_model_state" in model.model_options:
         s = model.model_options["pc_model_state"]()
-        return s
-    # Init missing state
+        if key is None:
+            return s
+        else:
+            return s.get(key)
+    # Init missing state and retry
     x = dict(applied_loras={})
     model.model_options["pc_model_state"] = lambda: x
-    return get_state(model)
+    return get_state(model, key)
+
+
+def set_state(model, key, value):
+    s = get_state(model, None)
+    s[key] = value
 
 
 class PCGuider(CFGGuider):
@@ -174,9 +182,9 @@ class PCGuider(CFGGuider):
         orig_cb = kwargs["callback"]
         sigmas = args[3]
         model = self.guider.model_patcher
-        state = get_state(model)
-        if "backup" in state:
-            model.backup = state["backup"]
+        backup = get_state(model, "backup")
+        if backup is not None:
+            model.backup = backup
 
         def step_callback(*args, **kwargs):
             apply_lora_for_step(
@@ -197,7 +205,7 @@ class PCGuider(CFGGuider):
             # Hold on to the current model state in case the next gen
             # doesn't need to apply more LoRAs
             log.info("Preventing ComfyUI model unpatch")
-            state["backup"] = model.backup
+            set_state(model, "backup", model.backup)
             model.backup = {}
             pass
         return r
