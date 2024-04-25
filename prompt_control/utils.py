@@ -15,7 +15,7 @@ import comfy.model_management
 
 log = logging.getLogger("comfyui-prompt-control")
 
-FORCE_CPU_OFFLOAD = False
+FORCE_CPU_OFFLOAD = bool(environ.get("COMFYUI_PC_CPU_OFFLOAD"))
 
 
 # Minimal Modelpatcher that doesn't do anything, for LoRA loading when not
