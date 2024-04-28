@@ -305,7 +305,7 @@ def encode_prompt(clip, text, default_style="comfy", default_normalization="none
             text_l, return_word_ids=len(regions) > 0 or (have_advanced_encode and style != "perp")
         )["l"]
 
-    if "g" in tokens and len(tokens["l"]) != len(tokens["g"]):
+    if "g" in tokens and "l" in tokens and len(tokens["l"]) != len(tokens["g"]):
         empty = clip.tokenize(text_l, return_word_ids=len(regions) > 0 or (have_advanced_encode and style != "perp"))
         while len(tokens["l"]) < len(tokens["g"]):
             tokens["l"] += empty["l"]
@@ -344,11 +344,15 @@ def encode_prompt(clip, text, default_style="comfy", default_normalization="none
                 )
             # Hardcoded clip_balance
             return prepareXL(embs_l, embs_g, pooled, 0.5)
+        if "l" in tokens:
+            key = "l"
+        else:
+            key = "g"
         return advanced_encode_from_tokens(
-            tokens["l"],
+            tokens[key],
             normalization,
             style,
-            lambda x: clip.encode_from_tokens({"l": x}, return_pooled=True),
+            lambda x: clip.encode_from_tokens({key: x}, return_pooled=True),
             return_pooled=True,
             apply_to_pooled=True,
         )
