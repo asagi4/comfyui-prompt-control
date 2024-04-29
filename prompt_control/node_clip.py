@@ -321,7 +321,7 @@ def encode_prompt(clip, text, default_style="comfy", default_normalization="none
         return perp_encode(clip, tokens)
 
     if have_advanced_encode:
-        if type(clip.cond_stage_model).__name__.startswith("SDXL"):
+        if "g" in tokens:
             embs_l = None
             embs_g = None
             pooled = None
@@ -340,19 +340,15 @@ def encode_prompt(clip, text, default_style="comfy", default_normalization="none
                     style,
                     lambda x: encode_token_weights(clip, x, encode_token_weights_g),
                     return_pooled=True,
-                    apply_to_pooled=True,
+                    apply_to_pooled=False,
                 )
             # Hardcoded clip_balance
             return prepareXL(embs_l, embs_g, pooled, 0.5)
-        if "l" in tokens:
-            key = "l"
-        else:
-            key = "g"
         return advanced_encode_from_tokens(
-            tokens[key],
+            tokens["l"],
             normalization,
             style,
-            lambda x: clip.encode_from_tokens({key: x}, return_pooled=True),
+            lambda x: clip.encode_from_tokens({"l": x}, return_pooled=True),
             return_pooled=True,
             apply_to_pooled=True,
         )
