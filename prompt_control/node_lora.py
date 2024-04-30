@@ -258,6 +258,10 @@ class PCSplitSampling:
 
 
 class LoRAScheduler:
+    cached_model = None
+    cached_clone = None
+    lora_cache = None
+
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -272,6 +276,10 @@ class LoRAScheduler:
     FUNCTION = "apply"
 
     def apply(self, model, text):
+        if model != self.cached_model:
+            self.cached_clone = clone_model(model)
+            self.cached_model = model
+            self.lora_cache = {}
         schedules = parse_prompt_schedules(text)
         model = model.clone()
-        return (schedule_lora_common(model, schedules),)
+        return (schedule_lora_common(self.cached_clone, schedules),)
