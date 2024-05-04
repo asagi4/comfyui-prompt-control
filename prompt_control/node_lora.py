@@ -9,6 +9,11 @@ from comfy.samplers import CFGGuider
 
 log = logging.getLogger("comfyui-prompt-control")
 
+# Use globals to store a cached model to speed up situations where the same LoRA is applied
+CACHED_MODEL = None
+CACHED_CLONE = None
+# This leaks memory, but we'll see if it is a problem...
+LORA_CACHE = None
 
 def apply_lora_for_step(model, schedules, step, total_steps, lora_cache):
     # zero-indexed steps, 0 = first step, but schedules are 1-indexed
@@ -210,12 +215,17 @@ class PCGuider(CFGGuider):
             pass
         return r
 
+def get_cached(model):
+    global CACHED_MODEL
+    global CACHED_CLONE
+    global LORA_CACHE
+    if model != CACHED_MODEL:
+        LORA_CACHE = {}
+        CACHED_CLONE = clone_model(model)
+        CACHED_MODEL = model
+    return CACHED_CLONE
 
 class ScheduleToModel:
-    cached_model = None
-    cached_clone = None
-    lora_cache = None
-
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -230,11 +240,7 @@ class ScheduleToModel:
     FUNCTION = "apply"
 
     def apply(self, model, prompt_schedule):
-        if model != self.cached_model:
-            self.cached_clone = clone_model(model)
-            self.cached_model = model
-            self.lora_cache = {}
-        return (schedule_lora_common(self.cached_clone, prompt_schedule, lora_cache=self.lora_cache),)
+        return (schedule_lora_common(get_cached(model), prompt_schedule, lora_cache=LORA_CACHE),)
 
 
 class PCSplitSampling:
@@ -258,10 +264,6 @@ class PCSplitSampling:
 
 
 class LoRAScheduler:
-    cached_model = None
-    cached_clone = None
-    lora_cache = None
-
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -276,10 +278,5 @@ class LoRAScheduler:
     FUNCTION = "apply"
 
     def apply(self, model, text):
-        if model != self.cached_model:
-            self.cached_clone = clone_model(model)
-            self.cached_model = model
-            self.lora_cache = {}
         schedules = parse_prompt_schedules(text)
-        model = model.clone()
-        return (schedule_lora_common(self.cached_clone, schedules),)
+        return (schedule_lora_common(get_cached(model), schedules, lora_cache=LORA_CACHE),)
