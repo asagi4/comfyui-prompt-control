@@ -2,24 +2,27 @@ import logging
 import torch
 import inspect
 
-from .utils import unpatch_model, clone_model, set_callback, apply_loras_from_spec
+from .utils import (
+    clone_model,
+    set_callback,
+    apply_loras_from_spec,
+    get_cached_model,
+    get_state,
+    set_state,
+    finish_sampling,
+    CACHE_MODELS,
+)
 from .parser import parse_prompt_schedules
 from .hijack import do_hijack
 from comfy.samplers import CFGGuider
 
 log = logging.getLogger("comfyui-prompt-control")
 
-# Use globals to store a cached model to speed up situations where the same LoRA is applied
-CACHED_MODEL = None
-CACHED_CLONE = None
-# This leaks memory, but we'll see if it is a problem...
-LORA_CACHE = None
 
 def apply_lora_for_step(model, schedules, step, total_steps, lora_cache):
     # zero-indexed steps, 0 = first step, but schedules are 1-indexed
     sched = schedules.at_step(step + 1, total_steps)
     lora_spec = sched[1]["loras"]
-    # mutable dict
     applied_loras = get_state(model, "applied_loras")
 
     if applied_loras != lora_spec:
@@ -32,10 +35,11 @@ def apply_lora_for_step(model, schedules, step, total_steps, lora_cache):
             patch=True,
             applied_loras=applied_loras,
         )
-        for k in m.backup.keys():
-            if k not in model.backup:
-                model.backup[k] = m.backup[k]
-        del m
+        if CACHE_MODELS:
+            backup = get_state(model, "backup")
+            for k in m.backup.keys():
+                if k not in backup:
+                    backup[k] = m.backup[k]
         set_state(model, "applied_loras", lora_spec)
 
 
@@ -120,13 +124,17 @@ def schedule_lora_common(model, schedules, lora_cache=None):
                     new_kwargs["disable_noise"] = True
                     new_args[1] = torch.zeros_like(s)
 
-                s = orig_sampler(*new_args, **new_kwargs)
+                try:
+                    s = orig_sampler(*new_args, **new_kwargs)
+                finally:
+                    finish_sampling(model)
                 start_step = end_step
                 first_step = False
         else:
-            s = orig_sampler(*args, **kwargs)
-
-        unpatch_model(model)
+            try:
+                s = orig_sampler(*args, **kwargs)
+            finally:
+                finish_sampling(model)
 
         return s
 
@@ -152,25 +160,6 @@ class PCWrapGuider:
         return (PCGuider(guider),)
 
 
-# Lambda avoids deepcopy
-def get_state(model, key):
-    if "pc_model_state" in model.model_options:
-        s = model.model_options["pc_model_state"]()
-        if key is None:
-            return s
-        else:
-            return s.get(key)
-    # Init missing state and retry
-    x = dict(applied_loras={})
-    model.model_options["pc_model_state"] = lambda: x
-    return get_state(model, key)
-
-
-def set_state(model, key, value):
-    s = get_state(model, None)
-    s[key] = value
-
-
 class PCGuider(CFGGuider):
     def __init__(self, original_guider):
         if "pc_schedules" not in original_guider.model_patcher.model_options:
@@ -187,9 +176,6 @@ class PCGuider(CFGGuider):
         orig_cb = kwargs["callback"]
         sigmas = args[3]
         model = self.guider.model_patcher
-        backup = get_state(model, "backup")
-        if backup is not None:
-            model.backup = backup
 
         def step_callback(*args, **kwargs):
             apply_lora_for_step(
@@ -207,27 +193,13 @@ class PCGuider(CFGGuider):
         try:
             r = self.guider.sample(*args, **kwargs)
         finally:
-            # Hold on to the current model state in case the next gen
-            # doesn't need to apply more LoRAs
-            log.info("Preventing ComfyUI model unpatch")
-            set_state(model, "backup", model.backup)
-            model.backup = {}
-            pass
+            finish_sampling(model)
         return r
 
-def get_cached(model):
-    global CACHED_MODEL
-    global CACHED_CLONE
-    global LORA_CACHE
-    if model != CACHED_MODEL:
-        LORA_CACHE = {}
-        if cached_clone is not None:
-            unpatch_model(cached_clone)
-        CACHED_CLONE = clone_model(model)
-        CACHED_MODEL = model
-    return CACHED_CLONE
 
 class ScheduleToModel:
+    lora_cache = None
+
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -242,7 +214,9 @@ class ScheduleToModel:
     FUNCTION = "apply"
 
     def apply(self, model, prompt_schedule):
-        return (schedule_lora_common(get_cached(model), prompt_schedule, lora_cache=LORA_CACHE),)
+        if self.lora_cache is None:
+            self.lora_cache = {}
+        return (schedule_lora_common(get_cached_model(model), prompt_schedule, lora_cache=self.lora_cache),)
 
 
 class PCSplitSampling:
@@ -266,6 +240,8 @@ class PCSplitSampling:
 
 
 class LoRAScheduler:
+    lora_cache = None
+
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -280,5 +256,7 @@ class LoRAScheduler:
     FUNCTION = "apply"
 
     def apply(self, model, text):
+        if self.lora_cache is None:
+            self.lora_cache = {}
         schedules = parse_prompt_schedules(text)
-        return (schedule_lora_common(get_cached(model), schedules, lora_cache=LORA_CACHE),)
+        return (schedule_lora_common(get_cached_model(model), schedules, lora_cache=self.lora_cache),)

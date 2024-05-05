@@ -16,6 +16,55 @@ import comfy.model_management
 log = logging.getLogger("comfyui-prompt-control")
 
 FORCE_CPU_OFFLOAD = bool(environ.get("COMFYUI_PC_CPU_OFFLOAD"))
+CACHE_MODELS = bool(environ.get("COMFYUI_PC_CACHE_MODEL", False))
+CACHED_MODEL = None
+CACHED_CLONE = None
+
+
+def finish_sampling(model):
+    # Hold on to the current model state in case the next gen
+    # doesn't need to apply more LoRAs
+    if not CACHE_MODELS:
+        unpatch_model(model)
+    log.info("Preventing ComfyUI model unpatch")
+    model.backup = {}
+
+
+def set_state(model, key, value):
+    s = get_state(model, None)
+    s[key] = value
+
+
+# Lambda avoids deepcopy
+def get_state(model, key):
+    if "pc_model_state" in model.model_options:
+        s = model.model_options["pc_model_state"]()
+        if key is None:
+            return s
+        else:
+            return s.get(key)
+    # Init missing state and retry
+    x = dict(applied_loras={})
+    model.model_options["pc_model_state"] = lambda: x
+    return get_state(model, key)
+
+
+def get_cached_model(model):
+    global CACHED_MODEL
+    global CACHED_CLONE
+    if not CACHE_MODELS:
+        return clone_model(model)
+
+    if model != CACHED_MODEL:
+        if CACHED_CLONE is not None:
+            unpatch_model(CACHED_CLONE)
+        CACHED_CLONE = clone_model(model)
+        # Make sure the state exists
+        set_state(CACHED_CLONE, "backup", CACHED_CLONE.backup)
+        CACHED_MODEL = model
+    # double clone maintains LoRA state because it's shared between clones, but allows other modifications without mixing things up
+    model = clone_model(CACHED_CLONE)
+    return CACHED_CLONE
 
 
 # Minimal Modelpatcher that doesn't do anything, for LoRA loading when not
@@ -141,10 +190,13 @@ def unpatch_model(model):
         if "pc_model_state" in model.model_options:
             s = model.model_options["pc_model_state"]()
             if "backup" in s:
-                model.backup = s["backup"]
-            del model.model_options["pc_model_state"]
+                for k in s["backup"]:
+                    if k not in model.backup:
+                        model.backup[k] = s["backup"][k]
         log.info("Unpatching model")
         model.unpatch_model()
+        set_state(model, "backup", model.backup)
+        set_state(model, "applied_loras", {})
 
 
 def clone_model(model):
