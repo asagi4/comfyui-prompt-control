@@ -221,6 +221,8 @@ def get_cached(model):
     global LORA_CACHE
     if model != CACHED_MODEL:
         LORA_CACHE = {}
+        if cached_clone is not None:
+            unpatch_model(cached_clone)
         CACHED_CLONE = clone_model(model)
         CACHED_MODEL = model
     return CACHED_CLONE
