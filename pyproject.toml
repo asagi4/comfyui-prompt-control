@@ -1,0 +1,16 @@
+[project]
+name = "comfyui-prompt-control"
+description = "Nodes for convenient prompt editing. The aim is to make basic generations in ComfyUI completely prompt-controllable."
+version = "1.0.0"
+license = "LICENSE"
+# # some lark versions older than 1.1.9 apparently have a bug that breaks things, see https://github.com/asagi4/comfyui-prompt-control/issues/35
+dependencies = ["lark >= 1.1.9"]
+
+[project.urls]
+Repository = "https://github.com/asagi4/comfyui-prompt-control"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = "asagi4"
+DisplayName = "ComfyUI Prompt Control"
+Icon = ""
