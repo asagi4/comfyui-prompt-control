@@ -262,7 +262,7 @@ def at_step(step, filters, tree):
 
 
 class PromptSchedule(object):
-    def __init__(self, prompt, filters="", start=0.0, end=1.0, defaults=None):
+    def __init__(self, prompt, filters="", start=0.0, end=1.0, defaults=None, masks=None):
         self.filters = filters
         self.start = start
         self.end = end
@@ -275,6 +275,9 @@ class PromptSchedule(object):
         self.interpolations = None
         self.parsed_prompt = None
         self.interpolations, self.parsed_prompt = self._parse()
+        self.masks = masks
+        if masks is None:
+            self.masks = []
 
     def __iter__(self):
         # Filter out zero, it's only useful for interpolation
@@ -337,6 +340,14 @@ class PromptSchedule(object):
 
         return interpolations, res
 
+    def add_masks(self, *masks):
+        for mask in masks:
+            if mask is not None:
+                self.masks.append(mask)
+
+    def clone(self):
+        return self.with_filters()
+
     def with_filters(self, filters=None, start=None, end=None, defaults=None):
         def ifspecified(x, defval):
             return x if x is not None else defval
@@ -347,6 +358,7 @@ class PromptSchedule(object):
             start=ifspecified(start, self.start),
             end=ifspecified(end, self.end),
             defaults=ifspecified(defaults, self.defaults),
+            masks=self.masks[:],
         )
         return p
 

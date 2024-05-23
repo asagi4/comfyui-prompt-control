@@ -8,6 +8,7 @@ from .prompt_control.node_other import (
     PromptToSchedule,
     FilterSchedule,
     PCScheduleSettings,
+    PCScheduleAddMasks,
     PCApplySettings,
     PCPromptFromSchedule,
 )
@@ -33,6 +34,7 @@ NODE_CLASS_MAPPINGS = {
     "PromptToSchedule": PromptToSchedule,
     "PCSplitSampling": PCSplitSampling,
     "PCScheduleSettings": PCScheduleSettings,
+    "PCScheduleAddMasks": PCScheduleAddMasks,
     "PCApplySettings": PCApplySettings,
     "PCPromptFromSchedule": PCPromptFromSchedule,
     "PCWrapGuider": PCWrapGuider,

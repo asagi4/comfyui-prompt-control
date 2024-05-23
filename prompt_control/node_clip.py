@@ -424,13 +424,14 @@ def make_mask(args, size, weight):
     return mask
 
 
-def get_mask(text, size):
-    """Parse MASK(x1 x2, y1 y2, weight) and FEATHER(left top right bottom)"""
+def get_mask(text, size, input_masks):
+    """Parse MASK(x1 x2, y1 y2, weight), IMASK(i, weight) and FEATHER(left top right bottom)"""
     # TODO: combine multiple masks
     text, masks = get_function(text, "MASK", ["0 1", "0 1", "1", "multiply"])
+    text, imasks = get_function(text, "IMASK", ["0", "1", "multiply"])
     text, feathers = get_function(text, "FEATHER", ["0 0 0 0"])
     text, maskw = get_function(text, "MASKW", ["1.0"])
-    if not masks:
+    if not masks and not imasks:
         return text, None, None
 
     def feather(f, mask):
@@ -447,17 +448,27 @@ def get_mask(text, size):
     for m in masks:
         weight = safe_float(m[2], 1.0)
         op = m[3]
-        value = 1.0
-        if len(masks) > 1:
-            value = weight
-        else:
-            totalweight = weight
-        nextmask = make_mask(m, size, value)
+        nextmask = make_mask(m, size, weight)
         if i < len(feathers):
             nextmask = feather(feathers[i], nextmask)
         i += 1
         if mask is not None:
             log.info("MaskComposite op=%s", op)
+            mask = MaskComposite().combine(mask, nextmask, 0, 0, op)[0]
+        else:
+            mask = nextmask
+
+    for idx, w, op in imasks:
+        idx = int(safe_float(idx, 0.0))
+        w = safe_float(w, 1.0)
+        if len(input_masks) < idx + 1:
+            log.warn("IMASK index %s not found, ignoring...", idx)
+            continue
+        nextmask = input_masks[idx] * w
+        if i < len(feathers):
+            nextmask = feather(feathers[i], nextmask)
+        i += 1
+        if mask is not None:
             mask = MaskComposite().combine(mask, nextmask, 0, 0, op)[0]
         else:
             mask = nextmask
@@ -499,7 +510,7 @@ def apply_noise(cond, weight, gen):
     return cond * (1 - weight) + n * weight
 
 
-def do_encode(clip, text, defaults):
+def do_encode(clip, text, defaults, masks):
     # First style modifier applies to ANDed prompts too unless overridden
     style, normalization, text = get_style(text)
     text, mask_size = get_mask_size(text, defaults)
@@ -530,7 +541,7 @@ def do_encode(clip, text, defaults):
     res = []
     scale = sum(abs(weight(p)[0]) for p in prompts if not ("AREA(" in p or "MASK(" in p))
     for prompt in prompts:
-        prompt, mask, mask_weight = get_mask(prompt, mask_size)
+        prompt, mask, mask_weight = get_mask(prompt, mask_size, masks)
         w, opts, prompt = weight(prompt)
         text, noise_w, generator = get_noise(text)
         if not w:
@@ -617,7 +628,7 @@ def control_to_clip_common(clip, schedules, lora_cache=None, cond_cache=None):
                     loras, clip=orig_clip, cache=lora_cache, applied_loras=current_loras
                 )
                 current_loras = loras
-            cond_cache[cachekey] = do_encode(clip, prompt, schedules.defaults)
+            cond_cache[cachekey] = do_encode(clip, prompt, schedules.defaults, schedules.masks)
         return cond_cache[cachekey]
 
     for end_pct, c in schedules:
