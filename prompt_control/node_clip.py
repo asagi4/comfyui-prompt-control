@@ -28,6 +28,15 @@ except ImportError:
     AVAILABLE_STYLES = ["comfy"]
     AVAILABLE_NORMALIZATIONS = ["none"]
 
+try:
+    from custom_nodes.Vector_Sculptor_ComfyUI.nodes import vector_sculptor_tokens
+
+    can_sculpt = True
+    log.info("Vector sculptor extension detected, can use SCULPT()")
+except ImportError:
+    can_sculpt = False
+
+
 AVAILABLE_STYLES.append("perp")
 log.info("Use STYLE:weight_interpretation:normalization at the start of a prompt to use advanced encodings")
 log.info("Weight interpretations available: %s", ",".join(AVAILABLE_STYLES))
@@ -279,6 +288,9 @@ def shuffle_chunk(shuffle, c):
 
 def encode_prompt(clip, text, default_style="comfy", default_normalization="none"):
     style, normalization, text = get_style(text, default_style, default_normalization)
+    sculpts = []
+    if can_sculpt:
+        text, sculpts = get_function(text, "SCULPT", ["1.0", "forward", "none"])
     text, regions = parse_cuts(text)
     # defaults=None means there is no argument parsing at all
     text, l_prompts = get_function(text, "CLIP_L", defaults=None)
@@ -292,8 +304,14 @@ def encode_prompt(clip, text, default_style="comfy", default_normalization="none
         if r != c:
             log.info("Shuffled prompt chunk to %s", r)
             c = r
-        # Tokenizer returns padded results
-        t = clip.tokenize(c, return_word_ids=len(regions) > 0 or (have_advanced_encode and style != "perp"))
+        if sculpts:
+            w, method, norm = sculpts[0]
+            log.info("Using vector sculptor with method=%s norm=%s w=%s", method, norm, w)
+            w = safe_float(w, 1.0)
+            t = vector_sculptor_tokens(clip, c, method, norm, w)
+        else:
+            # Tokenizer returns padded results
+            t = clip.tokenize(c, return_word_ids=len(regions) > 0 or (have_advanced_encode and style != "perp"))
         token_chunks.append(t)
     tokens = token_chunks[0]
     for c in token_chunks[1:]:
@@ -323,7 +341,7 @@ def encode_prompt(clip, text, default_style="comfy", default_normalization="none
             log.warning("Normalization is not supported with perp style weighting. Ignored '%s'", normalization)
         return perp_encode(clip, tokens)
 
-    if have_advanced_encode:
+    if have_advanced_encode and not sculpts:
         if "g" in tokens:
             embs_l = None
             embs_g = None
