@@ -38,7 +38,7 @@ except ImportError:
 
 
 AVAILABLE_STYLES.append("perp")
-log.info("Use STYLE:weight_interpretation:normalization at the start of a prompt to use advanced encodings")
+log.info("Use STYLE(weight_interpretation, normalization) at the start of a prompt to use advanced encodings")
 log.info("Weight interpretations available: %s", ",".join(AVAILABLE_STYLES))
 log.info("Normalization types available: %s", ",".join(AVAILABLE_NORMALIZATIONS))
 
