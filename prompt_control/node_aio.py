@@ -5,6 +5,7 @@ from .utils import get_cached_model
 
 
 class PromptControlSimple:
+    lora_cache = None
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -27,6 +28,8 @@ class PromptControlSimple:
     FUNCTION = "apply"
 
     def apply(self, model, clip, positive, negative, tags="", start=0.0, end=1.0):
+        if self.lora_cache is None:
+            self.lora_cache = {}
         cond_cache = {}
         pos_sched = parse_prompt_schedules(positive)
         pos_cond = pos_filtered = control_to_clip_common(clip, pos_sched, self.lora_cache, cond_cache)
