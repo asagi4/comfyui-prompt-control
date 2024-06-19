@@ -334,11 +334,12 @@ def apply_loras_from_spec(
 
     for key in applied_loras:
         if key not in loraspec:
-            actual_loraspec = loraspec
             additive = False
 
     backup_model = model
     if not additive:
+        # Need to unpatch and reapply all LoRAs
+        actual_loraspec = loraspec
         unpatch_model(model)
         # Reset clip to unpatched
         if clip:
