@@ -182,7 +182,7 @@ Similarly, you can use `AREA(x1 x2, y1 y2, weight)` to specify an area for the p
 
 #### Custom masks: IMASK and `PCScheduleAddMasks`
 
-You can attach custom masks to a `PROMPT_SCHEDULE` with the `PCScheduleAddMasks` node and then refer to those masks in the prompt using `IMASK(index, weight, op)`. Indexing starts from zero, so 0 is the first attached mask etc. `PCSCheduleAddMasks` ignores empty inputs, so if you only add a mask to the `mask4`, input, it will still have index 0.
+You can attach custom masks to a `PROMPT_SCHEDULE` with the `PCScheduleAddMasks` node and then refer to those masks in the prompt using `IMASK(index, weight, op)`. Indexing starts from zero, so 0 is the first attached mask etc. `PCSCheduleAddMasks` ignores empty inputs, so if you only add a mask to the `mask4` input, it will still have index 0.
 
 Applying `PCScheduleAddMasks` multiple times *appends* masks to a schedule rather than overriding existing ones, so if you need more than 4, you can just use it more than once.
 
