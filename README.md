@@ -57,7 +57,7 @@ a [large::0.1] [cat|dog:0.05] [<lora:somelora:0.5:0.6>::0.5]
 [in a park:in space:0.4]
 ```
 
-You can also use `a [b:c:0.3,0.7]` as a shortcut. The prompt be `a` until 0.3, `a b` until 0.7, and then `c`. `[a:0.1,0.4]` is equivalent to `[a::0.1,0.4]`
+You can also use `a [b:c:0.3,0.7]` as a shortcut. The prompt be `a` until 0.3, `a b` until 0.7, and then `a c`. `[a:0.1,0.4]` is equivalent to `[a::0.1,0.4]`
 
 ## LoRA loading
 
