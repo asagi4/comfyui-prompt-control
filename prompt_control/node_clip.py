@@ -286,6 +286,21 @@ def shuffle_chunk(shuffle, c):
     return c
 
 
+def fix_word_ids(tokens):
+    for key in tokens:
+        max_idx = 0
+        for group in range(len(tokens[key])):
+            for i, token in enumerate(tokens[key][group]):
+                if len(token) < 3:
+                    # No need to fix ids when they don't exist
+                    return tokens
+                # Ignore zeros, they represent the padding token
+                if token[2] != 0:
+                    tokens[key][group][i] = (token[0], token[1], token[2] + max_idx)
+            max_idx = max(max_idx, max(x for _, _, x in tokens[key][group]))
+    return tokens
+
+
 def encode_prompt(clip, text, default_style="comfy", default_normalization="none"):
     style, normalization, text = get_style(text, default_style, default_normalization)
     sculpts = []
@@ -296,6 +311,7 @@ def encode_prompt(clip, text, default_style="comfy", default_normalization="none
     text, l_prompts = get_function(text, "CLIP_L", defaults=None)
     chunks = re.split(r"\bBREAK\b", text)
     token_chunks = []
+    need_word_ids = len(regions) > 0 or (have_advanced_encode and style != "perp")
     for c in chunks:
         c, shuffles = get_function(c.strip(), "(SHIFT|SHUFFLE)", ["0", "default", "default"], return_func_name=True)
         r = c
@@ -311,27 +327,29 @@ def encode_prompt(clip, text, default_style="comfy", default_normalization="none
             t = vector_sculptor_tokens(clip, c, method, norm, w)
         else:
             # Tokenizer returns padded results
-            t = clip.tokenize(c, return_word_ids=len(regions) > 0 or (have_advanced_encode and style != "perp"))
+            t = clip.tokenize(c, return_word_ids=need_word_ids)
         token_chunks.append(t)
     tokens = token_chunks[0]
-    for c in token_chunks[1:]:
-        for key in tokens:
+
+    for key in tokens:
+        for c in token_chunks[1:]:
             tokens[key].extend(c[key])
 
     # Non-SDXL has only "l"
     if "g" in tokens and l_prompts:
         text_l = " ".join(l_prompts)
         log.info("Encoded SDXL CLIP_L prompt: %s", text_l)
-        tokens["l"] = clip.tokenize(
-            text_l, return_word_ids=len(regions) > 0 or (have_advanced_encode and style != "perp")
-        )["l"]
+        tokens["l"] = clip.tokenize(text_l, return_word_ids=need_word_ids)["l"]
 
     if "g" in tokens and "l" in tokens and len(tokens["l"]) != len(tokens["g"]):
-        empty = clip.tokenize(text_l, return_word_ids=len(regions) > 0 or (have_advanced_encode and style != "perp"))
+        empty = clip.tokenize(text_l, return_word_ids=need_word_ids)
         while len(tokens["l"]) < len(tokens["g"]):
             tokens["l"] += empty["l"]
         while len(tokens["l"]) > len(tokens["g"]):
             tokens["g"] += empty["g"]
+
+    # Fix word indexes. Tokenizing separately (when BREAKs exist) causes the indexes to restart which causes problems with some weighting algorithms that rely on them
+    tokens = fix_word_ids(tokens)
 
     if len(regions) > 0:
         return encode_regions(clip, tokens, regions, style, normalization)
