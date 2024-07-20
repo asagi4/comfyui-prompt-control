@@ -287,6 +287,7 @@ def shuffle_chunk(shuffle, c):
 
 
 def fix_word_ids(tokens):
+    """Fix word indexes. Tokenizing separately (when BREAKs exist) causes the indexes to restart which causes problems with some weighting algorithms that rely on them"""
     for key in tokens:
         max_idx = 0
         for group in range(len(tokens[key])):
@@ -295,7 +296,7 @@ def fix_word_ids(tokens):
                     # No need to fix ids when they don't exist
                     return tokens
                 # Ignore zeros, they represent the padding token
-                if token[2] != 0:
+                if token[2] != 0 and token[2] < max_idx:
                     tokens[key][group][i] = (token[0], token[1], token[2] + max_idx)
             max_idx = max(max_idx, max(x for _, _, x in tokens[key][group]))
     return tokens
@@ -348,7 +349,6 @@ def encode_prompt(clip, text, default_style="comfy", default_normalization="none
         while len(tokens["l"]) > len(tokens["g"]):
             tokens["g"] += empty["g"]
 
-    # Fix word indexes. Tokenizing separately (when BREAKs exist) causes the indexes to restart which causes problems with some weighting algorithms that rely on them
     tokens = fix_word_ids(tokens)
 
     if len(regions) > 0:
