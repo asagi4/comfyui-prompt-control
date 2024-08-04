@@ -20,6 +20,15 @@ CACHE_MODELS = bool(environ.get("COMFYUI_PC_CACHE_MODEL", False))
 CACHED_MODEL = None
 CACHED_CLONE = None
 
+def clear_cache():
+    global CACHED_MODEL
+    global CACHED_CLONE
+    if CACHED_MODEL:
+        del CACHED_MODEL
+        CACHED_MODEL = None
+    if CACHED_CLONE:
+        del CACHED_CLONE
+        CACHED_CLONE = None
 
 def finish_sampling(model):
     # Hold on to the current model state in case the next gen
@@ -58,12 +67,14 @@ def get_cached_model(model):
     if model != CACHED_MODEL:
         if CACHED_CLONE is not None:
             unpatch_model(CACHED_CLONE)
+            del CACHED_CLONE
         CACHED_CLONE = clone_model(model)
         # Make sure the state exists
         set_state(CACHED_CLONE, "backup", CACHED_CLONE.backup)
+        del CACHED_MODEL
         CACHED_MODEL = model
     # double clone maintains LoRA state because it's shared between clones, but allows other modifications without mixing things up
-    model = clone_model(CACHED_CLONE)
+    # model = clone_model(CACHED_CLONE)
     return CACHED_CLONE
 
 

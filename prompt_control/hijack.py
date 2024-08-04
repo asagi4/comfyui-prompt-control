@@ -1,4 +1,4 @@
-from .utils import get_callback, unpatch_model
+from .utils import get_callback, unpatch_model, clear_cache
 import sys
 
 import logging
@@ -49,6 +49,7 @@ def hijack_sampler(module, function, is_custom):
             except Exception:
                 log.error("Exception occurred during callback, unpatching model.")
                 unpatch_model(model)
+                clear_cache()
                 BrownianTreeNoiseSampler.pc_reset(False)
                 raise
         else:
