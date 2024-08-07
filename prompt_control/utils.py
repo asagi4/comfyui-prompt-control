@@ -48,7 +48,6 @@ def set_state(model, key, value):
 def get_state(model, key):
     global MODEL_STATES
     model_key = id(model.model)
-    print(f"get_state {model_key=}")
     state = MODEL_STATES.get(model_key, dict(applied_loras={}))
     MODEL_STATES[model_key] = state
     if key is None:
