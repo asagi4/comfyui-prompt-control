@@ -6,6 +6,7 @@ from .utils import get_cached_model
 
 class PromptControlSimple:
     lora_cache = None
+
     @classmethod
     def INPUT_TYPES(s):
         return {

@@ -9,7 +9,6 @@ from .utils import (
     get_state,
     set_state,
     finish_sampling,
-    CACHE_MODELS,
 )
 from .parser import parse_prompt_schedules
 from .hijack import do_hijack
@@ -34,11 +33,6 @@ def apply_lora_for_step(model, schedules, step, total_steps, lora_cache):
             patch=True,
             applied_loras=applied_loras,
         )
-        if CACHE_MODELS:
-            backup = get_state(model, "backup")
-            for k in m.backup.keys():
-                if k not in backup:
-                    backup[k] = m.backup[k]
         set_state(model, "applied_loras", lora_spec)
 
 
@@ -51,7 +45,6 @@ def schedule_lora_common(model, schedules, lora_cache=None):
 
     def sampler_cb(orig_sampler, is_custom, *args, **kwargs):
         split_sampling = args[0].model_options.get("pc_split_sampling")
-        state = {}
         if is_custom:
             steps = len(args[4])
             log.info(

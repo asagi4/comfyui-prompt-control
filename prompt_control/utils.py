@@ -13,12 +13,14 @@ import folder_paths
 
 import comfy.model_management
 
+from comfy.model_patcher import ModelPatcher
+
 log = logging.getLogger("comfyui-prompt-control")
 
 FORCE_CPU_OFFLOAD = bool(environ.get("COMFYUI_PC_CPU_OFFLOAD"))
 CACHE_MODELS = bool(environ.get("COMFYUI_PC_CACHE_MODEL", False))
-CACHED_MODEL = None
-CACHED_CLONE = None
+MODEL_STATES = {}
+
 
 def clear_cache():
     global CACHED_MODEL
@@ -30,13 +32,12 @@ def clear_cache():
         del CACHED_CLONE
         CACHED_CLONE = None
 
+
 def finish_sampling(model):
     # Hold on to the current model state in case the next gen
     # doesn't need to apply more LoRAs
     if not CACHE_MODELS:
         unpatch_model(model)
-    log.info("Preventing ComfyUI model unpatch")
-    model.backup = {}
 
 
 def set_state(model, key, value):
@@ -44,38 +45,19 @@ def set_state(model, key, value):
     s[key] = value
 
 
-# Lambda avoids deepcopy
 def get_state(model, key):
-    if "pc_model_state" in model.model_options:
-        s = model.model_options["pc_model_state"]()
-        if key is None:
-            return s
-        else:
-            return s.get(key)
-    # Init missing state and retry
-    x = dict(applied_loras={})
-    model.model_options["pc_model_state"] = lambda: x
-    return get_state(model, key)
+    global MODEL_STATES
+    model_key = id(model.model)
+    print(f"get_state {model_key=}")
+    state = MODEL_STATES.get(model_key, dict(applied_loras={}))
+    MODEL_STATES[model_key] = state
+    if key is None:
+        return state
+    return state[key]
 
 
 def get_cached_model(model):
-    global CACHED_MODEL
-    global CACHED_CLONE
-    if not CACHE_MODELS:
-        return clone_model(model)
-
-    if model != CACHED_MODEL:
-        if CACHED_CLONE is not None:
-            unpatch_model(CACHED_CLONE)
-            del CACHED_CLONE
-        CACHED_CLONE = clone_model(model)
-        # Make sure the state exists
-        set_state(CACHED_CLONE, "backup", CACHED_CLONE.backup)
-        del CACHED_MODEL
-        CACHED_MODEL = model
-    # double clone maintains LoRA state because it's shared between clones, but allows other modifications without mixing things up
-    # model = clone_model(CACHED_CLONE)
-    return CACHED_CLONE
+    return clone_model(model)
 
 
 # Minimal Modelpatcher that doesn't do anything, for LoRA loading when not
@@ -196,17 +178,20 @@ def safe_float(f, default):
         return default
 
 
+class PCModelPatcher(ModelPatcher):
+    def unpatch_model(self, device_to=None, unpatch_weights=True, really_unpatch=False):
+        if unpatch_weights and not really_unpatch:
+            log.info("Will prevent model unpatch for performance")
+
+        return super().unpatch_model(device_to=device_to, unpatch_weights=unpatch_weights and really_unpatch)
+
+
 def unpatch_model(model):
     if model:
-        if "pc_model_state" in model.model_options:
-            s = model.model_options["pc_model_state"]()
-            if "backup" in s:
-                for k in s["backup"]:
-                    if k not in model.backup:
-                        model.backup[k] = s["backup"][k]
-        log.info("Unpatching model")
-        model.unpatch_model()
-        set_state(model, "backup", model.backup)
+        if isinstance(model, PCModelPatcher):
+            model.unpatch_model(really_unpatch=True)
+        else:
+            model.unpatch_model()
         set_state(model, "applied_loras", {})
 
 
@@ -214,6 +199,11 @@ def clone_model(model):
     if not model:
         return None
     model = model.clone()
+    if model.__class__ != PCModelPatcher:
+        log.info("Swapping ModelPatcher class to PCModelPatcher")
+        if model.__class__ != ModelPatcher:
+            log.warning("Model class isn't ModelPatcher, things may break!")
+        model.__class__ = PCModelPatcher
     if not environ.get("PC_NO_INPLACE_UPDATE"):
         model.weight_inplace_update = True
     return model
@@ -223,10 +213,10 @@ def add_patches(model, patches, weight):
     model.add_patches(patches, weight)
 
 
-def patch_model(model, forget=False, orig=None):
+def patch_model(model):
     global FORCE_CPU_OFFLOAD
     try:
-        return _patch_model(model, forget, orig, FORCE_CPU_OFFLOAD)
+        return _patch_model(model, FORCE_CPU_OFFLOAD)
     except comfy.model_management.OOM_EXCEPTION:
         FORCE_CPU_OFFLOAD = True
         log.error("Ran out of memory while applying LoRAs, Forcing CPU offload from now on")
@@ -235,21 +225,16 @@ def patch_model(model, forget=False, orig=None):
         raise
 
 
-def _patch_model(model, forget=False, orig=None, offload_to_cpu=False):
+def _patch_model(model, offload_to_cpu=False):
     if not model:
         return None
     if offload_to_cpu:
         saved_offload = model.offload_device
         model.offload_device = torch.device("cpu")
     log.info("Patching model, cpu_offload=%s", model.offload_device == torch.device("cpu"))
-    if orig:
-        model.backup = orig.backup
     model.patch_model()
     if offload_to_cpu:
         model.offload_device = saved_offload
-    if forget:
-        model.patches = {}
-        model.object_patches = {}
     return model
 
 
@@ -347,7 +332,6 @@ def apply_loras_from_spec(
         if key not in loraspec:
             additive = False
 
-    backup_model = model
     if not additive:
         # Need to unpatch and reapply all LoRAs
         actual_loraspec = loraspec
@@ -397,7 +381,7 @@ def apply_loras_from_spec(
             log.info("Applying CLIP LoRA: %s:%s, LBW=%s, additive=%s", name, params["weight_clip"], bool(lbw), additive)
 
     # forget patches so we don't double-patch
-    model = patch_model(model, forget=True, orig=backup_model)
+    model = patch_model(model)
     return model, clip
 
 
