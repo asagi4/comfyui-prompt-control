@@ -359,7 +359,7 @@ def encode_prompt(clip, text, default_style="comfy", default_normalization="none
             log.warning("Normalization is not supported with perp style weighting. Ignored '%s'", normalization)
         return perp_encode(clip, tokens)
 
-    if have_advanced_encode and not sculpts:
+    if "t5xxl" not in tokens and have_advanced_encode and not sculpts:
         if "g" in tokens:
             embs_l = None
             embs_g = None
