@@ -173,10 +173,10 @@ def _patch_model(model, forget=False, orig=None, offload_to_cpu=False):
     if offload_to_cpu:
         saved_offload = model.offload_device
         model.offload_device = torch.device("cpu")
-    log.info("Patching model, cpu_offload=%s", model.offload_device == torch.device("cpu"))
+    log.info("Patching model, model.load_device=%s model.model.device=%s cpu_offload=%s", model.load_device, model.model.device, model.offload_device == torch.device("cpu"))
     if orig:
         model.backup = orig.backup
-    model.patch_model()
+    model.patch_model(device_to=model.load_device)
     if offload_to_cpu:
         model.offload_device = saved_offload
     if forget:
