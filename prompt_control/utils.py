@@ -281,18 +281,21 @@ def apply_loras_from_spec(
             additive = False
 
     backup_model = model
+    needs_patch = False
     if not additive:
         unpatch_model(model)
+        model = orig_model.clone()
+        backup_model = model
+        needs_patch = True
         # Reset clip to unpatched
         if clip:
             clip = orig_clip or clip
 
     if cache is None:
         cache = {}
-    if not loraspec:
-        return model, clip
 
     for name, params in actual_loraspec.items():
+        needs_patch = True
         m, c = model, clip
         w, w_clip = params["weight"], params["weight_clip"]
         if w == 0:
@@ -328,7 +331,8 @@ def apply_loras_from_spec(
             log.info("Applying CLIP LoRA: %s:%s, LBW=%s, additive=%s", name, params["weight_clip"], bool(lbw), additive)
 
     # forget patches so we don't double-patch
-    model = patch_model(model, forget=True, orig=backup_model)
+    if needs_patch:
+        model = patch_model(model, forget=True, orig=backup_model)
     return model, clip
 
 
