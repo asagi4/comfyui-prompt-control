@@ -13,6 +13,7 @@ from .prompt_control.node_other import (
     PCPromptFromSchedule,
 )
 from .prompt_control.node_aio import PromptControlSimple
+from .prompt_control.node_hooks import ScheduleToCondWithHooks
 
 log = logging.getLogger("comfyui-prompt-control")
 log.propagate = False
@@ -43,4 +44,5 @@ NODE_CLASS_MAPPINGS = {
     "ScheduleToModel": ScheduleToModel,
     "EditableCLIPEncode": EditableCLIPEncode,
     "LoRAScheduler": LoRAScheduler,
+    "ScheduleToCondWithHooks": ScheduleToCondWithHooks,
 }
