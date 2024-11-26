@@ -343,7 +343,7 @@ def encode_prompt(clip, text, default_style="comfy", default_normalization="none
         tokens["l"] = clip.tokenize(text_l, return_word_ids=need_word_ids)["l"]
 
     if "g" in tokens and "l" in tokens and len(tokens["l"]) != len(tokens["g"]):
-        empty = clip.tokenize(text_l, return_word_ids=need_word_ids)
+        empty = clip.tokenize("", return_word_ids=need_word_ids)
         while len(tokens["l"]) < len(tokens["g"]):
             tokens["l"] += empty["l"]
         while len(tokens["l"]) > len(tokens["g"]):
