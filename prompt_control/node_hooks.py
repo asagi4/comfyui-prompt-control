@@ -1,12 +1,8 @@
 import logging
 import re
 import torch
-from . import utils as utils
-from .parser import parse_prompt_schedules, parse_cuts
-from .utils import Timer, equalize, safe_float, get_function, parse_floats, lora_name_to_file
-from .perp_weight import perp_encode
+from .utils import Timer, safe_float, get_function, parse_floats, lora_name_to_file
 from comfy_extras.nodes_mask import FeatherMask, MaskComposite
-from node_helpers import conditioning_set_values
 import comfy.utils
 import comfy.hooks
 from comfy_extras.nodes_hooks import SetClipHooks
@@ -203,7 +199,7 @@ def encoder_patch(style, normalization, orig_fn):
     if not have_advanced_encode or style == "comfy" and normalization == "none":
         return orig_fn
     else:
-        log.debug(f"Encoding with style=%s, normalization=%s", style, normalization)
+        log.debug("Encoding with style=%s, normalization=%s", style, normalization)
         return lambda t: adv_encode.advanced_encode_from_tokens(
             t, normalization, style, orig_fn, return_pooled=True, apply_to_pooled=False
         )
@@ -385,7 +381,6 @@ def do_encode(clip, text, start_pct, end_pct, defaults, masks):
         return w, opts, t
 
     conds = []
-    res = []
     scale = sum(abs(weight(p)[0]) for p in prompts if not ("AREA(" in p or "MASK(" in p))
     for prompt in prompts:
         prompt, mask, mask_weight = get_mask(prompt, mask_size, masks)
