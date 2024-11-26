@@ -1,11 +1,10 @@
 import logging
 import re
 import torch
-from .utils import Timer, safe_float, get_function, parse_floats, lora_name_to_file
+from .utils import safe_float, get_function, parse_floats, lora_name_to_file
 from comfy_extras.nodes_mask import FeatherMask, MaskComposite
 import comfy.utils
 import comfy.hooks
-from comfy_extras.nodes_hooks import SetClipHooks
 import folder_paths
 
 log = logging.getLogger("comfyui-prompt-control")
@@ -24,26 +23,35 @@ except ImportError:
     pass
 
 
-class ScheduleToCondWithHooks:
+class PCLoraHooksFromSchedule:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {"prompt_schedule": ("PROMPT_SCHEDULE",)},
+        }
+
+    RETURN_TYPES = ("HOOKS",)
+    OUTPUT_TOOLTIPS = ("set of hooks created from the prompt schedule",)
+    CATEGORY = "promptcontrol/_unstable"
+    FUNCTION = "apply"
+
+    def apply(self, prompt_schedule):
+        return (lora_hooks_from_schedule(prompt_schedule),)
+
+
+class PCEncodeSchedule:
     @classmethod
     def INPUT_TYPES(s):
         return {
             "required": {"clip": ("CLIP",), "prompt_schedule": ("PROMPT_SCHEDULE",)},
         }
 
-    RETURN_TYPES = ("CONDITIONING", "CLIP")
-    RETURN_NAMES = ("CONDITIONING", "scheduled_clip")
-    OUTPUT_TOOLTIPS = (
-        "The conditioning that contains model hooks",
-        "A CLIP with hooks set, for encoding negative prompts",
-    )
+    RETURN_TYPES = ("CONDITIONING",)
     CATEGORY = "promptcontrol/_unstable"
     FUNCTION = "apply"
 
     def apply(self, clip, prompt_schedule):
-        with Timer("ScheduleToCondWithHooks"):
-            r = control_to_clip_common(clip, prompt_schedule)
-        return r
+        return (encode_schedule(clip, prompt_schedule),)
 
 
 SHUFFLE_GEN = torch.Generator(device="cpu")
@@ -420,9 +428,8 @@ def debug_conds(conds):
     return r
 
 
-def control_to_clip_common(clip, schedules):
+def lora_hooks_from_schedule(schedules):
     start_pct = 0.0
-    conds = []
 
     lora_cache = {}
 
@@ -445,6 +452,8 @@ def control_to_clip_common(clip, schedules):
             new_hook = comfy.hooks.create_hook_lora(
                 lora_cache[path], strength_model=info["weight"], strength_clip=info["weight_clip"]
             )
+            # Set hook_ref so that identical hooks compare equal
+            new_hook.hooks[0].hook_ref = f"pc-{path}-{info['weight']}-{info['weight_clip']}"
             hooks.append(new_hook)
         if start_pct > 0.0:
             kf = comfy.hooks.HookKeyframe(strength=0.0, start_percent=0.1)
@@ -481,10 +490,12 @@ def control_to_clip_common(clip, schedules):
 
     if all_hooks:
         hooks = comfy.hooks.HookGroup.combine_all_hooks(all_hooks)
-        (clip,) = SetClipHooks().apply_hooks(clip, schedule_clip=True, apply_to_conds=True, hooks=hooks)
-        log.info("Applied CLIP/Model hooks")
+        return hooks
 
+
+def encode_schedule(clip, schedules):
     start_pct = 0.0
+    conds = []
     for end_pct, c in schedules:
         if start_pct < end_pct:
             prompt = c["prompt"]
@@ -494,4 +505,4 @@ def control_to_clip_common(clip, schedules):
         log.debug("Conds at the end: %s", debug_conds(conds))
 
     log.debug("Final cond info: %s", debug_conds(conds))
-    return conds, clip
+    return conds
