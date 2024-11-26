@@ -19,7 +19,7 @@ AVAILABLE_NORMALIZATIONS = ["none"]
 
 have_advanced_encode = False
 try:
-    from custom_nodes.ComfyUI_ADV_CLIP_emb.adv_encode import advanced_encode_from_tokens
+    import custom_nodes.ComfyUI_ADV_CLIP_emb.adv_encode as adv_encode
 
     have_advanced_encode = True
     AVAILABLE_STYLES.extend(["A1111", "compel", "comfy++", "down_weight"])
@@ -204,7 +204,7 @@ def encoder_patch(style, normalization, orig_fn):
         return orig_fn
     else:
         log.debug(f"Encoding with style=%s, normalization=%s", style, normalization)
-        return lambda t: advanced_encode_from_tokens(
+        return lambda t: adv_encode.advanced_encode_from_tokens(
             t, normalization, style, orig_fn, return_pooled=True, apply_to_pooled=False
         )
 
@@ -492,8 +492,6 @@ def control_to_clip_common(clip, schedules):
     start_pct = 0.0
     for end_pct, c in schedules:
         if start_pct < end_pct:
-            # TODO: LORAs
-            loras = c["loras"]
             prompt = c["prompt"]
             cond = do_encode(clip, prompt, start_pct, end_pct, schedules.defaults, schedules.masks)
             conds.extend(cond)
