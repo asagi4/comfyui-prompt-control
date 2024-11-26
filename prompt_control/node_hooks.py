@@ -17,6 +17,16 @@ log = logging.getLogger("comfyui-prompt-control")
 AVAILABLE_STYLES = ["comfy"]
 AVAILABLE_NORMALIZATIONS = ["none"]
 
+have_advanced_encode = False
+try:
+    from custom_nodes.ComfyUI_ADV_CLIP_emb.adv_encode import advanced_encode_from_tokens
+
+    have_advanced_encode = True
+    AVAILABLE_STYLES.extend(["A1111", "compel", "comfy++", "down_weight"])
+    AVAILABLE_NORMALIZATIONS.extend(["mean", "length", "length+mean"])
+except ImportError:
+    pass
+
 
 class ScheduleToCondWithHooks:
     @classmethod
@@ -140,7 +150,7 @@ def encode_prompt(
     text, l_prompts = get_function(text, "CLIP_L", defaults=None)
     chunks = re.split(r"\bBREAK\b", text)
     token_chunks = []
-    need_word_ids = False
+    need_word_ids = have_advanced_encode or style == "comfy" and normalization == "none"
     for c in chunks:
         c, shuffles = get_function(c.strip(), "(SHIFT|SHUFFLE)", ["0", "default", "default"], return_func_name=True)
         r = c
@@ -171,7 +181,32 @@ def encode_prompt(
             tokens["g"] += empty["g"]
 
     tokens = fix_word_ids(tokens)
-    return clip.encode_from_tokens_scheduled(tokens, add_dict=settings)
+
+    newclip = clip
+    if have_advanced_encode:
+        newclip = clip.clone()
+        if hasattr(clip.patcher.model, "clip_g"):
+            newclip.patcher.add_object_patch(
+                "clip_g.encode_token_weights",
+                encoder_patch(style, normalization, clip.patcher.get_model_object("clip_g.encode_token_weights")),
+            )
+        if hasattr(clip.patcher.model, "clip_l"):
+            newclip.patcher.add_object_patch(
+                "clip_l.encode_token_weights",
+                encoder_patch(style, normalization, clip.patcher.get_model_object("clip_l.encode_token_weights")),
+            )
+
+    return newclip.encode_from_tokens_scheduled(tokens, add_dict=settings)
+
+
+def encoder_patch(style, normalization, orig_fn):
+    if not have_advanced_encode or style == "comfy" and normalization == "none":
+        return orig_fn
+    else:
+        log.debug(f"Encoding with style=%s, normalization=%s", style, normalization)
+        return lambda t: advanced_encode_from_tokens(
+            t, normalization, style, orig_fn, return_pooled=True, apply_to_pooled=False
+        )
 
 
 def get_area(text):
