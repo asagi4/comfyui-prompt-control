@@ -456,7 +456,7 @@ def lora_hooks_from_schedule(schedules):
             new_hook.hooks[0].hook_ref = f"pc-{path}-{info['weight']}-{info['weight_clip']}"
             hooks.append(new_hook)
         if start_pct > 0.0:
-            kf = comfy.hooks.HookKeyframe(strength=0.0, start_percent=0.1)
+            kf = comfy.hooks.HookKeyframe(strength=0.0, start_percent=0.0)
             hook_kf.add(kf)
         kf = comfy.hooks.HookKeyframe(strength=1.0, start_percent=start_pct)
         hook_kf.add(kf)
