@@ -1,20 +1,59 @@
 {
-  "last_node_id": 101,
-  "last_link_id": 201,
+  "last_node_id": 84,
+  "last_link_id": 157,
   "nodes": [
+    {
+      "id": 2,
+      "type": "PrimitiveNode",
+      "pos": {
+        "0": -675,
+        "1": -1095
+      },
+      "size": [
+        628.8022031564244,
+        200.09450269138313
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            94
+          ],
+          "slot_index": 0,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "title": "Negative",
+      "properties": {
+        "Run widget replace on values": false
+      },
+      "widgets_values": [
+        "nsfw, child, painting, blurry,text, watermark, figurine, [3d:0.2], multiple glasses\n\n[everything that works in the positive prompt applies here too. Note that the LoRA doesn't get applied to the negative part because it's not mentioned here:1]"
+      ],
+      "color": "#322",
+      "bgcolor": "#533",
+      "shape": 1
+    },
     {
       "id": 10,
       "type": "CheckpointLoaderSimple",
-      "pos": [
-        -1440,
-        -1485
-      ],
+      "pos": {
+        "0": -945,
+        "1": -690
+      },
       "size": [
-        358.77117919921875,
+        358.7711864218729,
         98
       ],
       "flags": {},
-      "order": 13,
+      "order": 15,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -22,7 +61,7 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            158
+            156
           ],
           "slot_index": 0,
           "shape": 3
@@ -31,7 +70,7 @@
           "name": "CLIP",
           "type": "CLIP",
           "links": [
-            163
+            11
           ],
           "slot_index": 1,
           "shape": 3
@@ -50,28 +89,28 @@
         "Node name for S&R": "CheckpointLoaderSimple"
       },
       "widgets_values": [
-        "XL/noobai-eps-v1.0.safetensors"
+        "XL/animaginexlv31_v31.safetensors"
       ]
     },
     {
       "id": 11,
       "type": "Reroute",
-      "pos": [
-        -630,
-        -810
-      ],
+      "pos": {
+        "0": -690,
+        "1": -405
+      },
       "size": [
         82,
         26
       ],
       "flags": {},
-      "order": 27,
+      "order": 26,
       "mode": 0,
       "inputs": [
         {
           "name": "",
           "type": "*",
-          "link": 158
+          "link": 157
         }
       ],
       "outputs": [
@@ -79,8 +118,8 @@
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            159,
-            174
+            61,
+            128
           ],
           "slot_index": 0
         }
@@ -93,22 +132,22 @@
     {
       "id": 12,
       "type": "Reroute",
-      "pos": [
-        -690,
-        -345
-      ],
+      "pos": {
+        "0": -690,
+        "1": -345
+      },
       "size": [
         75,
         26
       ],
       "flags": {},
-      "order": 33,
+      "order": 23,
       "mode": 0,
       "inputs": [
         {
           "name": "",
           "type": "*",
-          "link": 164
+          "link": 11
         }
       ],
       "outputs": [
@@ -116,8 +155,9 @@
           "name": "CLIP",
           "type": "CLIP",
           "links": [
-            129,
-            166
+            60,
+            92,
+            129
           ],
           "slot_index": 0
         }
@@ -125,21 +165,19 @@
       "properties": {
         "showOutputText": true,
         "horizontal": false
-      },
-      "color": "#232",
-      "bgcolor": "#353"
+      }
     },
     {
       "id": 18,
       "type": "PrimitiveNode",
-      "pos": [
-        90,
-        -855
-      ],
-      "size": [
-        210,
-        58
-      ],
+      "pos": {
+        "0": -510,
+        "1": 345
+      },
+      "size": {
+        "0": 210,
+        "1": 58
+      },
       "flags": {},
       "order": 0,
       "mode": 0,
@@ -168,14 +206,14 @@
     {
       "id": 20,
       "type": "PrimitiveNode",
-      "pos": [
-        90,
-        -1110
-      ],
-      "size": [
-        210,
-        82
-      ],
+      "pos": {
+        "0": -510,
+        "1": 90
+      },
+      "size": {
+        "0": 210,
+        "1": 82
+      },
       "flags": {
         "collapsed": false
       },
@@ -207,14 +245,14 @@
     {
       "id": 21,
       "type": "PrimitiveNode",
-      "pos": [
-        90,
-        -990
-      ],
-      "size": [
-        210,
-        82
-      ],
+      "pos": {
+        "0": -510,
+        "1": 210
+      },
+      "size": {
+        "0": 210,
+        "1": 82
+      },
       "flags": {},
       "order": 2,
       "mode": 0,
@@ -244,16 +282,16 @@
     {
       "id": 24,
       "type": "PrimitiveNode",
-      "pos": [
-        -945,
-        -795
-      ],
-      "size": [
-        210,
-        82
-      ],
+      "pos": {
+        "0": -825,
+        "1": -525
+      },
+      "size": {
+        "0": 210,
+        "1": 82
+      },
       "flags": {},
-      "order": 12,
+      "order": 9,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -275,7 +313,7 @@
         "Run widget replace on values": false
       },
       "widgets_values": [
-        2,
+        1,
         "fixed"
       ],
       "color": "#233",
@@ -284,16 +322,16 @@
     {
       "id": 26,
       "type": "EmptyLatentImage",
-      "pos": [
-        -795,
-        -210
-      ],
-      "size": [
-        210,
-        78
-      ],
+      "pos": {
+        "0": -795,
+        "1": -210
+      },
+      "size": {
+        "0": 210,
+        "1": 78
+      },
       "flags": {},
-      "order": 26,
+      "order": 19,
       "mode": 0,
       "inputs": [
         {
@@ -329,8 +367,8 @@
         "Node name for S&R": "EmptyLatentImage"
       },
       "widgets_values": [
-        1024,
-        1024,
+        864,
+        1152,
         1
       ],
       "color": "#432",
@@ -339,16 +377,16 @@
     {
       "id": 28,
       "type": "LatentUpscaleBy",
-      "pos": [
-        75,
-        -690
-      ],
-      "size": [
-        210,
-        82
-      ],
+      "pos": {
+        "0": 75,
+        "1": -690
+      },
+      "size": {
+        "0": 210,
+        "1": 82
+      },
       "flags": {},
-      "order": 42,
+      "order": 40,
       "mode": 0,
       "inputs": [
         {
@@ -381,18 +419,18 @@
     {
       "id": 29,
       "type": "VAEDecode",
-      "pos": [
-        -255,
-        -675
-      ],
-      "size": [
-        210,
-        46
-      ],
+      "pos": {
+        "0": -270,
+        "1": -525
+      },
+      "size": {
+        "0": 210,
+        "1": 46
+      },
       "flags": {
         "collapsed": true
       },
-      "order": 41,
+      "order": 39,
       "mode": 0,
       "inputs": [
         {
@@ -425,16 +463,16 @@
     {
       "id": 31,
       "type": "PreviewImage",
-      "pos": [
-        -555,
-        -120
-      ],
-      "size": [
-        480,
-        360
-      ],
+      "pos": {
+        "0": -825,
+        "1": -90
+      },
+      "size": {
+        "0": 280,
+        "1": 357
+      },
       "flags": {},
-      "order": 43,
+      "order": 41,
       "mode": 0,
       "inputs": [
         {
@@ -455,18 +493,18 @@
     {
       "id": 32,
       "type": "VAEDecode",
-      "pos": [
-        390,
-        -690
-      ],
-      "size": [
-        210,
-        46
-      ],
+      "pos": {
+        "0": 390,
+        "1": -690
+      },
+      "size": {
+        "0": 210,
+        "1": 46
+      },
       "flags": {
         "collapsed": true
       },
-      "order": 45,
+      "order": 43,
       "mode": 0,
       "inputs": [
         {
@@ -477,7 +515,7 @@
         {
           "name": "vae",
           "type": "VAE",
-          "link": 179
+          "link": 139
         }
       ],
       "outputs": [
@@ -499,16 +537,16 @@
     {
       "id": 33,
       "type": "PreviewImage",
-      "pos": [
-        75,
-        -150
-      ],
-      "size": [
-        426,
-        369
-      ],
+      "pos": {
+        "0": 60,
+        "1": -135
+      },
+      "size": {
+        "0": 426,
+        "1": 369
+      },
       "flags": {},
-      "order": 46,
+      "order": 44,
       "mode": 0,
       "inputs": [
         {
@@ -529,50 +567,13 @@
     {
       "id": 38,
       "type": "PromptToSchedule",
-      "pos": [
-        -1635,
-        -1125
-      ],
-      "size": [
-        615,
-        135
-      ],
-      "flags": {
-        "collapsed": false
+      "pos": {
+        "0": -1635,
+        "1": -1125
       },
-      "order": 24,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "PROMPT_SCHEDULE",
-          "type": "PROMPT_SCHEDULE",
-          "links": [
-            201
-          ],
-          "slot_index": 0,
-          "shape": 3
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "PromptToSchedule"
-      },
-      "widgets_values": [
-        "STYLE(A1111) [best quality, masterpiece,:0.2] 1girl, t-shirt, green eyes, black hair, multicolored shirt, upper body, fox ears, logo on shirt, [[white:simple:0.2] background,::0.6]"
-      ],
-      "color": "#223",
-      "bgcolor": "#335"
-    },
-    {
-      "id": 41,
-      "type": "PromptToSchedule",
-      "pos": [
-        -675,
-        -1260
-      ],
       "size": [
-        465,
-        165
+        615.5980816101398,
+        145.6926295280257
       ],
       "flags": {
         "collapsed": false
@@ -585,37 +586,220 @@
           "name": "PROMPT_SCHEDULE",
           "type": "PROMPT_SCHEDULE",
           "links": [
-            170
+            155
           ],
           "slot_index": 0,
           "shape": 3
         }
       ],
-      "title": "PromptToSchedule (Negative prompt)",
       "properties": {
         "Node name for S&R": "PromptToSchedule"
       },
       "widgets_values": [
-        "nsfw, worst quality, low quality, normal quality, blurry background, text, watermark, bad hands,\n[everything that works in the positive prompt applies here too.:1]"
+        "STYLE(A1111)\na woman, long hair, summer, t-shirt, by [ilya kuvshinov:akira toriyama:0.4], [[retro|sketch]:realistic:HR], (hair strands:1.1)"
       ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 39,
+      "type": "ScheduleToCond",
+      "pos": {
+        "0": -495,
+        "1": -435
+      },
+      "size": {
+        "0": 355.20001220703125,
+        "1": 46
+      },
+      "flags": {
+        "collapsed": true
+      },
+      "order": 34,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 60
+        },
+        {
+          "name": "prompt_schedule",
+          "type": "PROMPT_SCHEDULE",
+          "link": 117
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            80
+          ],
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ScheduleToCond"
+      },
+      "widgets_values": [],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 40,
+      "type": "ScheduleToModel",
+      "pos": {
+        "0": -495,
+        "1": -495
+      },
+      "size": {
+        "0": 267,
+        "1": 46
+      },
+      "flags": {
+        "collapsed": true
+      },
+      "order": 31,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 61
+        },
+        {
+          "name": "prompt_schedule",
+          "type": "PROMPT_SCHEDULE",
+          "link": 112
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            79
+          ],
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ScheduleToModel"
+      },
+      "widgets_values": [],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 41,
+      "type": "PromptToSchedule",
+      "pos": {
+        "0": -630,
+        "1": -795
+      },
+      "size": {
+        "0": 210,
+        "1": 46.00000762939453
+      },
+      "flags": {
+        "collapsed": true
+      },
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 94,
+          "slot_index": 0,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "PROMPT_SCHEDULE",
+          "type": "PROMPT_SCHEDULE",
+          "links": [
+            56
+          ],
+          "slot_index": 0,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PromptToSchedule"
+      },
+      "widgets_values": [
+        "nsfw, child, painting, blurry,text, watermark, figurine, [3d:0.2], multiple glasses\n\n[everything that works in the positive prompt applies here too. Note that the LoRA doesn't get applied to the negative part because it's not mentioned here:1]"
+      ],
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 42,
+      "type": "ScheduleToCond",
+      "pos": {
+        "0": -495,
+        "1": -375
+      },
+      "size": {
+        "0": 355.20001220703125,
+        "1": 46
+      },
+      "flags": {
+        "collapsed": true
+      },
+      "order": 27,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 92
+        },
+        {
+          "name": "prompt_schedule",
+          "type": "PROMPT_SCHEDULE",
+          "link": 56
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            121,
+            127
+          ],
+          "slot_index": 0,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ScheduleToCond"
+      },
+      "widgets_values": [],
       "color": "#322",
       "bgcolor": "#533"
     },
     {
       "id": 44,
       "type": "FilterSchedule",
-      "pos": [
-        345,
-        -795
-      ],
-      "size": [
-        262,
-        96.04244995117188
-      ],
+      "pos": {
+        "0": -255,
+        "1": 405
+      },
+      "size": {
+        "0": 262,
+        "1": 96.04244995117188
+      },
       "flags": {
         "collapsed": true
       },
-      "order": 37,
+      "order": 35,
       "mode": 0,
       "inputs": [
         {
@@ -654,7 +838,8 @@
           "name": "PROMPT_SCHEDULE",
           "type": "PROMPT_SCHEDULE",
           "links": [
-            175
+            68,
+            69
           ],
           "slot_index": 0,
           "shape": 3
@@ -672,36 +857,126 @@
       "bgcolor": "#355"
     },
     {
-      "id": 50,
-      "type": "KSampler",
-      "pos": [
-        -285,
-        -630
+      "id": 46,
+      "type": "ScheduleToCond",
+      "pos": {
+        "0": 90,
+        "1": -495
+      },
+      "size": {
+        "0": 355.20001220703125,
+        "1": 46
+      },
+      "flags": {
+        "collapsed": true
+      },
+      "order": 37,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 131
+        },
+        {
+          "name": "prompt_schedule",
+          "type": "PROMPT_SCHEDULE",
+          "link": 68
+        }
       ],
-      "size": [
-        215.8475341796875,
-        446
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            89
+          ],
+          "shape": 3
+        }
       ],
-      "flags": {},
-      "order": 40,
+      "properties": {
+        "Node name for S&R": "ScheduleToCond"
+      },
+      "widgets_values": [],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 47,
+      "type": "ScheduleToModel",
+      "pos": {
+        "0": 90,
+        "1": -540
+      },
+      "size": {
+        "0": 267,
+        "1": 46
+      },
+      "flags": {
+        "collapsed": true
+      },
+      "order": 38,
       "mode": 0,
       "inputs": [
         {
           "name": "model",
           "type": "MODEL",
-          "link": 159,
+          "link": 130
+        },
+        {
+          "name": "prompt_schedule",
+          "type": "PROMPT_SCHEDULE",
+          "link": 69
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            88
+          ],
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ScheduleToModel"
+      },
+      "widgets_values": [],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 50,
+      "type": "KSampler",
+      "pos": {
+        "0": -300,
+        "1": -480
+      },
+      "size": {
+        "0": 215.8475341796875,
+        "1": 446
+      },
+      "flags": {},
+      "order": 36,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 79,
           "slot_index": 0
         },
         {
           "name": "positive",
           "type": "CONDITIONING",
-          "link": 168,
+          "link": 80,
           "slot_index": 1
         },
         {
           "name": "negative",
           "type": "CONDITIONING",
-          "link": 171,
+          "link": 127,
           "slot_index": 2
         },
         {
@@ -736,10 +1011,10 @@
         "Node name for S&R": "KSampler"
       },
       "widgets_values": [
-        2,
+        1,
         "randomize",
-        29,
-        7,
+        20,
+        8,
         "euler_ancestral",
         "karras",
         1
@@ -750,34 +1025,34 @@
     {
       "id": 51,
       "type": "KSampler",
-      "pos": [
-        315,
-        -660
-      ],
-      "size": [
-        210,
-        446
-      ],
+      "pos": {
+        "0": 315,
+        "1": -660
+      },
+      "size": {
+        "0": 210,
+        "1": 446
+      },
       "flags": {},
-      "order": 44,
+      "order": 42,
       "mode": 0,
       "inputs": [
         {
           "name": "model",
           "type": "MODEL",
-          "link": 174,
+          "link": 88,
           "slot_index": 0
         },
         {
           "name": "positive",
           "type": "CONDITIONING",
-          "link": 178,
+          "link": 89,
           "slot_index": 1
         },
         {
           "name": "negative",
           "type": "CONDITIONING",
-          "link": 172,
+          "link": 132,
           "slot_index": 2
         },
         {
@@ -812,13 +1087,13 @@
         "Node name for S&R": "KSampler"
       },
       "widgets_values": [
-        2,
+        1,
         "randomize",
         20,
         8,
         "euler",
         "karras",
-        0.67
+        0.8
       ],
       "color": "#323",
       "bgcolor": "#535"
@@ -826,14 +1101,14 @@
     {
       "id": 52,
       "type": "Note",
-      "pos": [
-        315,
-        -1110
-      ],
-      "size": [
-        210,
-        267.0199890136719
-      ],
+      "pos": {
+        "0": -285,
+        "1": 90
+      },
+      "size": {
+        "0": 210,
+        "1": 267.0199890136719
+      },
       "flags": {},
       "order": 3,
       "mode": 0,
@@ -851,18 +1126,18 @@
     {
       "id": 53,
       "type": "PCApplySettings",
-      "pos": [
-        -915,
-        -915
-      ],
-      "size": [
-        393,
-        46
-      ],
+      "pos": {
+        "0": -915,
+        "1": -825
+      },
+      "size": {
+        "0": 393,
+        "1": 46
+      },
       "flags": {
         "collapsed": true
       },
-      "order": 32,
+      "order": 25,
       "mode": 0,
       "inputs": [
         {
@@ -883,6 +1158,7 @@
           "name": "PROMPT_SCHEDULE",
           "type": "PROMPT_SCHEDULE",
           "links": [
+            112,
             116
           ],
           "slot_index": 0,
@@ -899,18 +1175,18 @@
     {
       "id": 57,
       "type": "PCScheduleSettings",
-      "pos": [
-        -1410,
-        -105
-      ],
-      "size": [
-        262,
-        249
-      ],
+      "pos": {
+        "0": -1410,
+        "1": -105
+      },
+      "size": {
+        "0": 262,
+        "1": 249
+      },
       "flags": {
         "collapsed": false
       },
-      "order": 25,
+      "order": 18,
       "mode": 0,
       "inputs": [
         {
@@ -964,8 +1240,8 @@
       },
       "widgets_values": [
         0,
-        1024,
-        1024,
+        864,
+        1152,
         1024,
         1024,
         864,
@@ -979,16 +1255,16 @@
     {
       "id": 59,
       "type": "Note",
-      "pos": [
-        -1125,
-        -90
-      ],
-      "size": [
-        315,
-        435
-      ],
+      "pos": {
+        "0": -1110,
+        "1": -180
+      },
+      "size": {
+        "0": 277.907958984375,
+        "1": 359.69842529296875
+      },
       "flags": {},
-      "order": 5,
+      "order": 6,
       "mode": 0,
       "inputs": [],
       "outputs": [],
@@ -1004,16 +1280,16 @@
     {
       "id": 60,
       "type": "LoadImage",
-      "pos": [
-        -1425,
-        -480
-      ],
-      "size": [
-        315,
-        314
-      ],
+      "pos": {
+        "0": -1425,
+        "1": -480
+      },
+      "size": {
+        "0": 315,
+        "1": 314
+      },
       "flags": {},
-      "order": 21,
+      "order": 14,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -1044,18 +1320,18 @@
     {
       "id": 62,
       "type": "PCScheduleAddMasks",
-      "pos": [
-        -930,
-        -870
-      ],
-      "size": [
-        393,
-        106
-      ],
+      "pos": {
+        "0": -930,
+        "1": -780
+      },
+      "size": {
+        "0": 393,
+        "1": 106
+      },
       "flags": {
         "collapsed": true
       },
-      "order": 35,
+      "order": 30,
       "mode": 0,
       "inputs": [
         {
@@ -1093,8 +1369,8 @@
           "name": "PROMPT_SCHEDULE",
           "type": "PROMPT_SCHEDULE",
           "links": [
-            120,
-            173
+            117,
+            120
           ],
           "slot_index": 0
         }
@@ -1107,18 +1383,92 @@
       "bgcolor": "#653"
     },
     {
+      "id": 66,
+      "type": "Reroute",
+      "pos": {
+        "0": 90,
+        "1": -465
+      },
+      "size": [
+        140.8,
+        26
+      ],
+      "flags": {},
+      "order": 33,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "",
+          "type": "*",
+          "link": 121
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            132
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "showOutputText": true,
+        "horizontal": false
+      },
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 68,
+      "type": "Reroute",
+      "pos": {
+        "0": -45,
+        "1": -390
+      },
+      "size": [
+        82,
+        26
+      ],
+      "flags": {},
+      "order": 32,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "",
+          "type": "*",
+          "link": 128
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            130
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "showOutputText": true,
+        "horizontal": false
+      }
+    },
+    {
       "id": 69,
       "type": "Reroute",
-      "pos": [
-        -30,
-        -345
-      ],
+      "pos": {
+        "0": -30,
+        "1": -330
+      },
       "size": [
         75,
         26
       ],
       "flags": {},
-      "order": 36,
+      "order": 28,
       "mode": 0,
       "inputs": [
         {
@@ -1132,7 +1482,7 @@
           "name": "CLIP",
           "type": "CLIP",
           "links": [
-            176
+            131
           ],
           "slot_index": 0
         }
@@ -1140,23 +1490,21 @@
       "properties": {
         "showOutputText": true,
         "horizontal": false
-      },
-      "color": "#232",
-      "bgcolor": "#353"
+      }
     },
     {
       "id": 71,
       "type": "Note",
-      "pos": [
-        -465,
-        -1050
-      ],
-      "size": [
-        245.2353515625,
-        94.10244750976562
-      ],
+      "pos": {
+        "0": -390,
+        "1": -840
+      },
+      "size": {
+        "0": 245.2353515625,
+        "1": 94.10244750976562
+      },
       "flags": {},
-      "order": 6,
+      "order": 8,
       "mode": 0,
       "inputs": [],
       "outputs": [],
@@ -1172,16 +1520,16 @@
     {
       "id": 72,
       "type": "PrimitiveNode",
-      "pos": [
-        -1080,
-        -435
-      ],
+      "pos": {
+        "0": -1080,
+        "1": -435
+      },
       "size": [
         210,
         82
       ],
       "flags": {},
-      "order": 9,
+      "order": 4,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -1202,7 +1550,7 @@
         "Run widget replace on values": false
       },
       "widgets_values": [
-        1024,
+        864,
         "fixed"
       ],
       "color": "#432",
@@ -1211,16 +1559,16 @@
     {
       "id": 73,
       "type": "PrimitiveNode",
-      "pos": [
-        -1080,
-        -300
-      ],
+      "pos": {
+        "0": -1080,
+        "1": -300
+      },
       "size": [
         210,
         82
       ],
       "flags": {},
-      "order": 10,
+      "order": 5,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -1241,25 +1589,62 @@
         "Run widget replace on values": false
       },
       "widgets_values": [
-        1024,
+        1152,
         "fixed"
       ],
       "color": "#432",
       "bgcolor": "#653"
     },
     {
-      "id": 76,
+      "id": 75,
       "type": "Reroute",
-      "pos": [
-        -645,
-        -1080
-      ],
+      "pos": {
+        "0": -105,
+        "1": -795
+      },
       "size": [
         75,
         26
       ],
       "flags": {},
-      "order": 28,
+      "order": 29,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "",
+          "type": "*",
+          "link": 142,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            139
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "showOutputText": true,
+        "horizontal": false
+      }
+    },
+    {
+      "id": 76,
+      "type": "Reroute",
+      "pos": {
+        "0": -210,
+        "1": -645
+      },
+      "size": [
+        75,
+        26
+      ],
+      "flags": {},
+      "order": 24,
       "mode": 0,
       "inputs": [
         {
@@ -1275,7 +1660,7 @@
           "type": "VAE",
           "links": [
             141,
-            179
+            142
           ],
           "slot_index": 0
         }
@@ -1288,16 +1673,16 @@
     {
       "id": 78,
       "type": "Note",
-      "pos": [
-        -960,
-        -1185
-      ],
+      "pos": {
+        "0": -945,
+        "1": -1110
+      },
       "size": [
-        229.70484924316406,
-        127.95516204833984
+        229.70484916081296,
+        127.95516126035989
       ],
       "flags": {},
-      "order": 4,
+      "order": 12,
       "mode": 0,
       "inputs": [],
       "outputs": [],
@@ -1311,22 +1696,22 @@
     {
       "id": 79,
       "type": "Reroute",
-      "pos": [
-        -915,
-        -990
-      ],
+      "pos": {
+        "0": -915,
+        "1": -915
+      },
       "size": [
         166,
         26
       ],
       "flags": {},
-      "order": 30,
+      "order": 21,
       "mode": 0,
       "inputs": [
         {
           "name": "",
           "type": "*",
-          "link": 201
+          "link": 155
         }
       ],
       "outputs": [
@@ -1349,18 +1734,18 @@
     {
       "id": 80,
       "type": "PromptToSchedule",
-      "pos": [
-        -1635,
-        -915
-      ],
+      "pos": {
+        "0": -1635,
+        "1": -915
+      },
       "size": [
-        620.8040161132812,
-        138.1505889892578
+        620.8040054283256,
+        138.15058378973072
       ],
       "flags": {
         "collapsed": false
       },
-      "order": 20,
+      "order": 16,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -1376,7 +1761,7 @@
         "Node name for S&R": "PromptToSchedule"
       },
       "widgets_values": [
-        "[best quality, masterpiece,:0.2] 1girl, t-shirt, green eyes, black hair, multicolored shirt, upper body, fox ears, logo on shirt, [[white:simple:0.2] background,::0.6] [AND MASK(0.25 0.75, 0.5 1, 2)::0.4] large heart symbol on shirt, multicolored shirt, "
+        "STYLE(A1111)\na woman, long hair, summer, t-shirt, by [ilya kuvshinov:akira toriyama:0.4], [retro|sketch] (hair strands:1.1)\n[traditional media, <lora:line_draft_animagine:1>:0.1,0.3]"
       ],
       "color": "#223",
       "bgcolor": "#335"
@@ -1384,18 +1769,18 @@
     {
       "id": 81,
       "type": "PromptToSchedule",
-      "pos": [
-        -1635,
-        -720
-      ],
+      "pos": {
+        "0": -1635,
+        "1": -720
+      },
       "size": [
-        639.2022094726562,
-        185.1746063232422
+        639.2021978407033,
+        185.17461181308852
       ],
       "flags": {
         "collapsed": false
       },
-      "order": 22,
+      "order": 10,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -1411,7 +1796,7 @@
         "Node name for S&R": "PromptToSchedule"
       },
       "widgets_values": [
-        "[best quality, masterpiece,:0.2] [realistic:HR] 1girl, t-shirt, green eyes, black hair, multicolored shirt, upper body, fox ears, logo on shirt,  [[white:simple:0.2] background,::0.6] [AND MASK(0.25 0.75, 0.5 1, 2)::0.4] large heart symbol on shirt, multicolored shirt, [heterochromia [AND IMASK(0)::0.9] (pink eyes):0.2]"
+        "a woman, long hair, summer, t-shirt, BREAK by [ilya kuvshinov:akira toriyama:0.4], [retro|sketch] (hair strands:1.1)\n[AND MASK(0 0.5)::0.5] blonde hair, [AND MASK(0.5 1)::0.7] black hair,\nAND IMASK(0, 0.8) apple logo,"
       ],
       "color": "#223",
       "bgcolor": "#335"
@@ -1419,16 +1804,16 @@
     {
       "id": 82,
       "type": "Note",
-      "pos": [
-        -1665,
-        -480
-      ],
+      "pos": {
+        "0": -1665,
+        "1": -465
+      },
       "size": [
-        229.70484924316406,
-        127.95516204833984
+        229.70484916081296,
+        127.95516126035989
       ],
       "flags": {},
-      "order": 7,
+      "order": 13,
       "mode": 0,
       "inputs": [],
       "outputs": [],
@@ -1442,16 +1827,16 @@
     {
       "id": 83,
       "type": "Note",
-      "pos": [
-        75,
-        -1515
-      ],
+      "pos": {
+        "0": 0,
+        "1": -1095
+      },
       "size": [
-        406.24371337890625,
-        299.6196594238281
+        406.24372682187277,
+        299.61966948780355
       ],
       "flags": {},
-      "order": 8,
+      "order": 17,
       "mode": 0,
       "inputs": [],
       "outputs": [],
@@ -1465,409 +1850,53 @@
       "bgcolor": "#653"
     },
     {
-      "id": 86,
-      "type": "PCLoraHooksFromSchedule",
-      "pos": [
-        -990,
-        -1290
-      ],
-      "size": [
-        225,
-        30
-      ],
-      "flags": {
-        "collapsed": false
+      "id": 84,
+      "type": "PCSplitSampling",
+      "pos": {
+        "0": -555,
+        "1": -690
       },
-      "order": 29,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "prompt_schedule",
-          "type": "PROMPT_SCHEDULE",
-          "link": 191
-        }
-      ],
-      "outputs": [
-        {
-          "name": "HOOKS",
-          "type": "HOOKS",
-          "links": [
-            162
-          ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "PCLoraHooksFromSchedule"
-      },
-      "widgets_values": [],
-      "color": "#232",
-      "bgcolor": "#353"
-    },
-    {
-      "id": 87,
-      "type": "PromptToSchedule",
-      "pos": [
-        -1635,
-        -1350
-      ],
-      "size": [
-        615,
-        165
-      ],
-      "flags": {
-        "collapsed": false
-      },
-      "order": 16,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "PROMPT_SCHEDULE",
-          "type": "PROMPT_SCHEDULE",
-          "links": [
-            191
-          ],
-          "slot_index": 0,
-          "shape": 3
-        }
-      ],
-      "title": "PromptToSchedule (LoRAs)",
-      "properties": {
-        "Node name for S&R": "PromptToSchedule"
-      },
-      "widgets_values": [
-        "[<lora:mylora:1>:0.1,0.5]\nThe rest of the prompt is ignored by PCLoraHooksFromSchedule\n"
-      ],
-      "color": "#223",
-      "bgcolor": "#335"
-    },
-    {
-      "id": 89,
-      "type": "SetClipHooks",
-      "pos": [
-        -975,
-        -1455
-      ],
       "size": [
         210,
-        102
+        58
       ],
       "flags": {},
-      "order": 31,
+      "order": 22,
       "mode": 0,
       "inputs": [
         {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 163
-        },
-        {
-          "name": "hooks",
-          "type": "HOOKS",
-          "link": 162,
-          "shape": 7
+          "name": "model",
+          "type": "MODEL",
+          "link": 156
         }
       ],
       "outputs": [
         {
-          "name": "CLIP",
-          "type": "CLIP",
+          "name": "MODEL",
+          "type": "MODEL",
           "links": [
-            164,
-            195
+            157
           ],
           "slot_index": 0
         }
       ],
       "properties": {
-        "Node name for S&R": "SetClipHooks"
+        "Node name for S&R": "PCSplitSampling"
       },
       "widgets_values": [
-        true,
-        true
-      ],
-      "color": "#232",
-      "bgcolor": "#353"
-    },
-    {
-      "id": 90,
-      "type": "Note",
-      "pos": [
-        -675,
-        -1530
-      ],
-      "size": [
-        705,
-        210
-      ],
-      "flags": {},
-      "order": 14,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "properties": {
-        "text": ""
-      },
-      "widgets_values": [
-        "Set CLIP Hooks is from ComfyUI core. Use this CLIP object as you would normally.\n\napply_to_conds enables the LoRA hooks to the model when sampling, and schedule_clip enables it when encoding prompts.\n\nYou can use different hooks for the negative prompt, but that seems to lead to crazytown. Experimentation is key."
-      ],
-      "color": "#432",
-      "bgcolor": "#653"
-    },
-    {
-      "id": 92,
-      "type": "PCEncodeSchedule",
-      "pos": [
-        -540,
-        -615
-      ],
-      "size": [
-        236.8000030517578,
-        46
-      ],
-      "flags": {
-        "collapsed": false
-      },
-      "order": 38,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 166
-        },
-        {
-          "name": "prompt_schedule",
-          "type": "PROMPT_SCHEDULE",
-          "link": 173
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CONDITIONING",
-          "type": "CONDITIONING",
-          "links": [
-            168
-          ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "PCEncodeSchedule"
-      },
-      "widgets_values": [],
-      "color": "#223",
-      "bgcolor": "#335"
-    },
-    {
-      "id": 93,
-      "type": "PCEncodeSchedule",
-      "pos": [
-        -465,
-        -915
-      ],
-      "size": [
-        236.8000030517578,
-        46
-      ],
-      "flags": {
-        "collapsed": false
-      },
-      "order": 34,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 195
-        },
-        {
-          "name": "prompt_schedule",
-          "type": "PROMPT_SCHEDULE",
-          "link": 170
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CONDITIONING",
-          "type": "CONDITIONING",
-          "links": [
-            171,
-            172
-          ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "PCEncodeSchedule"
-      },
-      "widgets_values": [],
-      "color": "#322",
-      "bgcolor": "#533"
-    },
-    {
-      "id": 94,
-      "type": "PCEncodeSchedule",
-      "pos": [
-        60,
-        -510
-      ],
-      "size": [
-        236.8000030517578,
-        46
-      ],
-      "flags": {
-        "collapsed": false
-      },
-      "order": 39,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 176
-        },
-        {
-          "name": "prompt_schedule",
-          "type": "PROMPT_SCHEDULE",
-          "link": 175
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CONDITIONING",
-          "type": "CONDITIONING",
-          "links": [
-            178
-          ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "PCEncodeSchedule"
-      },
-      "widgets_values": [],
-      "color": "#223",
-      "bgcolor": "#335"
-    },
-    {
-      "id": 97,
-      "type": "Note",
-      "pos": [
-        -1980,
-        -915
-      ],
-      "size": [
-        300,
-        135
-      ],
-      "flags": {},
-      "order": 18,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "properties": {},
-      "widgets_values": [
-        "let's change the logo on the shirt with a mask (apply the mask only up to 0.4 to speed up things)"
-      ],
-      "color": "#432",
-      "bgcolor": "#653"
-    },
-    {
-      "id": 98,
-      "type": "Note",
-      "pos": [
-        -2175,
-        -720
-      ],
-      "size": [
-        510,
-        195
-      ],
-      "flags": {},
-      "order": 23,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "properties": {},
-      "widgets_values": [
-        "finally, test a custom mask. Copy a gen to the clipspace, paste it into LoadImage and mask approximately the location of the other eye.\n\nAlso try enabling the second pass to create a see what adding the \"realistic\" tag to the prompt does."
-      ],
-      "color": "#432",
-      "bgcolor": "#653"
-    },
-    {
-      "id": 99,
-      "type": "Note",
-      "pos": [
-        -1755,
-        -1545
-      ],
-      "size": [
-        270,
-        135
-      ],
-      "flags": {},
-      "order": 17,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "properties": {},
-      "widgets_values": [
-        "Use noobai XL EPS version 1.0 to reproduce things. It's nothing fancy, though. "
-      ],
-      "color": "#432",
-      "bgcolor": "#653"
-    },
-    {
-      "id": 100,
-      "type": "Note",
-      "pos": [
-        -2010,
-        -1350
-      ],
-      "size": [
-        360,
-        165
-      ],
-      "flags": {},
-      "order": 15,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "properties": {},
-      "widgets_values": [
-        "You *can* have the LoRA schedule mixed with the rest of the prompt, but this is clearer. This same schedule is used for *both* passes. This schedule uses a LoRA between 10% and 50% of timesteps"
-      ],
-      "color": "#432",
-      "bgcolor": "#653"
-    },
-    {
-      "id": 101,
-      "type": "Note",
-      "pos": [
-        -1995,
-        -1125
-      ],
-      "size": [
-        300,
-        135
-      ],
-      "flags": {},
-      "order": 19,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "properties": {},
-      "widgets_values": [
-        "Basic scheduling with A1111 weight interpretation. Schedules can be nested"
-      ],
-      "color": "#432",
-      "bgcolor": "#653"
+        "disable"
+      ]
     }
   ],
   "links": [
+    [
+      11,
+      10,
+      1,
+      12,
+      0,
+      "*"
+    ],
     [
       45,
       29,
@@ -1883,6 +1912,30 @@
       33,
       0,
       "IMAGE"
+    ],
+    [
+      56,
+      41,
+      0,
+      42,
+      1,
+      "PROMPT_SCHEDULE"
+    ],
+    [
+      60,
+      12,
+      0,
+      39,
+      0,
+      "CLIP"
+    ],
+    [
+      61,
+      11,
+      0,
+      40,
+      0,
+      "MODEL"
     ],
     [
       64,
@@ -1907,6 +1960,38 @@
       44,
       3,
       "FLOAT"
+    ],
+    [
+      68,
+      44,
+      0,
+      46,
+      1,
+      "PROMPT_SCHEDULE"
+    ],
+    [
+      69,
+      44,
+      0,
+      47,
+      1,
+      "PROMPT_SCHEDULE"
+    ],
+    [
+      79,
+      40,
+      0,
+      50,
+      0,
+      "MODEL"
+    ],
+    [
+      80,
+      39,
+      0,
+      50,
+      1,
+      "CONDITIONING"
     ],
     [
       82,
@@ -1957,12 +2042,44 @@
       "LATENT"
     ],
     [
+      88,
+      47,
+      0,
+      51,
+      0,
+      "MODEL"
+    ],
+    [
+      89,
+      46,
+      0,
+      51,
+      1,
+      "CONDITIONING"
+    ],
+    [
       91,
       24,
       0,
       51,
       4,
       "INT"
+    ],
+    [
+      92,
+      12,
+      0,
+      42,
+      0,
+      "CLIP"
+    ],
+    [
+      94,
+      2,
+      0,
+      41,
+      0,
+      "STRING"
     ],
     [
       111,
@@ -1973,11 +2090,27 @@
       "SCHEDULE_SETTINGS"
     ],
     [
+      112,
+      53,
+      0,
+      40,
+      1,
+      "PROMPT_SCHEDULE"
+    ],
+    [
       116,
       53,
       0,
       62,
       0,
+      "PROMPT_SCHEDULE"
+    ],
+    [
+      117,
+      62,
+      0,
+      39,
+      1,
       "PROMPT_SCHEDULE"
     ],
     [
@@ -1989,12 +2122,60 @@
       "PROMPT_SCHEDULE"
     ],
     [
+      121,
+      42,
+      0,
+      66,
+      0,
+      "*"
+    ],
+    [
+      127,
+      42,
+      0,
+      50,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      128,
+      11,
+      0,
+      68,
+      0,
+      "*"
+    ],
+    [
       129,
       12,
       0,
       69,
       0,
       "*"
+    ],
+    [
+      130,
+      68,
+      0,
+      47,
+      0,
+      "MODEL"
+    ],
+    [
+      131,
+      69,
+      0,
+      46,
+      0,
+      "CLIP"
+    ],
+    [
+      132,
+      66,
+      0,
+      51,
+      2,
+      "CONDITIONING"
     ],
     [
       134,
@@ -2029,12 +2210,28 @@
       "INT"
     ],
     [
+      139,
+      75,
+      0,
+      32,
+      1,
+      "VAE"
+    ],
+    [
       141,
       76,
       0,
       29,
       1,
       "VAE"
+    ],
+    [
+      142,
+      76,
+      0,
+      75,
+      0,
+      "*"
     ],
     [
       146,
@@ -2061,187 +2258,68 @@
       "*"
     ],
     [
-      158,
-      10,
-      0,
-      11,
-      0,
-      "*"
-    ],
-    [
-      159,
-      11,
-      0,
-      50,
-      0,
-      "MODEL"
-    ],
-    [
-      162,
-      86,
-      0,
-      89,
-      1,
-      "HOOKS"
-    ],
-    [
-      163,
-      10,
-      1,
-      89,
-      0,
-      "CLIP"
-    ],
-    [
-      164,
-      89,
-      0,
-      12,
-      0,
-      "*"
-    ],
-    [
-      166,
-      12,
-      0,
-      92,
-      0,
-      "CLIP"
-    ],
-    [
-      168,
-      92,
-      0,
-      50,
-      1,
-      "CONDITIONING"
-    ],
-    [
-      170,
-      41,
-      0,
-      93,
-      1,
-      "PROMPT_SCHEDULE"
-    ],
-    [
-      171,
-      93,
-      0,
-      50,
-      2,
-      "CONDITIONING"
-    ],
-    [
-      172,
-      93,
-      0,
-      51,
-      2,
-      "CONDITIONING"
-    ],
-    [
-      173,
-      62,
-      0,
-      92,
-      1,
-      "PROMPT_SCHEDULE"
-    ],
-    [
-      174,
-      11,
-      0,
-      51,
-      0,
-      "MODEL"
-    ],
-    [
-      175,
-      44,
-      0,
-      94,
-      1,
-      "PROMPT_SCHEDULE"
-    ],
-    [
-      176,
-      69,
-      0,
-      94,
-      0,
-      "CLIP"
-    ],
-    [
-      178,
-      94,
-      0,
-      51,
-      1,
-      "CONDITIONING"
-    ],
-    [
-      179,
-      76,
-      0,
-      32,
-      1,
-      "VAE"
-    ],
-    [
-      191,
-      87,
-      0,
-      86,
-      0,
-      "PROMPT_SCHEDULE"
-    ],
-    [
-      195,
-      89,
-      0,
-      93,
-      0,
-      "CLIP"
-    ],
-    [
-      201,
+      155,
       38,
       0,
       79,
+      0,
+      "*"
+    ],
+    [
+      156,
+      10,
+      0,
+      84,
+      0,
+      "MODEL"
+    ],
+    [
+      157,
+      84,
+      0,
+      11,
       0,
       "*"
     ]
   ],
   "groups": [
     {
-      "id": 1,
       "title": "Positive schedule",
       "bounding": [
         -945,
-        -1035,
-        202.6666259765625,
-        173.60000610351562
+        -975,
+        230,
+        204
       ],
       "color": "#88A",
       "font_size": 24,
       "flags": {}
     },
     {
-      "id": 3,
+      "title": "Negative schedule",
+      "bounding": [
+        -645,
+        -870,
+        210,
+        90
+      ],
+      "color": "#A88",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
       "title": "First pass",
       "bounding": [
-        -555,
-        -750,
-        490.8475341796875,
-        574.5999755859375
+        -525,
+        -570,
+        452,
+        567
       ],
       "color": "#8A8",
       "font_size": 24,
       "flags": {}
     },
     {
-      "id": 4,
       "title": "Second pass + upscale (optional)",
       "bounding": [
         60,
@@ -2254,11 +2332,10 @@
       "flags": {}
     },
     {
-      "id": 5,
       "title": "Filtering",
       "bounding": [
-        75,
-        -1185,
+        -525,
+        15,
         452,
         393
       ],
@@ -2267,26 +2344,16 @@
       "flags": {}
     }
   ],
-  "config": {
-    "links_ontop": false
-  },
+  "config": {},
   "extra": {
     "ds": {
-      "scale": 0.6934334949441497,
+      "scale": 0.6209213230591554,
       "offset": [
-        2433.4041924524054,
-        1533.5654012915797
+        1875.8489431781263,
+        1188.0226734270827
       ]
     },
-    "groupNodes": {},
-    "controller_panel": {
-      "controllers": {},
-      "hidden": true,
-      "highlight": true,
-      "version": 2,
-      "default_order": []
-    },
-    "ue_links": []
+    "groupNodes": {}
   },
   "version": 0.4
 }
