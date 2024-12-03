@@ -13,7 +13,7 @@ Things you can control via the prompt:
 - SDXL parameters
 - Other miscellaneous things
 
-[This example workflow](workflows/example.json?raw=1) implements a two-pass workflow illustrating most scheduling features. (Note: the example still uses deprecated nodes; update pending).
+[This example workflow](workflows/example.json?raw=1) implements a two-pass workflow illustrating most scheduling features.
 
 The tools in this repository combine well with the macro and wildcard functionality in [comfyui-utility-nodes](https://github.com/asagi4/comfyui-utility-nodes)
 
