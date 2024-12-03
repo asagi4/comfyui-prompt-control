@@ -13,7 +13,7 @@ Things you can control via the prompt:
 - SDXL parameters
 - Other miscellaneous things
 
-[This example workflow](workflows/example.json?raw=1) implements a two-pass workflow illustrating most scheduling features.
+[This example workflow](workflows/example.json?raw=1) implements a two-pass workflow illustrating most scheduling features. (Note: the example still uses deprecated nodes; update pending).
 
 The tools in this repository combine well with the macro and wildcard functionality in [comfyui-utility-nodes](https://github.com/asagi4/comfyui-utility-nodes)
 
@@ -32,6 +32,7 @@ Then restart ComfyUI afterwards.
 
 I try to avoid behavioural changes that break old prompts, but they may happen occasionally.
 
+- 2024-12-03 ComfyUI merged support for model/conditioning hooks. There are two new nodes, `PCEncodeSchedule` and `PCLoraHooksFromSchedule` that can be used in combination with the hook nodes. Some functionality is still missing from them, but going forward, these nodes will be the only nodes supported; **I will not spend significant time fixing bugs in the old monkeypatched nodes anymore.**
 - 2024-02-02 The node will now automatically enable offloading LoRA backup weights to the CPU if you run out of memory during LoRA operations, even when `--highvram` is specified. This change persists until ComfyUI is restarted.
 - 2024-01-14 Multiple `CLIP_L` instances are now joined with a space separator instead of concatenated.
 - 2024-01-09 AITemplate support dropped. I don't recommend or test AITemplate anymore. Use Stable-Fast instead (see below for info)
@@ -100,6 +101,8 @@ a [black:blue:X] [cat:dog:Y] [walking:running:Z] in space
 with `tags` `x,z` would result in the prompt `a blue cat running in space`
 
 ## Prompt interpolation
+
+Note: Not currently supported by `PCEncodeSchedule`
 
 `a red [INT:dog:cat:0.2,0.8:0.05]` will attempt to interpolate the tensors for `a red dog` and `a red cat` between the specified range in as many steps of 0.05 as will fit.
 
@@ -215,6 +218,10 @@ gives you a mask that is a combination of 1, 2 and 3, where 1 and 3 are feathere
 The order of the `FEATHER` and `MASK` calls doesn't matter; you can have `FEATHER` before `MASK` or even interleave them.
 
 # Schedulable LoRAs
+
+Note: Use `PCLoraHooksFromSchedule`. It will work better.
+
+## Old nodes
 The `ScheduleToModel` node patches a model so that when sampling, it'll switch LoRAs between steps. You can apply the LoRA's effect separately to CLIP conditioning and the unet (model).
 
 Swapping LoRAs often can be quite slow without the `--highvram` switch because ComfyUI will shuffle things between the CPU and GPU. When things stay on the GPU, it's quite fast.
@@ -224,6 +231,8 @@ If you run out of VRAM during a LoRA swap, the node will attempt to save VRAM by
 You can also set the `PC_RETRY_ON_OOM` environment variable to any non-empty value to automatically retry sampling once if VRAM runs out.
 
 ## LoRA Block Weight
+
+Note: Not supported by `PCEncodeSchedule` yet
 
 If you have [ComfyUI Inspire Pack](https://github.com/ltdrdata/ComfyUI-Inspire-Pack) installed, you can use its Lora Block Weight syntax, for example:
 
@@ -235,6 +244,8 @@ The syntax is the same as in the `ImpactWildcard` node, documented [here](https:
 
 # Other integrations
 ## Advanced CLIP encoding
+Note: `perp` is not supported by `PCEncodeSchedule`
+
 You can use the syntax `STYLE(weight_interpretation, normalization)` in a prompt to affect how prompts are interpreted.
 
 Without any extra nodes, only `perp` is available, which does the same as [ComfyUI_PerpWeight](https://github.com/bvhari/ComfyUI_PerpWeight) extension.
@@ -256,6 +267,8 @@ For things (ie. the code imports) to work, the nodes must be cloned in a directo
 
 ## Cutoff node integration
 
+Note: Not supported by `PCEncodeSchedule` yet.
+
 If you have [ComfyUI Cutoff](https://github.com/BlenderNeko/ComfyUI_Cutoff) cloned into your `custom_nodes`, you can use the `CUT` keyword to use cutoff functionality
 
 The syntax is
@@ -265,11 +278,15 @@ a group of animals, [CUT:white cat:white], [CUT:brown dog:brown:0.5:1.0:1.0:_]
 the parameters in the `CUT` section are `region_text:target_text:weight;strict_mask:start_from_masked:padding_token` of which only the first two are required.
 If `strict_mask`, `start_from_masked` or `padding_token` are specified in more than one section, the last one takes effect for the whole prompt
 
-## Stable-Fast
-
-The prompt control node works well with [ComfyUI_stable_fast](https://github.com/gameltb/ComfyUI_stable_fast). However, you should apply `ScheduleToModel` **after** applying `Apply StableFast Unet` to prevent constant recompilations.
-
 # Nodes
+
+## PCLoraHooksFromSchedule
+
+Creates a ComfyUI `HOOKS` object from a prompt schedule. Can be attached to a CLIP model to perform encoding and LoRA switching
+
+## PCEncodeSchedule
+
+Encodes all prompts in a schedule. Pass in a `CLIP` object with hooks attached for LoRA scheduling, then use the resulting `CONDITIONING` normally
 
 ## PromptToSchedule
 Parses a schedule from a text prompt. A schedule is essentially an array of `(valid_until, prompt)` pairs that the other nodes can use.
@@ -282,17 +299,6 @@ The node also does tag filtering if any tags are specified.
 Always returns at least the last prompt in the schedule if everything would otherwise be filtered.
 
 `start=0, end=0` returns the prompt at the start and `start=1.0, end=1.0` returns the prompt at the end.
-
-## ScheduleToCond
-Produces a combined conditioning for the appropriate timesteps. From a schedule. Also applies LoRAs to the CLIP model according to the schedule.
-
-## ScheduleToModel
-Produces a model that'll cause the sampler to reapply LoRAs at specific steps according to the schedule.
-
-This depends on a callback handled by a monkeypatch of the ComfyUI sampler function, so it might not work with custom samplers, but it shouldn't interfere with them either.
-
-## PCSplitSampling
-Causes sampling to be split into multiple sampler calls instead of relying on timesteps for scheduling. This makes the schedules more accurate, but seems to cause weird behaviour with SDE samplers. (Upstream bug?)
 
 ## PCScheduleSettings
 Returns an object representing **default values** for the `SDXL` function and allows configuring `MASK_SIZE` outside the prompt. You need to apply them to a schedule with `PCApplySettings`. Note that for the SDXL settings to apply, you still need to have `SDXL()` in the prompt.
@@ -311,7 +317,19 @@ LoRAs are *not* included in the text prompt, though they are logged.
 
 Attaches custom masks to a `PROMPT_SCHEDULE` that can then be used in a prompt.
 
-## PromptControlSimple
+## ScheduleToCond (deprecated)
+Produces a combined conditioning for the appropriate timesteps. From a schedule. Also applies LoRAs to the CLIP model according to the schedule.
+
+## ScheduleToModel (deprecated)
+Produces a model that'll cause the sampler to reapply LoRAs at specific steps according to the schedule.
+
+This depends on a callback handled by a monkeypatch of the ComfyUI sampler function, so it might not work with custom samplers, but it shouldn't interfere with them either.
+
+## PCSplitSampling (deprecated)
+Causes sampling to be split into multiple sampler calls instead of relying on timesteps for scheduling. This makes the schedules more accurate, but seems to cause weird behaviour with SDE samplers. (Upstream bug?)
+
+
+## PromptControlSimple (deprecated)
 This node exists purely for convenience. It's a combination of `PromptToSchedule`, `ScheduleToCond`, `ScheduleToModel` and `FilterSchedule` such that it provides as output a model, positive conds and negative conds, both with and without any specified filters applied.
 
 This makes it handy for quick one- or two-pass workflows.
