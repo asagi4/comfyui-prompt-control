@@ -19,7 +19,9 @@ The tools in this repository combine well with the macro and wildcard functional
 
 ## Requirements
 
-You need to have `lark` installed in your Python environment for parsing to work (If you reuse A1111's venv, it'll already be there)
+For `PCEncodeSchedule` and `PCLoraHooksFromSchedule`, you'll need at least version 0.3.7 of ComfyUI (0.3.36 of ComfyUI desktop).
+
+You need to have `lark` installed in your Python environment for parsing to work (If you reuse A1111's venv, it'll already be there).
 
 If you use the portable version of ComfyUI on Windows with its embedded Python, you must open a terminal in the ComfyUI installation directory and run the command:
 ```
