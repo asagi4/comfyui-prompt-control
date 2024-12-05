@@ -79,6 +79,22 @@ def get_sdxl(text, defaults):
     return text, opts
 
 
+def get_clipweights(text, existing_spec=None):
+    text, spec = get_function(text, "TE_WEIGHT", defaults=None)
+    if not spec:
+        return existing_spec or {}, text
+    args = spec[0].strip()
+    res = {}
+    for arg in args.split(","):
+        try:
+            te, val = arg.strip().split("=")
+            te, val = te.strip(), float(val.strip())
+            res[te] = val
+        except ValueError:
+            log.warning("Invalid TE weight spec '%s', ignoring...", arg.strip())
+    return res, text
+
+
 def get_style(text, default_style="comfy", default_normalization="none"):
     text, styles = get_function(text, "STYLE", [default_style, default_normalization])
     if not styles:
@@ -147,9 +163,15 @@ def fix_word_ids(tokens):
 
 
 def encode_prompt(
-    clip, text, settings, default_style="comfy", default_normalization="none"
+    clip,
+    text,
+    settings,
+    default_style="comfy",
+    default_normalization="none",
+    clip_weights=None,
 ) -> list[tuple[torch.Tensor, dict[str]]]:
     style, normalization, text = get_style(text, default_style, default_normalization)
+    clip_weights, text = get_clipweights(text, clip_weights)
     # defaults=None means there is no argument parsing at all
     text, l_prompts = get_function(text, "CLIP_L", defaults=None)
     chunks = re.split(r"\bBREAK\b", text)
@@ -193,16 +215,47 @@ def encode_prompt(
         else:
             tes.append(k)
 
-    clip = hook_te(clip, tes, style, normalization)
+    clip = hook_te(clip, tes, style, normalization, clip_weights)
 
     return clip.encode_from_tokens_scheduled(tokens, add_dict=settings)
 
 
-def make_patch(orig_fn, normalization, style):
-    return lambda t: adv_encode.advanced_encode_from_tokens(t, normalization, style, orig_fn, return_pooled=True, apply_to_pooled=False)
+def handle_weights(spec, te_name, output):
+    if not spec:
+        return output
+
+    if te_name.startswith("clip_"):
+        te_name = te_name[5:]
+
+    if isinstance(output, tuple):
+        out, pooled = output
+        if te_name in spec:
+            log.info("Weighting %s output by %s", te_name, spec[te_name])
+            out = out * spec[te_name]
+        pkey = te_name + "_pooled"
+        if pkey in spec:
+            log.info("Weighting %s pooled output by %s", te_name, spec[pkey])
+            pooled = pooled * spec[pkey]
+
+        return out, pooled
+    else:
+        if te_name in spec:
+            log.info("Weighting %s output by %s", te_name, spec[te_name])
+            output = output * spec[te_name]
+        return output
 
 
-def hook_te(clip, te_names, style, normalization):
+def make_patch(te_name, orig_fn, normalization, style, clip_weights):
+    def encode(t):
+        r = adv_encode.advanced_encode_from_tokens(
+            t, normalization, style, orig_fn, return_pooled=True, apply_to_pooled=False
+        )
+        return handle_weights(clip_weights, te_name, r)
+
+    return encode
+
+
+def hook_te(clip, te_names, style, normalization, clip_weights):
     if not have_advanced_encode or style == "comfy" and normalization == "none":
         return clip
     newclip = clip.clone()
@@ -211,7 +264,13 @@ def hook_te(clip, te_names, style, normalization):
             log.debug("Hooked into %s with style=%s, normalization=%s", te_name, style, normalization)
             newclip.patcher.add_object_patch(
                 f"{te_name}.encode_token_weights",
-                make_patch(clip.patcher.get_model_object(f"{te_name}.encode_token_weights"), normalization, style)
+                make_patch(
+                    te_name,
+                    clip.patcher.get_model_object(f"{te_name}.encode_token_weights"),
+                    normalization,
+                    style,
+                    clip_weights,
+                ),
             )
         # 'g' and 'l' exist in these are clip_g and clip_l
         else:
