@@ -30,11 +30,12 @@ else:
 import importlib
 
 if importlib.util.find_spec("comfy.hooks"):
-    from .prompt_control.node_hooks import PCLoraHooksFromSchedule, PCEncodeSchedule
+    from .prompt_control.node_hooks import PCLoraHooksFromSchedule, PCEncodeSchedule, PCEncodeSingle
 
     maps = {
         "PCLoraHooksFromSchedule": PCLoraHooksFromSchedule,
         "PCEncodeSchedule": PCEncodeSchedule,
+        "PCEncodeSingle": PCEncodeSingle,
     }
 else:
     log.warning(

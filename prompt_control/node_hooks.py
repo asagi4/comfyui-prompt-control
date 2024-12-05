@@ -54,6 +54,22 @@ class PCEncodeSchedule:
         return (encode_schedule(clip, prompt_schedule),)
 
 
+class PCEncodeSingle:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {"clip": ("CLIP",), "prompt": ("STRING", {"multiline": True})},
+            "optional": {"defaults": ("SCHEDULE_DEFAULTS",)},
+        }
+
+    RETURN_TYPES = ("CONDITIONING",)
+    CATEGORY = "promptcontrol/_unstable"
+    FUNCTION = "apply"
+
+    def apply(self, clip, prompt, defaults=None):
+        return (do_encode(clip, prompt, 0, 1.0, defaults or {}, None),)
+
+
 SHUFFLE_GEN = torch.Generator(device="cpu")
 
 
