@@ -5,6 +5,12 @@ from math import ceil
 logging.basicConfig()
 log = logging.getLogger("comfyui-prompt-control")
 
+if lark.__version__ == "0.12.0":
+    x = "Your lark package reports an ancient version (0.12.0) and will not work. If you have the 'lark-parser' package in your Python environment, remove that and *reinstall* lark!"
+    log.error(x)
+    raise ImportError(x)
+
+
 prompt_parser = lark.Lark(
     r"""
 !start: (prompt | /[][():|]/+)*
