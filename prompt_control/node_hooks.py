@@ -186,31 +186,37 @@ def encode_prompt(
 
     tokens = fix_word_ids(tokens)
 
-    newclip = clip
-    if have_advanced_encode:
-        newclip = clip.clone()
-        if hasattr(clip.patcher.model, "clip_g"):
-            newclip.patcher.add_object_patch(
-                "clip_g.encode_token_weights",
-                encoder_patch(style, normalization, clip.patcher.get_model_object("clip_g.encode_token_weights")),
-            )
-        if hasattr(clip.patcher.model, "clip_l"):
-            newclip.patcher.add_object_patch(
-                "clip_l.encode_token_weights",
-                encoder_patch(style, normalization, clip.patcher.get_model_object("clip_l.encode_token_weights")),
-            )
+    tes = []
+    for k in tokens:
+        if k in ["g", "l"]:
+            tes.append(f"clip_{k}")
+        else:
+            tes.append(k)
 
-    return newclip.encode_from_tokens_scheduled(tokens, add_dict=settings)
+    clip = hook_te(clip, tes, style, normalization)
+
+    return clip.encode_from_tokens_scheduled(tokens, add_dict=settings)
 
 
-def encoder_patch(style, normalization, orig_fn):
+def make_patch(orig_fn, normalization, style):
+    return lambda t: adv_encode.advanced_encode_from_tokens(t, normalization, style, orig_fn, return_pooled=True, apply_to_pooled=False)
+
+
+def hook_te(clip, te_names, style, normalization):
     if not have_advanced_encode or style == "comfy" and normalization == "none":
-        return orig_fn
-    else:
-        log.debug("Encoding with style=%s, normalization=%s", style, normalization)
-        return lambda t: adv_encode.advanced_encode_from_tokens(
-            t, normalization, style, orig_fn, return_pooled=True, apply_to_pooled=False
-        )
+        return clip
+    newclip = clip.clone()
+    for te_name in te_names:
+        if hasattr(clip.patcher.model, te_name):
+            log.debug("Hooked into %s with style=%s, normalization=%s", te_name, style, normalization)
+            newclip.patcher.add_object_patch(
+                f"{te_name}.encode_token_weights",
+                make_patch(clip.patcher.get_model_object(f"{te_name}.encode_token_weights"), normalization, style)
+            )
+        # 'g' and 'l' exist in these are clip_g and clip_l
+        else:
+            log.debug("Tokens contain items with key %s but no TE found on object with that name.", te_name)
+    return newclip
 
 
 def get_area(text):
@@ -502,7 +508,6 @@ def encode_schedule(clip, schedules):
             cond = do_encode(clip, prompt, start_pct, end_pct, schedules.defaults, schedules.masks)
             conds.extend(cond)
         start_pct = end_pct
-        log.debug("Conds at the end: %s", debug_conds(conds))
 
     log.debug("Final cond info: %s", debug_conds(conds))
     return conds
