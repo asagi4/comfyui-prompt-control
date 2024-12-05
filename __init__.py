@@ -13,7 +13,7 @@ from .prompt_control.node_other import (
     PCPromptFromSchedule,
 )
 from .prompt_control.node_aio import PromptControlSimple
-from .prompt_control.node_hooks import PCLoraHooksFromSchedule, PCEncodeSchedule
+
 
 log = logging.getLogger("comfyui-prompt-control")
 log.propagate = False
@@ -26,6 +26,21 @@ if os.environ.get("COMFYUI_PC_DEBUG"):
     log.setLevel(logging.DEBUG)
 else:
     log.setLevel(logging.INFO)
+
+import importlib
+
+if importlib.util.find_spec("comfy.hooks"):
+    from .prompt_control.node_hooks import PCLoraHooksFromSchedule, PCEncodeSchedule
+
+    maps = {
+        "PCLoraHooksFromSchedule": PCLoraHooksFromSchedule,
+        "PCEncodeSchedule": PCEncodeSchedule,
+    }
+else:
+    log.warning(
+        "Your ComfyUI version is too old, can't import comfy.hooks for PCEncodeSchedule and PCLoraHooksFromSchedule. Update your installation."
+    )
+    maps = {}
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "comfy"))
 
@@ -44,6 +59,6 @@ NODE_CLASS_MAPPINGS = {
     "ScheduleToModel": ScheduleToModel,
     "EditableCLIPEncode": EditableCLIPEncode,
     "LoRAScheduler": LoRAScheduler,
-    "PCLoraHooksFromSchedule": PCLoraHooksFromSchedule,
-    "PCEncodeSchedule": PCEncodeSchedule,
 }
+
+NODE_CLASS_MAPPINGS.update(maps)
