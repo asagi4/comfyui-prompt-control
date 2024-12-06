@@ -6,16 +6,19 @@ LoRA and prompt scheduling should produce identical output to the equivalent Com
 
 ## Note about stability
 
-The nodes are currently undergoing some refactoring and rewriting. Interfaces for nodes market unstable are subject to breaking change at any time.
+The nodes are currently undergoing some refactoring and rewriting. Interfaces for nodes market unstable are subject to breaking change at any time, though at worst you'll likely just have to recreate a few nodes.
 
 ## What can it do?
 
 Things you can control via the prompt:
+- Weight interpretation types (comfy, A1111, etc.)
 - Prompt editing and filtering without multiple samplers
-- LoRA loading and scheduling (including LoRA block weights)
-- Prompt masking and area control, combining prompts and interpolation
+- LoRA loading and scheduling via ComfyUI's hook system
+- Masking, compositions and area control, combining prompts (`AND`), `BREAK`
+- Prompt masking with cutoff
 - SDXL parameters
-- Other miscellaneous things
+
+If you find prompt scheduling inconvenient, `PCEncodePrompt` can be used as a drop-in replacement for `CLIPTextEncode` to get everything else.
 
 [This example workflow](workflows/example.json?raw=1) implements a two-pass workflow illustrating most scheduling features.
 
@@ -282,9 +285,24 @@ The syntax is the same as in the `ImpactWildcard` node, documented [here](https:
 # Other integrations
 ## Advanced CLIP encoding
 
+If you use `PCEncodeSchedule` or `PCEncodePrompt`. advanced encodings are available automatically. Thanks to BlenderNeko for the original code.
+
 You can use the syntax `STYLE(weight_interpretation, normalization)` in a prompt to affect how prompts are interpreted.
 
-If you use `PCEncodeSchedule` or `PCEncodePrompt`. advanced encodings are available automatically.
+The weight interpretations available are:
+  - comfy (default)
+  - comfy++
+  - compel
+  - down_weight
+  - A1111
+  - perp
+
+Normalizations are:
+  - none (default)
+  - length
+  - mean
+
+The normalization calculations are independent operations and you can combine them with `+`, eg `STYLE(A1111, length+mean)` or `STYLE(comfy, mean+length)`, or even something silly like `STYLE(perp, mean+length+mean+length)`
 
 For the legacy nodes, you need to have [Advanced CLIP Encoding nodes](https://github.com/BlenderNeko/ComfyUI_ADV_CLIP_emb/tree/master) cloned into your `custom_nodes` for more options will be available.
 
