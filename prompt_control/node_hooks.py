@@ -7,22 +7,12 @@ import comfy.utils
 import comfy.hooks
 import folder_paths
 from .perp_weight import perp_encode_new
+from . import adv_encode
 
 log = logging.getLogger("comfyui-prompt-control")
 
-AVAILABLE_STYLES = ["comfy", "perp"]
-AVAILABLE_NORMALIZATIONS = ["none"]
-
-have_advanced_encode = False
-try:
-    import custom_nodes.ComfyUI_ADV_CLIP_emb.adv_encode as adv_encode
-
-    have_advanced_encode = True
-    AVAILABLE_STYLES.extend(["A1111", "compel", "comfy++", "down_weight"])
-    AVAILABLE_NORMALIZATIONS.extend(["mean", "length", "length+mean"])
-except ImportError:
-    pass
-
+AVAILABLE_STYLES = ["comfy", "perp", "A1111", "compel", "comfy++", "down_weight"]
+AVAILABLE_NORMALIZATIONS = ["none", "mean", "length", "length+mean"]
 
 class PCLoraHooksFromSchedule:
     @classmethod
@@ -193,7 +183,7 @@ def encode_prompt(
     text, l_prompts = get_function(text, "CLIP_L", defaults=None)
     chunks = re.split(r"\bBREAK\b", text)
     token_chunks = []
-    need_word_ids = have_advanced_encode or style == "comfy" and normalization == "none"
+    need_word_ids = True
     for c in chunks:
         c, shuffles = get_function(c.strip(), "(SHIFT|SHUFFLE)", ["0", "default", "default"], return_func_name=True)
         r = c
@@ -279,7 +269,7 @@ def make_patch(te_name, orig_fn, normalization, style, clip_weights, empty_token
 
 
 def hook_te(clip, te_names, style, normalization, clip_weights, empty_tokens):
-    if not have_advanced_encode or style == "comfy" and normalization == "none":
+    if style == "comfy" and normalization == "none" and not clip_weights:
         return clip
     newclip = clip.clone()
     for te_name in te_names:
