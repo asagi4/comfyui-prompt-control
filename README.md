@@ -4,6 +4,10 @@ Nodes for LoRA and prompt scheduling that make basic operations in ComfyUI compl
 
 LoRA and prompt scheduling should produce identical output to the equivalent ComfyUI workflow using multiple samplers or the various conditioning manipulation nodes. If you find situations where this is not the case, please report a bug.
 
+## Note about stability
+
+The nodes are currently undergoing some refactoring and rewriting. Interfaces for nodes market unstable are subject to breaking change at any time.
+
 ## What can it do?
 
 Things you can control via the prompt:
@@ -277,13 +281,12 @@ The syntax is the same as in the `ImpactWildcard` node, documented [here](https:
 
 # Other integrations
 ## Advanced CLIP encoding
-Note: `perp` is not supported by `PCEncodeSchedule`
 
 You can use the syntax `STYLE(weight_interpretation, normalization)` in a prompt to affect how prompts are interpreted.
 
-Without any extra nodes, only `perp` is available, which does the same as [ComfyUI_PerpWeight](https://github.com/bvhari/ComfyUI_PerpWeight) extension.
+If you use `PCEncodeSchedule` or `PCEncodePrompt`. advanced encodings are available automatically.
 
-If you have [Advanced CLIP Encoding nodes](https://github.com/BlenderNeko/ComfyUI_ADV_CLIP_emb/tree/master) cloned into your `custom_nodes`, more options will be available.
+For the legacy nodes, you need to have [Advanced CLIP Encoding nodes](https://github.com/BlenderNeko/ComfyUI_ADV_CLIP_emb/tree/master) cloned into your `custom_nodes` for more options will be available.
 
 The style can be specified separately for each AND:ed prompt, but the first prompt is special; later prompts will "inherit" it as default. For example:
 
@@ -320,6 +323,12 @@ Creates a ComfyUI `HOOKS` object from a prompt schedule. Can be attached to a CL
 ## PCEncodeSchedule
 
 Encodes all prompts in a schedule. Pass in a `CLIP` object with hooks attached for LoRA scheduling, then use the resulting `CONDITIONING` normally
+
+## PCEncodePrompt
+
+Encodes a single prompt *without* scheduling or LoRA loading features (but including everything else).
+
+Note: This does not currently ignore `<lora:...:1>` and will treat it as part of the prompt.
 
 ## PromptToSchedule
 Parses a schedule from a text prompt. A schedule is essentially an array of `(valid_until, prompt)` pairs that the other nodes can use.
