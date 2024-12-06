@@ -1,6 +1,31 @@
 import torch
 
 
+def perp_encode_new(encode, tokens, empty_tokens):
+    unweighted_tokens = [[(t, 1.0) for t, _, _ in x] for x in tokens]
+
+    unweighted, unweighted_pooled = encode(unweighted_tokens)
+    zero, zero_pooled = encode(empty_tokens)
+
+    weights = []
+    weights = (
+        torch.tensor([[w for _, w, _ in x] for x in tokens], dtype=unweighted.dtype, device=unweighted.device)
+        .reshape(1, -1, 1)
+        .expand(unweighted.shape)
+    )
+
+    perp = (
+        torch.mul(zero, unweighted).sum(dim=-1, keepdim=True) / (unweighted.norm(dim=-1, keepdim=True) ** 2)
+    ) * unweighted
+
+    over1 = weights.abs() > 1.0
+    result = unweighted + weights * perp
+    result[~over1] = (unweighted - (1 - weights) * perp)[~over1]
+    result[weights == 0.0] = zero[weights == 0.0]
+
+    return result, unweighted_pooled
+
+
 # Copied and adapted from https://github.com/bvhari/ComfyUI_PerpWeight/blob/main/clipperpweight.py
 def perp_encode(clip, tokens):
     empty_tokens = clip.tokenize("")

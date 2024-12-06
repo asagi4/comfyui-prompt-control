@@ -6,10 +6,11 @@ from comfy_extras.nodes_mask import FeatherMask, MaskComposite
 import comfy.utils
 import comfy.hooks
 import folder_paths
+from .perp_weight import perp_encode_new
 
 log = logging.getLogger("comfyui-prompt-control")
 
-AVAILABLE_STYLES = ["comfy"]
+AVAILABLE_STYLES = ["comfy", "perp"]
 AVAILABLE_NORMALIZATIONS = ["none"]
 
 have_advanced_encode = False
@@ -225,13 +226,16 @@ def encode_prompt(
     tokens = fix_word_ids(tokens)
 
     tes = []
+    empty = clip.tokenize("")
     for k in tokens:
         if k in ["g", "l"]:
             tes.append(f"clip_{k}")
+            empty[f"clip_{k}"] = empty[k]
+            empty.pop(k)
         else:
             tes.append(k)
 
-    clip = hook_te(clip, tes, style, normalization, clip_weights)
+    clip = hook_te(clip, tes, style, normalization, clip_weights, empty)
 
     return clip.encode_from_tokens_scheduled(tokens, add_dict=settings)
 
@@ -261,17 +265,20 @@ def handle_weights(spec, te_name, output):
         return output
 
 
-def make_patch(te_name, orig_fn, normalization, style, clip_weights):
+def make_patch(te_name, orig_fn, normalization, style, clip_weights, empty_tokens):
     def encode(t):
-        r = adv_encode.advanced_encode_from_tokens(
-            t, normalization, style, orig_fn, return_pooled=True, apply_to_pooled=False
-        )
+        if style == "perp":
+            r = perp_encode_new(orig_fn, t, empty_tokens[te_name])
+        else:
+            r = adv_encode.advanced_encode_from_tokens(
+                t, normalization, style, orig_fn, return_pooled=True, apply_to_pooled=False
+            )
         return handle_weights(clip_weights, te_name, r)
 
     return encode
 
 
-def hook_te(clip, te_names, style, normalization, clip_weights):
+def hook_te(clip, te_names, style, normalization, clip_weights, empty_tokens):
     if not have_advanced_encode or style == "comfy" and normalization == "none":
         return clip
     newclip = clip.clone()
@@ -286,6 +293,7 @@ def hook_te(clip, te_names, style, normalization, clip_weights):
                     normalization,
                     style,
                     clip_weights,
+                    empty_tokens,
                 ),
             )
         # 'g' and 'l' exist in these are clip_g and clip_l
