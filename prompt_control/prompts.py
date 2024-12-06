@@ -133,6 +133,11 @@ def encode_prompt_segment(
     style, normalization, text = get_style(text, default_style, default_normalization)
     clip_weights, text = get_clipweights(text, clip_weights)
     text, cuts = parse_cuts(text)
+    extra = {}
+    if clip_weights:
+        extra["clip_weights"] = clip_weights
+    if cuts:
+        extra["cuts"] = cuts
 
     # defaults=None means there is no argument parsing at all
     text, l_prompts = get_function(text, "CLIP_L", defaults=None)
@@ -171,21 +176,19 @@ def encode_prompt_segment(
     tokens = fix_word_ids(tokens)
 
     tes = []
-    empty = clip.tokenize("")
     for k in tokens:
         if k in ["g", "l"]:
             tes.append(f"clip_{k}")
-            empty[f"clip_{k}"] = empty[k]
-            empty.pop(k)
         else:
             tes.append(k)
 
-    clip = hook_te(clip, tes, style, normalization, clip_weights, empty)
+    clip = hook_te(clip, tes, style, normalization, extra)
 
     return clip.encode_from_tokens_scheduled(tokens, add_dict=settings)
 
 
-def handle_weights(spec, te_name, output):
+def apply_weights(output, te_name, spec):
+    """Applies weights to TE outputs"""
     if not spec:
         return output
 
@@ -213,12 +216,12 @@ def handle_weights(spec, te_name, output):
 def make_patch(te_name, orig_fn, normalization, style, extra):
     def encode(t):
         r = advanced_encode_from_tokens(
-            t, normalization, style, orig_fn, return_pooled=True, apply_to_pooled=False, extra=extra
+            t, normalization, style, orig_fn, return_pooled=True, apply_to_pooled=False, **extra
         )
-        return handle_weights(r, extra)
+        return apply_weights(r, te_name, extra.get("clip_weights"))
 
     if "cuts" in extra:
-        return partial(process_cuts, extra, encode)
+        return partial(process_cuts, encode, extra)
     return encode
 
 
@@ -228,7 +231,8 @@ def hook_te(clip, te_names, style, normalization, extra):
     newclip = clip.clone()
     for te_name in te_names:
         if hasattr(clip.patcher.model, te_name):
-            extra["tokenizer"] = getattr(clip.tokenizer, te_name)
+            x = extra.copy()
+            x["tokenizer"] = getattr(clip.tokenizer, te_name)
             log.debug("Hooked into %s with style=%s, normalization=%s", te_name, style, normalization)
             newclip.patcher.add_object_patch(
                 f"{te_name}.encode_token_weights",
@@ -237,7 +241,7 @@ def hook_te(clip, te_names, style, normalization, extra):
                     clip.patcher.get_model_object(f"{te_name}.encode_token_weights"),
                     normalization,
                     style,
-                    extra,
+                    x,
                 ),
             )
         # 'g' and 'l' exist in these are clip_g and clip_l

@@ -231,7 +231,7 @@ def advanced_encode_from_tokens(
 
     if weight_interpretation == "perp":
         weighted_emb, pooled = perp_encode_new(
-            weights, (base_emb, pooled_base), encode_func(extra_args["empty_tokens"])
+            weights, (base_emb, pooled_base), encode_func(extra_args["tokenizer"].tokenize_with_weights(""))
         )
 
     if return_pooled:

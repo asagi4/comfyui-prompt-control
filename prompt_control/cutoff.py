@@ -3,15 +3,14 @@ import copy
 import re
 
 import numpy as np
+import logging
+
+log = logging.getLogger("comfyui-prompt-control")
 
 
-def replace_embeddings(prompt, replacements=None):
+def replace_embeddings(max_token, prompt, replacements=None):
     """Replaces embedding tensors in a token array and replaces them with increasing IDs past max_token"""
 
-    # Some large enough value that it will not conflict with any actual token values
-    max_token = 5000_000
-
-    # Some large enough value that it will not conflict with any tokens
     if replacements is None:
         emb_lookup = []
     else:
@@ -49,19 +48,6 @@ def unpad_prompt(pad_token, prompt):
     return np.trim_zeros(res - pad_token, "b") + pad_token
 
 
-def cutoff_init_prompt(self, clip, text):
-    tokens = clip.tokenize(text, return_word_ids=True)
-    return (
-        {
-            "clip": clip,
-            "base_tokens": tokens,
-            "regions": [],
-            "targets": [],
-            "weights": [],
-        },
-    )
-
-
 def get_sublists(super_list, sub_list):
     positions = []
     for candidate_ind in (i for i, e in enumerate(super_list) if e == sub_list[0]):
@@ -78,23 +64,31 @@ def cutoff_add_region(
     region_outputs = []
     target_outputs = []
     if strict_mask is not None:
-        clip_regions["strict_mask"] = strict_mask
+        clip_regions["strict_mask"] = float(strict_mask)
     if start_from_masked is not None:
-        clip_regions["start_from_masked"] = start_from_masked
+        clip_regions["start_from_masked"] = float(start_from_masked)
     if mask_token is not None:
         clip_regions["mask_token"] = tokenizer.tokenizer(mask_token)["input_ids"][1]
+    if weight is None:
+        weight = 1.0
+    else:
+        weight = float(weight)
 
-    # strip input strings
     region_text = region_text.strip()
     target_text = target_text.strip()
 
-    pad_token = tokenizer.pad_token
+    strict_mask = clip_regions["strict_mask"]
+    start_from_masked = clip_regions["start_from_masked"]
+    mask_token = clip_regions["mask_token"]
+    log.info(f"CUT region {region_text=} {target_text=} {weight=} {strict_mask=} {start_from_masked=} {mask_token=}")
 
-    prompt_tokens, emb_lookup = replace_embeddings(base_tokens)
+    pad_token = tokenizer.end_token
+
+    prompt_tokens, emb_lookup = replace_embeddings(pad_token, base_tokens)
 
     for rt in region_text.split("\n"):
         region_tokens = tokenizer.tokenize_with_weights(rt)
-        region_tokens, _ = replace_embeddings(region_tokens, emb_lookup)
+        region_tokens, _ = replace_embeddings(pad_token, region_tokens, emb_lookup)
         region_tokens = unpad_prompt(pad_token, region_tokens).tolist()
 
         # calc region mask
@@ -117,7 +111,7 @@ def cutoff_add_region(
             target = re.sub(r"\\_", "_", target)
 
             target_tokens = tokenizer.tokenize_with_weights(target)
-            target_tokens, _ = replace_embeddings(target_tokens, emb_lookup)
+            target_tokens, _ = replace_embeddings(pad_token, target_tokens, emb_lookup)
             target_tokens = unpad_prompt(pad_token, target_tokens).tolist()
 
             targets.extend([(x, len(target_tokens)) for x in get_sublists(region_tokens, target_tokens)])
@@ -161,19 +155,24 @@ def process_cuts(encode, extra, tokens):
         "regions": [],
         "targets": [],
         "weights": [],
-        "strict_mask": None,
-        "start_from_masked": None,
-        "mask_token": None,
+        "strict_mask": 1.0,
+        "start_from_masked": 1.0,
+        "mask_token": extra["tokenizer"].tokenizer("+")["input_ids"][1],
     }
 
     for cut in extra["cuts"]:
         cutoff_add_region(base, extra["tokenizer"], *cut)
 
-    return encode_regions(base, encode)
+    return encode_regions(base, encode, extra["tokenizer"])
 
 
-def encode_regions(clip_regions, encode):
-    print("Encode regions called")
+def debug_tokens(label, prompt, tokenizer):
+    log.debug("Tokens for %s", label)
+    for tokens in prompt:
+        log.debug(" ".join(f"{x[0][0]} {x[1]}" for x in tokenizer.untokenize(tokens) if x[0][0] != tokenizer.end_token))
+
+
+def encode_regions(clip_regions, encode, tokenizer):
     base_weighted_tokens = clip_regions["base_tokens"]
     start_from_masked = clip_regions["start_from_masked"]
     mask_token = clip_regions["mask_token"]
@@ -193,7 +192,9 @@ def encode_regions(clip_regions, encode):
     regions_normalized = np.divide(1, regions_sum, out=np.zeros_like(regions_sum), where=regions_sum != 0)
 
     # mask base embeddings
-    base_embedding_masked = encode(create_masked_prompt(base_weighted_tokens, global_target_mask, mask_token))
+    base_masked_prompt = create_masked_prompt(base_weighted_tokens, global_target_mask, mask_token)
+    debug_tokens("base_masked", base_masked_prompt, tokenizer)
+    base_embedding_masked, _ = encode(base_masked_prompt)
     base_embedding_start = base_embedding_full * (1 - start_from_masked) + base_embedding_masked * start_from_masked
     base_embedding_outer = base_embedding_full * (1 - strict_mask) + base_embedding_masked * strict_mask
 
@@ -203,9 +204,9 @@ def encode_regions(clip_regions, encode):
             regions_normalized * region * weight, dtype=base_embedding_full.dtype, device=base_embedding_full.device
         ).unsqueeze(-1)
 
-        region_emb = encode(
-            create_masked_prompt(base_weighted_tokens, global_target_mask - target, mask_token),
-        )
+        region_prompt = create_masked_prompt(base_weighted_tokens, global_target_mask - target, mask_token)
+        debug_tokens("region", region_prompt, tokenizer)
+        region_emb, _ = encode(region_prompt)
         region_emb -= base_embedding_start
         region_emb *= region_masking
 
