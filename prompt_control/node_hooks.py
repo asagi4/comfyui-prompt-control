@@ -468,7 +468,8 @@ def do_encode(clip, text, start_pct, end_pct, defaults, masks):
         return w, opts, t
 
     conds = []
-    scale = sum(abs(weight(p)[0]) for p in prompts if not ("AREA(" in p or "MASK(" in p))
+    # TODO: is this still needed?
+    #scale = sum(abs(weight(p)[0]) for p in prompts if not ("AREA(" in p or "MASK(" in p))
     for prompt in prompts:
         prompt, mask, mask_weight = get_mask(prompt, mask_size, masks)
         w, opts, prompt = weight(prompt)
