@@ -15,6 +15,9 @@ def _norm_mag(w, n):
     return  1 + np.sign(d) * np.sqrt(np.abs(d)**2 / n)
     #return  np.sign(w) * np.sqrt(np.abs(w)**2 / n)
 
+def weights_like(weights, emb):
+    return torch.tensor(weights, dtype=emb.dtype, device=emb.device).reshape(1,-1,1).expand(emb.shape)
+
 def divide_length(word_ids, weights):
     sums = dict(zip(*np.unique(word_ids, return_counts=True)))
     sums[0] = 1
@@ -34,11 +37,6 @@ def scale_to_norm(weights, word_ids, w_max):
     weights = [[w_max if id == 0 else (w/top) * w_max
                 for w, id in zip(x, y)] for x, y in zip(weights, word_ids)]
     return weights
-
-def from_zero(weights, base_emb):
-    weight_tensor = torch.tensor(weights, dtype=base_emb.dtype, device=base_emb.device)
-    weight_tensor = weight_tensor.reshape(1,-1,1).expand(base_emb.shape)
-    return base_emb * weight_tensor
 
 def mask_word_id(tokens, word_ids, target_id, mask_token):
         new_tokens = [[mask_token if wid == target_id else t 
@@ -66,8 +64,7 @@ def from_masked(tokens, weights, word_ids, base_emb, length, encode_func, m_toke
         if len(weight_dict) == 0:
             return torch.zeros_like(base_emb), base_emb[0,length-1:length,:]
 
-        weight_tensor = torch.tensor(weights, dtype=base_emb.dtype, device=base_emb.device)
-        weight_tensor = weight_tensor.reshape(1,-1,1).expand(base_emb.shape)
+        weight_tensor = weights_like(weights, base_emb)
 
         #m_token = (clip.tokenizer.end_token, 1.0) if  clip.tokenizer.pad_with_end else (0,1.0)
         #TODO: find most suitable masking token here
@@ -81,10 +78,7 @@ def from_masked(tokens, weights, word_ids, base_emb, length, encode_func, m_toke
         for id, w in weight_dict.items():
             masked, m = mask_word_id(tokens, word_ids, id, m_token)
             masked_tokens.extend(masked)
-            
-            m = torch.tensor(m, dtype=base_emb.dtype, device=base_emb.device)
-            m = m.reshape(1,-1,1).expand(base_emb.shape)
-            masks.append(m)
+            masks.append(weights_like(m, base_emb))
 
             ws.append(w)
         
@@ -150,15 +144,12 @@ def recover_dist(base_emb, weighted_emb):
     embeddings_final = fixed_std + (base_emb.mean() - fixed_std.mean())
     return embeddings_final
 
-def A1111_renorm(base_emb, weighted_emb):
-    embeddings_final = (base_emb.mean() / weighted_emb.mean()) * weighted_emb
-    return embeddings_final
 
 def perp_encode_new(weights, unweighted_embs, empty_embs):
     unweighted, unweighted_pooled = unweighted_embs
     zero, zero_pooled = empty_embs
 
-    weights = torch.tensor(weights, dtype=unweighted.dtype, device=unweighted.device).reshape(1, -1, 1).expand(unweighted.shape)
+    weights = weights_like(weights, unweighted)
 
     if zero.shape != unweighted.shape:
         zero = zero.repeat(1, unweighted.shape[1] // zero.shape[1], 1)
@@ -179,19 +170,15 @@ def advanced_encode_from_tokens(tokenized, token_normalization, weight_interpret
     weights = [[w for _,w,_ in x] for x in tokenized]
     word_ids = [[wid for _,_,wid in x] for x in tokenized]
 
-    #weight normalization
-    #====================
+    for op in token_normalization.split("+"):
+        op = op.strip()
+        if op == "length":
+            # distribute down/up weights over word lengths
+            weights = divide_length(word_ids, weights)
+        if op == "mean":
+            weights = shift_mean_weight(word_ids, weights)
 
-    #distribute down/up weights over word lengths
-    if token_normalization.startswith("length"):
-        weights = divide_length(word_ids, weights)
-        
-    #make mean of word tokens 1
-    if token_normalization.endswith("mean"):
-        weights = shift_mean_weight(word_ids, weights)        
 
-    #weight interpretation
-    #=====================
     pooled = None
 
     if weight_interpretation == "comfy":
@@ -203,8 +190,8 @@ def advanced_encode_from_tokens(tokenized, token_normalization, weight_interpret
         base_emb, pooled_base = encode_func(unweighted_tokens)
     
     if weight_interpretation == "A1111":
-        weighted_emb = from_zero(weights, base_emb)
-        weighted_emb = A1111_renorm(base_emb, weighted_emb)
+        weighted_emb = base_emb * weights_like(weights, base_emb) # from_zero
+        weighted_emb = (base_emb.mean() / weighted_emb.mean()) * weighted_emb # renormalize
         pooled = pooled_base
     
     if weight_interpretation == "compel":
