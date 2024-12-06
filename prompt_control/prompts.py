@@ -1,9 +1,13 @@
 import logging
 import re
 import torch
-from .utils import safe_float, get_function, parse_floats
+from functools import partial
 from comfy_extras.nodes_mask import FeatherMask, MaskComposite
-from . import adv_encode
+
+from .utils import safe_float, get_function, parse_floats
+from .adv_encode import advanced_encode_from_tokens
+from .cutoff import process_cuts
+from .parser import parse_cuts
 
 log = logging.getLogger("comfyui-prompt-control")
 
@@ -128,6 +132,8 @@ def encode_prompt_segment(
 ) -> list[tuple[torch.Tensor, dict[str]]]:
     style, normalization, text = get_style(text, default_style, default_normalization)
     clip_weights, text = get_clipweights(text, clip_weights)
+    text, cuts = parse_cuts(text)
+
     # defaults=None means there is no argument parsing at all
     text, l_prompts = get_function(text, "CLIP_L", defaults=None)
     chunks = re.split(r"\bBREAK\b", text)
@@ -204,28 +210,25 @@ def handle_weights(spec, te_name, output):
         return output
 
 
-def make_patch(te_name, orig_fn, normalization, style, clip_weights, empty_tokens):
+def make_patch(te_name, orig_fn, normalization, style, extra):
     def encode(t):
-        r = adv_encode.advanced_encode_from_tokens(
-            t,
-            normalization,
-            style,
-            orig_fn,
-            return_pooled=True,
-            apply_to_pooled=False,
-            empty_tokens=empty_tokens[te_name],
+        r = advanced_encode_from_tokens(
+            t, normalization, style, orig_fn, return_pooled=True, apply_to_pooled=False, extra=extra
         )
-        return handle_weights(clip_weights, te_name, r)
+        return handle_weights(r, extra)
 
+    if "cuts" in extra:
+        return partial(process_cuts, extra, encode)
     return encode
 
 
-def hook_te(clip, te_names, style, normalization, clip_weights, empty_tokens):
-    if style == "comfy" and normalization == "none" and not clip_weights:
+def hook_te(clip, te_names, style, normalization, extra):
+    if style == "comfy" and normalization == "none" and not extra:
         return clip
     newclip = clip.clone()
     for te_name in te_names:
         if hasattr(clip.patcher.model, te_name):
+            extra["tokenizer"] = getattr(clip.tokenizer, te_name)
             log.debug("Hooked into %s with style=%s, normalization=%s", te_name, style, normalization)
             newclip.patcher.add_object_patch(
                 f"{te_name}.encode_token_weights",
@@ -234,8 +237,7 @@ def hook_te(clip, te_names, style, normalization, clip_weights, empty_tokens):
                     clip.patcher.get_model_object(f"{te_name}.encode_token_weights"),
                     normalization,
                     style,
-                    clip_weights,
-                    empty_tokens,
+                    extra,
                 ),
             )
         # 'g' and 'l' exist in these are clip_g and clip_l
