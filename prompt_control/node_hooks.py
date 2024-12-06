@@ -57,7 +57,7 @@ class PCEncodeSingle:
     FUNCTION = "apply"
 
     def apply(self, clip, prompt, defaults=None):
-        return (do_encode(clip, prompt, 0, 1.0, defaults or {}, None),)
+        return (encode_prompt(clip, prompt, 0, 1.0, defaults or {}, None),)
 
 
 SHUFFLE_GEN = torch.Generator(device="cpu")
@@ -168,7 +168,7 @@ def fix_word_ids(tokens):
     return tokens
 
 
-def encode_prompt(
+def encode_prompt_segment(
     clip,
     text,
     settings,
@@ -440,7 +440,7 @@ def apply_noise(cond, weight, gen):
     return cond * (1 - weight) + n * weight
 
 
-def do_encode(clip, text, start_pct, end_pct, defaults, masks):
+def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
     # First style modifier applies to ANDed prompts too unless overridden
     style, normalization, text = get_style(text)
     text, mask_size = get_mask_size(text, defaults)
@@ -488,7 +488,7 @@ def do_encode(clip, text, start_pct, end_pct, defaults, masks):
 
         settings["start_percent"] = start_pct
         settings["end_percent"] = end_pct
-        x = encode_prompt(clip, prompt, settings, style, normalization)
+        x = encode_prompt_segment(clip, prompt, settings, style, normalization)
         conds.extend(x)
 
     return conds
@@ -575,7 +575,7 @@ def encode_schedule(clip, schedules):
     for end_pct, c in schedules:
         if start_pct < end_pct:
             prompt = c["prompt"]
-            cond = do_encode(clip, prompt, start_pct, end_pct, schedules.defaults, schedules.masks)
+            cond = encode_prompt(clip, prompt, start_pct, end_pct, schedules.defaults, schedules.masks)
             conds.extend(cond)
         start_pct = end_pct
 
