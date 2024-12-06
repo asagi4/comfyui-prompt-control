@@ -1,10 +1,6 @@
 import torch
 import numpy as np
 import itertools
-from math import gcd
-
-from comfy import model_management
-from comfy.sdxl_clip import SDXLClipModel, SDXLRefinerClipModel, SDXLClipG
 
 def _grouper(n, iterable):
     it = iter(iterable)
@@ -213,82 +209,3 @@ def advanced_encode_from_tokens(tokenized, token_normalization, weight_interpret
         else:
             return weighted_emb, pooled_base
     return weighted_emb, None
-
-def encode_token_weights_g(model, token_weight_pairs):
-    return model.clip_g.encode_token_weights(token_weight_pairs)
-
-def encode_token_weights_l(model, token_weight_pairs):
-    l_out, _ = model.clip_l.encode_token_weights(token_weight_pairs)
-    return l_out, None
-
-def encode_token_weights(model, token_weight_pairs, encode_func):
-    if model.layer_idx is not None:
-        if hasattr(model.cond_stage_model, 'set_clip_options'):
-            model.cond_stage_model.set_clip_options({"layer": model.layer_idx})
-        else:
-            print(f"[ComfyUI_ADV_CLIP_emb] ComfyUI is outdated.")
-            model.cond_stage_model.clip_layer(model.layer_idx)
-    
-    model_management.load_model_gpu(model.patcher)
-    return encode_func(model.cond_stage_model, token_weight_pairs)
-
-def prepareXL(embs_l, embs_g, pooled, clip_balance, pooled_weight=1.0):
-    l_w = 1 - max(0, clip_balance - .5) * 2
-    g_w = 1 - max(0, .5 - clip_balance) * 2
-    if embs_l is not None:
-        return torch.cat([embs_l * l_w, embs_g * g_w], dim=-1), pooled*pooled_weight
-    else:
-        return embs_g, pooled*pooled_weight
-
-def advanced_encode(clip, text, token_normalization, weight_interpretation, w_max=1.0, clip_balance=.5, apply_to_pooled=True):
-    tokenized = clip.tokenize(text, return_word_ids=True)
-    if "g" in tokenized:
-        embs_l = None
-        embs_g = None
-        pooled = None
-        if 'l' in tokenized and isinstance(clip.cond_stage_model, SDXLClipModel):
-            embs_l, _ = advanced_encode_from_tokens(tokenized['l'], 
-                                                 token_normalization, 
-                                                 weight_interpretation, 
-                                                 lambda x: encode_token_weights(clip, x, encode_token_weights_l),
-                                                 w_max=w_max, 
-                                                 return_pooled=False)
-        if 'g' in tokenized:
-            embs_g, pooled = advanced_encode_from_tokens(tokenized['g'], 
-                                                         token_normalization, 
-                                                         weight_interpretation,
-                                                         lambda x: encode_token_weights(clip, x, encode_token_weights_g),
-                                                         w_max=w_max, 
-                                                         return_pooled=True,
-                                                         apply_to_pooled=apply_to_pooled)
-        return prepareXL(embs_l, embs_g, pooled, clip_balance)
-    else:
-        return advanced_encode_from_tokens(tokenized['l'],
-                                           token_normalization, 
-                                           weight_interpretation, 
-                                           lambda x: (clip.encode_from_tokens({'l': x}), None),
-                                           w_max=w_max)
-def advanced_encode_XL(clip, text1, text2, token_normalization, weight_interpretation, w_max=1.0, clip_balance=.5, apply_to_pooled=True):
-    tokenized1 = clip.tokenize(text1, return_word_ids=True)
-    tokenized2 = clip.tokenize(text2, return_word_ids=True)
-
-    embs_l, _ = advanced_encode_from_tokens(tokenized1['l'], 
-                                            token_normalization, 
-                                            weight_interpretation, 
-                                            lambda x: encode_token_weights(clip, x, encode_token_weights_l),
-                                            w_max=w_max, 
-                                            return_pooled=False)
-
-    embs_g, pooled = advanced_encode_from_tokens(tokenized2['g'], 
-                                                 token_normalization, 
-                                                 weight_interpretation,
-                                                 lambda x: encode_token_weights(clip, x, encode_token_weights_g),
-                                                 w_max=w_max, 
-                                                 return_pooled=True,
-                                                 apply_to_pooled=apply_to_pooled)
-    
-    gcd_num = gcd(embs_l.shape[1], embs_g.shape[1])
-    repeat_l = int((embs_g.shape[1] / gcd_num) * embs_l.shape[1])
-    repeat_g = int((embs_l.shape[1] / gcd_num) * embs_g.shape[1])
-    
-    return prepareXL(embs_l.expand((-1,repeat_l,-1)), embs_g.expand((-1,repeat_g,-1)), pooled, clip_balance)
