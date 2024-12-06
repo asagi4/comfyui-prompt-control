@@ -154,7 +154,27 @@ def A1111_renorm(base_emb, weighted_emb):
     embeddings_final = (base_emb.mean() / weighted_emb.mean()) * weighted_emb
     return embeddings_final
 
-def advanced_encode_from_tokens(tokenized, token_normalization, weight_interpretation, encode_func, m_token=266, length=77, w_max=1.0, return_pooled=False, apply_to_pooled=False):
+def perp_encode_new(weights, unweighted_embs, empty_embs):
+    unweighted, unweighted_pooled = unweighted_embs
+    zero, zero_pooled = empty_embs
+
+    weights = torch.tensor(weights, dtype=unweighted.dtype, device=unweighted.device).reshape(1, -1, 1).expand(unweighted.shape)
+
+    if zero.shape != unweighted.shape:
+        zero = zero.repeat(1, unweighted.shape[1] // zero.shape[1], 1)
+
+    perp = (
+        torch.mul(zero, unweighted).sum(dim=-1, keepdim=True) / (unweighted.norm(dim=-1, keepdim=True) ** 2)
+    ) * unweighted
+
+    over1 = weights.abs() > 1.0
+    result = unweighted + weights * perp
+    result[~over1] = (unweighted - (1 - weights) * perp)[~over1]
+    result[weights == 0.0] = zero[weights == 0.0]
+
+    return result, unweighted_pooled
+
+def advanced_encode_from_tokens(tokenized, token_normalization, weight_interpretation, encode_func, m_token=266, length=77, w_max=1.0, return_pooled=False, apply_to_pooled=False, **extra_args):
     tokens = [[t for t,_,_ in x] for x in tokenized]
     weights = [[w for _,w,_ in x] for x in tokenized]
     word_ids = [[wid for _,_,wid in x] for x in tokenized]
@@ -202,6 +222,9 @@ def advanced_encode_from_tokens(tokenized, token_normalization, weight_interpret
     if weight_interpretation == "down_weight":
         weights = scale_to_norm(weights, word_ids, w_max)
         weighted_emb, _, pooled = down_weight(unweighted_tokens, weights, word_ids, base_emb, length, encode_func)
+
+    if weight_interpretation == "perp":
+        weighted_emb, pooled = perp_encode_new(weights, (base_emb, pooled_base), encode_func(extra_args['empty_tokens']))
 
     if return_pooled:
         if apply_to_pooled:

@@ -6,7 +6,6 @@ from comfy_extras.nodes_mask import FeatherMask, MaskComposite
 import comfy.utils
 import comfy.hooks
 import folder_paths
-from .perp_weight import perp_encode_new
 from . import adv_encode
 
 log = logging.getLogger("comfyui-prompt-control")
@@ -257,12 +256,9 @@ def handle_weights(spec, te_name, output):
 
 def make_patch(te_name, orig_fn, normalization, style, clip_weights, empty_tokens):
     def encode(t):
-        if style == "perp":
-            r = perp_encode_new(orig_fn, t, empty_tokens[te_name])
-        else:
-            r = adv_encode.advanced_encode_from_tokens(
-                t, normalization, style, orig_fn, return_pooled=True, apply_to_pooled=False
-            )
+        r = adv_encode.advanced_encode_from_tokens(
+            t, normalization, style, orig_fn, return_pooled=True, apply_to_pooled=False, empty_tokens=empty_tokens[te_name]
+        )
         return handle_weights(clip_weights, te_name, r)
 
     return encode
