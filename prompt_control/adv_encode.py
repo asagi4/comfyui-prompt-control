@@ -153,7 +153,7 @@ def recover_dist(base_emb, weighted_emb):
     return embeddings_final
 
 
-def perp_encode_new(weights, unweighted_embs, empty_embs):
+def perp_weight(weights, unweighted_embs, empty_embs):
     unweighted, unweighted_pooled = unweighted_embs
     zero, zero_pooled = empty_embs
 
@@ -230,7 +230,7 @@ def advanced_encode_from_tokens(
         weighted_emb, _, pooled = down_weight(unweighted_tokens, weights, word_ids, base_emb, length, encode_func)
 
     if weight_interpretation == "perp":
-        weighted_emb, pooled = perp_encode_new(
+        weighted_emb, pooled = perp_weight(
             weights, (base_emb, pooled_base), encode_func(extra_args["tokenizer"].tokenize_with_weights(""))
         )
 
