@@ -14,6 +14,9 @@ def perp_encode_new(encode, tokens, empty_tokens):
         .expand(unweighted.shape)
     )
 
+    if zero.shape != unweighted.shape:
+        zero = zero.repeat(1, unweighted.shape[1] // zero.shape[1], 1)
+
     perp = (
         torch.mul(zero, unweighted).sum(dim=-1, keepdim=True) / (unweighted.norm(dim=-1, keepdim=True) ** 2)
     ) * unweighted
