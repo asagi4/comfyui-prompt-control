@@ -10,7 +10,8 @@ log = logging.getLogger("comfyui-prompt-control")
 AVAILABLE_STYLES = ["comfy", "perp", "A1111", "compel", "comfy++", "down_weight"]
 AVAILABLE_NORMALIZATIONS = ["none", "mean", "length", "length+mean"]
 
-SHUFFLE_GEN = torch.Generator(device='cpu')
+SHUFFLE_GEN = torch.Generator(device="cpu")
+
 
 def get_sdxl(text, defaults):
     # Defaults fail to parse and get looked up from the defaults dict
@@ -206,7 +207,13 @@ def handle_weights(spec, te_name, output):
 def make_patch(te_name, orig_fn, normalization, style, clip_weights, empty_tokens):
     def encode(t):
         r = adv_encode.advanced_encode_from_tokens(
-            t, normalization, style, orig_fn, return_pooled=True, apply_to_pooled=False, empty_tokens=empty_tokens[te_name]
+            t,
+            normalization,
+            style,
+            orig_fn,
+            return_pooled=True,
+            apply_to_pooled=False,
+            empty_tokens=empty_tokens[te_name],
         )
         return handle_weights(clip_weights, te_name, r)
 
@@ -414,7 +421,7 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
 
     conds = []
     # TODO: is this still needed?
-    #scale = sum(abs(weight(p)[0]) for p in prompts if not ("AREA(" in p or "MASK(" in p))
+    # scale = sum(abs(weight(p)[0]) for p in prompts if not ("AREA(" in p or "MASK(" in p))
     for prompt in prompts:
         prompt, mask, mask_weight = get_mask(prompt, mask_size, masks)
         w, opts, prompt = weight(prompt)

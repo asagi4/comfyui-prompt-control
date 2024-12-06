@@ -7,6 +7,7 @@ from .utils import lora_name_to_file
 
 log = logging.getLogger("comfyui-prompt-control")
 
+
 class PCLoraHooksFromSchedule:
     @classmethod
     def INPUT_TYPES(s):
@@ -52,7 +53,6 @@ class PCEncodeSingle:
 
     def apply(self, clip, prompt, defaults=None):
         return (encode_prompt(clip, prompt, 0, 1.0, defaults or {}, None),)
-
 
 
 def lora_hooks_from_schedule(schedules):
@@ -125,6 +125,7 @@ def debug_conds(conds):
             del x["pooled_output"]
         r.append((i, x))
     return r
+
 
 def encode_schedule(clip, schedules):
     start_pct = 0.0

@@ -77,7 +77,6 @@ def safe_float(f, default):
         return default
 
 
-
 def lora_name_to_file(name):
     filenames = folder_paths.get_filename_list("loras")
     # Return exact matches as is
