@@ -1,6 +1,6 @@
 from .node_clip import control_to_clip_common
 from .node_lora import schedule_lora_common
-from .parser import parse_prompt_schedules
+from ..parser import parse_prompt_schedules
 
 
 class PromptControlSimple:

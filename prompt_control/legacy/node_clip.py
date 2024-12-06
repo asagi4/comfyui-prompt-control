@@ -1,9 +1,9 @@
 import logging
 import re
 import torch
-from . import utils as utils
-from .parser import parse_prompt_schedules, parse_cuts
-from .utils import Timer, equalize, safe_float, get_function, parse_floats
+from ..parser import parse_prompt_schedules, parse_cuts
+from .utils import Timer, equalize, apply_loras_from_spec
+from ..utils import safe_float, get_function, parse_floats # non-legacy
 from .perp_weight import perp_encode
 from comfy_extras.nodes_mask import FeatherMask, MaskComposite
 from node_helpers import conditioning_set_values
@@ -661,7 +661,7 @@ def control_to_clip_common(clip, schedules, lora_cache=None, cond_cache=None):
         cond = cond_cache.get(cachekey)
         if cond is None:
             if loras != current_loras:
-                _, clip = utils.apply_loras_from_spec(
+                _, clip = apply_loras_from_spec(
                     loras, clip=orig_clip, cache=lora_cache, applied_loras=current_loras
                 )
                 current_loras = loras

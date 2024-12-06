@@ -2,7 +2,7 @@ import logging
 import torch
 
 from .utils import unpatch_model, clone_model, set_callback, apply_loras_from_spec
-from .parser import parse_prompt_schedules
+from ..parser import parse_prompt_schedules
 from .hijack import do_hijack
 from comfy.samplers import CFGGuider
 

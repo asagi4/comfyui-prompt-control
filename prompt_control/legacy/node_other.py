@@ -1,5 +1,5 @@
 import logging
-from .parser import parse_prompt_schedules
+from ..parser import parse_prompt_schedules
 
 log = logging.getLogger("comfyui-prompt-control")
 
