@@ -2,9 +2,9 @@ import os
 import sys
 import logging
 
-from .prompt_control.node_clip import EditableCLIPEncode, ScheduleToCond
-from .prompt_control.node_lora import LoRAScheduler, ScheduleToModel, PCSplitSampling, PCWrapGuider
-from .prompt_control.node_other import (
+from .prompt_control.legacy.node_clip import EditableCLIPEncode, ScheduleToCond
+from .prompt_control.legacy.node_lora import LoRAScheduler, ScheduleToModel, PCSplitSampling, PCWrapGuider
+from .prompt_control.legacy.node_other import (
     PromptToSchedule,
     FilterSchedule,
     PCScheduleSettings,
@@ -12,7 +12,7 @@ from .prompt_control.node_other import (
     PCApplySettings,
     PCPromptFromSchedule,
 )
-from .prompt_control.node_aio import PromptControlSimple
+from .prompt_control.legacy.node_aio import PromptControlSimple
 
 
 log = logging.getLogger("comfyui-prompt-control")
