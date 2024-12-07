@@ -347,6 +347,8 @@ The parameters affect how the masked and unmasked prompts are combined to produc
 
 Creates a ComfyUI `HOOKS` object from a prompt schedule. Can be attached to a CLIP model to perform encoding and LoRA switching
 
+The hooks can be a bit slow sometimes, especially in cases where the LoRA spec doesn't actually require reloading the patches every time you sample. Try `PCHooksFromScheduleWithOptimizationTest`. (Though that node is likely to go away eventually).
+
 ## PCEncodeSchedule
 
 Encodes all prompts in a schedule. Pass in a `CLIP` object with hooks attached for LoRA scheduling, then use the resulting `CONDITIONING` normally
