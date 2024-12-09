@@ -169,6 +169,7 @@ def process_cuts(encode, extra, tokens):
 def debug_tokens(label, prompt, tokenizer):
     log.debug("Tokens for %s", label)
     for tokens in prompt:
+        tokens = (t for t in tokens if not torch.is_tensor(t[0]))
         log.debug(" ".join(f"{x[0][0]} {x[1]}" for x in tokenizer.untokenize(tokens) if x[0][0] != tokenizer.end_token))
 
 
