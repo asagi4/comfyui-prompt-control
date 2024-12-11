@@ -142,6 +142,7 @@ class ScheduleToCond:
             "required": {"clip": ("CLIP",), "prompt_schedule": ("PROMPT_SCHEDULE",)},
         }
 
+    DEPRECATED = True
     RETURN_TYPES = ("CONDITIONING",)
     CATEGORY = "promptcontrol/_legacy"
     FUNCTION = "apply"
@@ -163,6 +164,7 @@ class EditableCLIPEncode:
             "optional": {"filter_tags": ("STRING", {"default": ""})},
         }
 
+    DEPRECATED = True
     RETURN_TYPES = ("CONDITIONING",)
     CATEGORY = "promptcontrol/_donotuse"
     FUNCTION = "parse"

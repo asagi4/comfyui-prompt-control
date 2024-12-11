@@ -20,6 +20,7 @@ class PromptControlSimple:
             },
         }
 
+    DEPRECATED = True
     RETURN_TYPES = ("MODEL", "CONDITIONING", "CONDITIONING", "MODEL", "CONDITIONING", "CONDITIONING")
     RETURN_NAMES = ("model", "positive", "negative", "model_filtered", "pos_filtered", "neg_filtered")
     CATEGORY = "promptcontrol/_legacy"

@@ -16,8 +16,9 @@ class FilterSchedule:
             },
         }
 
+    DEPRECATED = True
     RETURN_TYPES = ("PROMPT_SCHEDULE",)
-    CATEGORY = "promptcontrol"
+    CATEGORY = "promptcontrol/_legacy"
     FUNCTION = "apply"
 
     def apply(self, prompt_schedule, tags="", start=0.0, end=1.0):
@@ -34,8 +35,9 @@ class PCApplySettings:
     def INPUT_TYPES(s):
         return {"required": {"prompt_schedule": ("PROMPT_SCHEDULE",), "settings": ("SCHEDULE_SETTINGS",)}}
 
+    DEPRECATED = True
     RETURN_TYPES = ("PROMPT_SCHEDULE",)
-    CATEGORY = "promptcontrol"
+    CATEGORY = "promptcontrol/_legacy"
     FUNCTION = "apply"
 
     def apply(self, prompt_schedule, settings):
@@ -55,8 +57,9 @@ class PCScheduleAddMasks:
             },
         }
 
+    DEPRECATED = True
     RETURN_TYPES = ("PROMPT_SCHEDULE",)
-    CATEGORY = "promptcontrol"
+    CATEGORY = "promptcontrol/_legacy"
     FUNCTION = "apply"
 
     def apply(self, prompt_schedule, mask1=None, mask2=None, mask3=None, mask4=None):
@@ -83,8 +86,9 @@ class PCScheduleSettings:
             },
         }
 
+    DEPRECATED = True
     RETURN_TYPES = ("SCHEDULE_SETTINGS",)
-    CATEGORY = "promptcontrol"
+    CATEGORY = "promptcontrol/_legacy"
     FUNCTION = "apply"
 
     def apply(
@@ -124,8 +128,9 @@ class PCPromptFromSchedule:
             "optional": {"tags": ("STRING", {"default": ""})},
         }
 
+    DEPRECATED = True
     RETURN_TYPES = ("STRING",)
-    CATEGORY = "promptcontrol"
+    CATEGORY = "promptcontrol/_legacy"
     FUNCTION = "apply"
 
     def apply(self, prompt_schedule, at, tags=""):
@@ -144,8 +149,9 @@ class PromptToSchedule:
             },
         }
 
+    DEPRECATED = True
     RETURN_TYPES = ("PROMPT_SCHEDULE",)
-    CATEGORY = "promptcontrol"
+    CATEGORY = "promptcontrol/_legacy"
     FUNCTION = "parse"
 
     def parse(self, text, settings=None):

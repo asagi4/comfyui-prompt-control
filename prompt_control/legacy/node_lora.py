@@ -141,6 +141,7 @@ class PCWrapGuider:
             },
         }
 
+    DEPRECATED = True
     CATEGORY = "promptcontrol/_legacy"
     FUNCTION = "apply"
     RETURN_TYPES = ("GUIDER",)
@@ -200,6 +201,7 @@ class ScheduleToModel:
             },
         }
 
+    DEPRECATED = True
     RETURN_TYPES = ("MODEL",)
     CATEGORY = "promptcontrol/_legacy"
     FUNCTION = "apply"
@@ -218,6 +220,7 @@ class PCSplitSampling:
             },
         }
 
+    DEPRECATED = True
     RETURN_TYPES = ("MODEL",)
     CATEGORY = "promptcontrol/_legacy"
     FUNCTION = "apply"
@@ -238,6 +241,7 @@ class LoRAScheduler:
             },
         }
 
+    DEPRECATED = True
     RETURN_TYPES = ("MODEL",)
     CATEGORY = "promptcontrol/_donotuse"
     FUNCTION = "apply"
