@@ -163,13 +163,20 @@ Add masks to a schedule object, for use with IMASK (see [syntax documentation](d
 
 # Experimental nodes
 
-- `PCEncodeLazy` is an experiment that uses ComfyUI's lazy graph execution mechanism to dynamically generate a graph of `PCEncodeSingle` and `SetConditioningTimestepRange` nodes from a prompt with schedules. This has the advantage that if a part of the schedule doesn't change, ComfyUI's caching mechanism allows you to avoid re-encoding the non-changed part.
+## PCEncodeLazy
+`PCEncodeLazy` is an experiment that uses ComfyUI's lazy graph execution mechanism to dynamically generate a graph of `PCEncodeSingle` and `SetConditioningTimestepRange` nodes from a prompt with schedules. This has the advantage that if a part of the schedule doesn't change, ComfyUI's caching mechanism allows you to avoid re-encoding the non-changed part.
 
 for example, if you first encode `[cat:dog:0.1]` and later change that to `[cat:dog:0.5]`, no re-encoding takes place.
 
 for added fun, put `NODE(NodeClassName, paramname)` in a prompt to encode the text using any other node (the default is to use `PCEncodeSingle` and `text`)
 
 Note that the node can't have required parameters besides a single CLIP parameter (which must be named `clip`) and the text prompt, and it must return a `CONDITIONING` as its first return value.
+
+## PCLazyLoraLoader
+
+Another lazy node that will construct a graph of `LoraLoader`s and `CreateHookLora`s as necessary to provide the necessary LoRA scheduling.
+
+If you have `apply_hooks` set to true, you **do not** need to apply the `HOOKS`  output to a CLIP model separately.
 
 # Legacy nodes
 
