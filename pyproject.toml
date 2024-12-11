@@ -1,16 +1,16 @@
 [project]
-name = "comfyui-prompt-control"
-description = "Nodes for convenient prompt editing, making many common operations prompt-controllable"
+name = "comfyui-prompt-control-legacy"
+description = "Legacy prompt control nodes. These exist only to allow old workflows to run"
 version = "1.2.1"
 license = { file = "LICENSE" }
 # some lark versions older than 1.1.9 apparently have a bug that breaks things, see https://github.com/asagi4/comfyui-prompt-control/issues/35
 dependencies = ["lark >= 1.1.9"]
 
 [project.urls]
-Repository = "https://github.com/asagi4/comfyui-prompt-control"
+Repository = "https://github.com/asagi4/comfyui-prompt-control-legacy"
 #  Used by Comfy Registry https://comfyregistry.org
 
 [tool.comfy]
 PublisherId = "asagi4"
-DisplayName = "ComfyUI Prompt Control"
+DisplayName = "ComfyUI Prompt Control (LEGACY VERSION)"
 Icon = ""
