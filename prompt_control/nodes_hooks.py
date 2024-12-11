@@ -105,7 +105,7 @@ class PCEncodeSingle:
     @classmethod
     def INPUT_TYPES(s):
         return {
-            "required": {"clip": ("CLIP",), "prompt": ("STRING", {"multiline": True})},
+            "required": {"clip": ("CLIP",), "text": ("STRING", {"multiline": True})},
             "optional": {"defaults": ("SCHEDULE_DEFAULTS",)},
         }
 
@@ -113,8 +113,8 @@ class PCEncodeSingle:
     CATEGORY = "promptcontrol/v2"
     FUNCTION = "apply"
 
-    def apply(self, clip, prompt, defaults=None):
-        return (encode_prompt(clip, prompt, 0, 1.0, defaults or {}, None),)
+    def apply(self, clip, text, defaults=None):
+        return (encode_prompt(clip, text, 0, 1.0, defaults or {}, None),)
 
 
 def consolidate_schedule(prompt_schedule):

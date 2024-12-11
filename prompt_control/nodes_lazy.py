@@ -11,8 +11,8 @@ class PCEncodeLazy:
     @classmethod
     def INPUT_TYPES(s):
         return {
-            "required": {"clip": ("CLIP",), "prompt": ("STRING", {"multiline": True})},
-            #"optional": {"defaults": ("SCHEDULE_DEFAULTS",)},
+            "required": {"clip": ("CLIP",), "text": ("STRING", {"multiline": True})},
+            # "optional": {"defaults": ("SCHEDULE_DEFAULTS",)},
             "hidden": {"dynprompt": "DYNPROMPT", "unique_id": "UNIQUE_ID"},
         }
 
@@ -21,8 +21,8 @@ class PCEncodeLazy:
     CATEGORY = "promptcontrol/_experimental"
     FUNCTION = "apply"
 
-    def apply(self, clip, prompt, dynprompt, unique_id):
-        schedules = parse_prompt_schedules(prompt)
+    def apply(self, clip, text, dynprompt, unique_id):
+        schedules = parse_prompt_schedules(text)
         graph = GraphBuilder(f"PCEncodeLazy-{unique_id}")
 
         this_node = dynprompt.get_node(unique_id)
@@ -35,11 +35,11 @@ class PCEncodeLazy:
             p, classnames = get_function(p, "NODE", ["PCEncodeSingle"])
             classname = "PCEncodeSingle"
             if classnames:
-                classname = classnames[0]
+                classname = classnames[0][0]
             node = graph.node(classname)
             timestep = graph.node("ConditioningSetTimestepRange")
             node.set_input("clip", this_node["inputs"]["clip"])
-            node.set_input("prompt", p)
+            node.set_input("text", p)
             timestep.set_input("conditioning", node.out(0))
             timestep.set_input("start", start_pct)
             timestep.set_input("end", end_pct)
