@@ -6,7 +6,7 @@ from .prompts import get_function
 
 log = logging.getLogger("comfyui-prompt-control")
 
-from .node_hooks import consolidate_schedule, find_nonscheduled_loras
+from .nodes_hooks import consolidate_schedule, find_nonscheduled_loras
 from .utils import lora_name_to_file
 
 
@@ -14,7 +14,7 @@ class PCLazyLoraLoader:
     @classmethod
     def INPUT_TYPES(s):
         return {
-            "required": {"text": ("STRING", {"multiline": True}), "model": ("MODEL",), "clip": ("CLIP")},
+            "required": {"text": ("STRING", {"multiline": True}), "model": ("MODEL",), "clip": ("CLIP",)},
             # "optional": {"defaults": ("SCHEDULE_DEFAULTS",)},
             "hidden": {"dynprompt": "DYNPROMPT", "unique_id": "UNIQUE_ID"},
         }
@@ -24,16 +24,16 @@ class PCLazyLoraLoader:
     CATEGORY = "promptcontrol/_experimental"
     FUNCTION = "apply"
 
-    def apply(self, text, dynprompt, unique_id):
+    def apply(self, model, clip, text, dynprompt, unique_id):
         schedule = parse_prompt_schedules(text)
         consolidated = consolidate_schedule(schedule)
         non_scheduled = find_nonscheduled_loras(consolidated)
-        graph = GraphBuilder(f"PCEncodeLazy-{unique_id}")
+        graph = GraphBuilder(f"PCLazyLoraLoader-{unique_id}")
         this_node = dynprompt.get_node(unique_id)
 
         modelinput = this_node["inputs"]["model"]
         clipinput = this_node["inputs"]["clip"]
-        for lora, info in non_scheduled:
+        for lora, info in non_scheduled.items():
             path = lora_name_to_file(lora)
             if path is None:
                 log.info("Lazy expansion ignoring nonexistent LoRA %s", lora)
@@ -43,6 +43,7 @@ class PCLazyLoraLoader:
             loader.set_input("clip", clipinput)
             loader.set_input("strength_model", info["weight"])
             loader.set_input("strength_clip", info["weight_clip"])
+            loader.set_input("lora_name", path)
             modelinput = loader.out(0)
             clipinput = loader.out(1)
 
@@ -62,6 +63,7 @@ class PCLazyLoraLoader:
                     continue
                 k = key(lora, info)
                 existing_node = hook_nodes.get(key(lora, info))
+                prev_keyframe = None
                 if not existing_node:
                     hook_node = graph.node("CreateHookLora")
                     hook_node.set_input("lora_name", path)
@@ -78,7 +80,8 @@ class PCLazyLoraLoader:
                     prev_hook_kf = prev_keyframe.out(0)
 
                 if (
-                    prev_keyframe.get_input("start_pct") == start_pct
+                    prev_keyframe
+                    and prev_keyframe.get_input("start_pct") == start_pct
                     and prev_keyframe.get_input("strength_mult") == 0.0
                 ):
                     next_keyframe = prev_keyframe
@@ -114,9 +117,8 @@ class PCLazyLoraLoader:
             res = res.out(0)
 
         r = graph.finalize()
-        print("Final crazy graph", r)
 
-        return {"output": (modelinput, clipinput, res), "expand": r}
+        return {"result": (modelinput, clipinput, res), "expand": r}
 
 
 class PCEncodeLazy:
