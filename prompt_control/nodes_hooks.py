@@ -4,7 +4,6 @@ import comfy.hooks
 import folder_paths
 from .prompts import encode_prompt
 from .utils import lora_name_to_file
-import nodes
 
 log = logging.getLogger("comfyui-prompt-control")
 
@@ -42,7 +41,7 @@ class PCEncodeSchedule:
         return (encode_schedule(clip, prompt_schedule),)
 
 
-class PCEncodeSingle:
+class PCTextEncode:
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -167,14 +166,12 @@ def encode_schedule(clip, schedules):
 
 NODE_CLASS_MAPPINGS = {
     "PCLoraHooksFromSchedule": PCLoraHooksFromSchedule,
-    "PCLoraHooksFromScheduleWithOptimizationTest": PCLoraHooksFromScheduleWithOptimizationTest,
     "PCEncodeSchedule": PCEncodeSchedule,
-    "PCEncodeSingle": PCEncodeSingle,
+    "PCTextEncode": PCTextEncode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "PCLoraHooksFromSchedule": "PC Create LoRA Hooks",
-    "PCLoraHooksFromScheduleWithOptimizationTest": "PC Create LoRA Hooks (with model optimization) (EXPERIMENTAL)",
     "PCEncodeSchedule": "PC Encode Schedule",
-    "PCEncodeSingle": "PC Encode Single Prompt (no scheduling)",
+    "PCTextEncode": "PC Text Encode (no scheduling)",
 }

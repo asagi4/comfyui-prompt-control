@@ -22,7 +22,7 @@ See [features](#features) below. Things you can control via the prompt:
 - Prompt masking with cutoff
 - SDXL parameters
 
-If you find prompt scheduling inconvenient, `PCEncodeSingle` can be used as a drop-in replacement for `CLIPTextEncode` to get everything else.
+If you find prompt scheduling inconvenient, `PCTextEncode` can be used as a drop-in replacement for `CLIPTextEncode` to get everything else.
 
 [This example workflow](workflows/example.json?raw=1) implements a two-pass workflow illustrating most scheduling features.
 
@@ -58,7 +58,7 @@ See the [syntax documentation](doc/syntax.md)
 
 ## Advanced CLIP encoding
 
-If you use `PCEncodeSchedule` or `PCEncodeSingle`. advanced encodings are available automatically. Thanks to BlenderNeko for the original code.
+If you use `PCEncodeSchedule` or `PCTextEncode`. advanced encodings are available automatically. Thanks to BlenderNeko for the original code.
 
 You can use the syntax `STYLE(weight_interpretation, normalization)` in a prompt to affect how prompts are interpreted.
 
@@ -126,7 +126,7 @@ The hooks can be a bit slow sometimes, especially in cases where the LoRA spec d
 
 Encodes all prompts in a schedule. Pass in a `CLIP` object with hooks attached for LoRA scheduling, then use the resulting `CONDITIONING` normally
 
-## PCEncodeSingle
+## PCTextEncode
 
 Encodes a single prompt *without* scheduling or LoRA loading features (but including everything else).
 
@@ -164,11 +164,11 @@ Add masks to a schedule object, for use with IMASK (see [syntax documentation](d
 # Experimental nodes
 
 ## PCLazyEncode
-`PCLazyEncode` is an experiment that uses ComfyUI's lazy graph execution mechanism to dynamically generate a graph of `PCEncodeSingle` and `SetConditioningTimestepRange` nodes from a prompt with schedules. This has the advantage that if a part of the schedule doesn't change, ComfyUI's caching mechanism allows you to avoid re-encoding the non-changed part.
+`PCLazyEncode` is an experiment that uses ComfyUI's lazy graph execution mechanism to dynamically generate a graph of `PCTextEncode` and `SetConditioningTimestepRange` nodes from a prompt with schedules. This has the advantage that if a part of the schedule doesn't change, ComfyUI's caching mechanism allows you to avoid re-encoding the non-changed part.
 
 for example, if you first encode `[cat:dog:0.1]` and later change that to `[cat:dog:0.5]`, no re-encoding takes place.
 
-for added fun, put `NODE(NodeClassName, paramname)` in a prompt to encode the text using any other node (the default is to use `PCEncodeSingle` and `text`)
+for added fun, put `NODE(NodeClassName, paramname)` in a prompt to encode the text using any other node (the default is to use `PCTextEncode` and `text`)
 
 Note that the node can't have required parameters besides a single CLIP parameter (which must be named `clip`) and the text prompt, and it must return a `CONDITIONING` as its first return value.
 

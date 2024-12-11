@@ -132,7 +132,7 @@ class PCLazyLoraLoader:
         return {"result": (modelinput, clipinput, res), "expand": r}
 
 
-class PCLazyEncode:
+class PCLazyTextEncode:
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -157,8 +157,8 @@ class PCLazyEncode:
         start_pct = 0.0
         for end_pct, c in schedules:
             p = c["prompt"]
-            p, classnames = get_function(p, "NODE", ["PCEncodeSingle", "text"])
-            classname = "PCEncodeSingle"
+            p, classnames = get_function(p, "NODE", ["PCTextEncode", "text"])
+            classname = "PCTextEncode"
             paramname = "text"
             if classnames:
                 classname = classnames[0][0]
@@ -183,12 +183,11 @@ class PCLazyEncode:
 
 
 NODE_CLASS_MAPPINGS = {
-    "PCLazyEncode": PCLazyEncode,
+    "PCLazyTextEncode": PCLazyTextEncode,
     "PCLazyLoraLoader": PCLazyLoraLoader,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "PCLazyEncode": "Encode a prompt with scheduling (Lazy) (EXPERIMENTAL)"
-    "PCLazyLoraLoader"
-    "Schedule LoRAs from a given prompt (Lazy) (EXPERIMENTAL)"
+    "PCLazyTextEncode": "Encode prompt w/ scheduling (Lazy) (EXPERIMENTAL)",
+    "PCLazyLoraLoader": "Load LoRAs from prompt w/ scheduling (Lazy) (EXPERIMENTAL)",
 }
