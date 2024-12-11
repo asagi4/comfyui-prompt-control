@@ -4,7 +4,7 @@ import logging
 
 import folder_paths
 
-log = logging.getLogger("comfyui-prompt-control")
+log = logging.getLogger("comfyui-prompt-control-legacy")
 
 
 def find_closing_paren(text, start):

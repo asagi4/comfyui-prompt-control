@@ -3,7 +3,7 @@ import logging
 from math import ceil
 
 logging.basicConfig()
-log = logging.getLogger("comfyui-prompt-control")
+log = logging.getLogger("comfyui-prompt-control-legacy")
 
 if lark.__version__ == "0.12.0":
     x = "Your lark package reports an ancient version (0.12.0) and will not work. If you have the 'lark-parser' package in your Python environment, remove that and *reinstall* lark!"

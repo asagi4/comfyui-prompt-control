@@ -6,7 +6,7 @@ from ..parser import parse_prompt_schedules
 from .hijack import do_hijack
 from comfy.samplers import CFGGuider
 
-log = logging.getLogger("comfyui-prompt-control")
+log = logging.getLogger("comfyui-prompt-control-legacy")
 
 
 def apply_lora_for_step(schedules, step, total_steps, state, original_model, lora_cache, patch=True):

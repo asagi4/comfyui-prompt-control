@@ -9,7 +9,7 @@ from comfy_extras.nodes_mask import FeatherMask, MaskComposite
 from node_helpers import conditioning_set_values
 
 
-log = logging.getLogger("comfyui-prompt-control")
+log = logging.getLogger("comfyui-prompt-control-legacy")
 
 try:
     from custom_nodes.ComfyUI_ADV_CLIP_emb.adv_encode import (

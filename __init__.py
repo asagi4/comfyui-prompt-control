@@ -17,7 +17,7 @@ from .prompt_control.legacy.node_aio import PromptControlSimple
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 
-log = logging.getLogger("comfyui-prompt-control")
+log = logging.getLogger("comfyui-prompt-control-legacy")
 log.propagate = False
 if not log.handlers:
     h = logging.StreamHandler(sys.stdout)

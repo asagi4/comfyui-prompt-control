@@ -6,7 +6,7 @@ import gc
 import comfy.model_management
 import os
 
-log = logging.getLogger("comfyui-prompt-control")
+log = logging.getLogger("comfyui-prompt-control-legacy")
 
 
 def has_hijack(obj):
