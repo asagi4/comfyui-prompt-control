@@ -31,6 +31,7 @@ class PCLoraHooksFromScheduleWithOptimizationTest:
     # Cache model
     last_loras = None
     last_modelclip = None
+
     @classmethod
     def INPUT_TYPES(s):
         return {

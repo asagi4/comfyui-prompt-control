@@ -53,7 +53,4 @@ NODE_CLASS_MAPPINGS = {
     "PCEncodeLazy": PCEncodeLazy,
 }
 
-NODE_DISPLAY_NAME_MAPPINGS = {
-    "PCEncodeLazy": "PromptControl Encode (Lazy) (EXPERIMENTAL)"
-}
-
+NODE_DISPLAY_NAME_MAPPINGS = {"PCEncodeLazy": "PromptControl Encode (Lazy) (EXPERIMENTAL)"}
