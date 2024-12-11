@@ -166,7 +166,7 @@ class EditableCLIPEncode:
 
     DEPRECATED = True
     RETURN_TYPES = ("CONDITIONING",)
-    CATEGORY = "promptcontrol/_donotuse"
+    CATEGORY = "promptcontrol/_legacy"
     FUNCTION = "parse"
 
     def parse(self, clip, text, filter_tags=""):

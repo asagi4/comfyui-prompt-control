@@ -243,7 +243,7 @@ class LoRAScheduler:
 
     DEPRECATED = True
     RETURN_TYPES = ("MODEL",)
-    CATEGORY = "promptcontrol/_donotuse"
+    CATEGORY = "promptcontrol/_legacy"
     FUNCTION = "apply"
 
     def apply(self, model, text):
