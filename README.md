@@ -163,8 +163,8 @@ Add masks to a schedule object, for use with IMASK (see [syntax documentation](d
 
 # Experimental nodes
 
-## PCEncodeLazy
-`PCEncodeLazy` is an experiment that uses ComfyUI's lazy graph execution mechanism to dynamically generate a graph of `PCEncodeSingle` and `SetConditioningTimestepRange` nodes from a prompt with schedules. This has the advantage that if a part of the schedule doesn't change, ComfyUI's caching mechanism allows you to avoid re-encoding the non-changed part.
+## PCLazyEncode
+`PCLazyEncode` is an experiment that uses ComfyUI's lazy graph execution mechanism to dynamically generate a graph of `PCEncodeSingle` and `SetConditioningTimestepRange` nodes from a prompt with schedules. This has the advantage that if a part of the schedule doesn't change, ComfyUI's caching mechanism allows you to avoid re-encoding the non-changed part.
 
 for example, if you first encode `[cat:dog:0.1]` and later change that to `[cat:dog:0.5]`, no re-encoding takes place.
 
