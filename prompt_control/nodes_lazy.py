@@ -25,7 +25,7 @@ class PCLazyLoraLoader:
 
     RETURN_TYPES = ("MODEL", "CLIP", "HOOKS")
     OUTPUT_TOOLTIPS = ("Returns a model and clip with LoRAs scheduled",)
-    CATEGORY = "promptcontrol/_experimental"
+    CATEGORY = "promptcontrol"
     FUNCTION = "apply"
 
     def apply(self, model, clip, text, apply_hooks, dynprompt, unique_id):
@@ -143,7 +143,7 @@ class PCLazyTextEncode:
 
     RETURN_TYPES = ("CONDITIONING",)
     OUTPUT_TOOLTIPS = ("A fully encoded and scheduled conditioning",)
-    CATEGORY = "promptcontrol/_experimental"
+    CATEGORY = "promptcontrol"
     FUNCTION = "apply"
 
     def apply(self, clip, text, dynprompt, unique_id):
@@ -188,6 +188,6 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "PCLazyTextEncode": "Encode prompt w/ scheduling (Lazy) (EXPERIMENTAL)",
-    "PCLazyLoraLoader": "Load LoRAs from prompt w/ scheduling (Lazy) (EXPERIMENTAL)",
+    "PCLazyTextEncode": "Encode prompt w/ scheduling (Lazy)",
+    "PCLazyLoraLoader": "Load LoRAs from prompt w/ scheduling (Lazy)",
 }

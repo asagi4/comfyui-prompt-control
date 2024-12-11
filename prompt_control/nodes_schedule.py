@@ -1,14 +1,43 @@
 import logging
-from ..parser import parse_prompt_schedules
+from .prompts import encode_prompt
+from .parser import parse_prompt_schedules
 
 log = logging.getLogger("comfyui-prompt-control")
+
+
+def encode_schedule(clip, schedules):
+    start_pct = 0.0
+    conds = []
+    for end_pct, c in schedules:
+        if start_pct < end_pct:
+            prompt = c["prompt"]
+            cond = encode_prompt(clip, prompt, start_pct, end_pct, schedules.defaults, schedules.masks)
+            conds.extend(cond)
+        start_pct = end_pct
+
+    return conds
+
+
+class PCEncodeSchedule:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {"clip": ("CLIP",), "prompt_schedule": ("PC_SCHEDULE",)},
+        }
+
+    RETURN_TYPES = ("CONDITIONING",)
+    CATEGORY = "promptcontrol/schedule"
+    FUNCTION = "apply"
+
+    def apply(self, clip, prompt_schedule):
+        return (encode_schedule(clip, prompt_schedule),)
 
 
 class FilterSchedule:
     @classmethod
     def INPUT_TYPES(s):
         return {
-            "required": {"prompt_schedule": ("PROMPT_SCHEDULE",)},
+            "required": {"prompt_schedule": ("PC_SCHEDULE",)},
             "optional": {
                 "tags": ("STRING", {"default": ""}),
                 "start": ("FLOAT", {"min": 0.00, "max": 1.00, "default": 0.0, "step": 0.01}),
@@ -16,8 +45,8 @@ class FilterSchedule:
             },
         }
 
-    RETURN_TYPES = ("PROMPT_SCHEDULE",)
-    CATEGORY = "promptcontrol"
+    RETURN_TYPES = ("PC_SCHEDULE",)
+    CATEGORY = "promptcontrol/schedule"
     FUNCTION = "apply"
 
     def apply(self, prompt_schedule, tags="", start=0.0, end=1.0):
@@ -32,10 +61,10 @@ class FilterSchedule:
 class PCApplySettings:
     @classmethod
     def INPUT_TYPES(s):
-        return {"required": {"prompt_schedule": ("PROMPT_SCHEDULE",), "settings": ("SCHEDULE_SETTINGS",)}}
+        return {"required": {"prompt_schedule": ("PC_SCHEDULE",), "settings": ("PC_SETTINGS",)}}
 
-    RETURN_TYPES = ("PROMPT_SCHEDULE",)
-    CATEGORY = "promptcontrol"
+    RETURN_TYPES = ("PC_SCHEDULE",)
+    CATEGORY = "promptcontrol/schedule"
     FUNCTION = "apply"
 
     def apply(self, prompt_schedule, settings):
@@ -46,7 +75,7 @@ class PCScheduleAddMasks:
     @classmethod
     def INPUT_TYPES(s):
         return {
-            "required": {"prompt_schedule": ("PROMPT_SCHEDULE",)},
+            "required": {"prompt_schedule": ("PC_SCHEDULE",)},
             "optional": {
                 "mask1": ("MASK",),
                 "mask2": ("MASK",),
@@ -55,8 +84,8 @@ class PCScheduleAddMasks:
             },
         }
 
-    RETURN_TYPES = ("PROMPT_SCHEDULE",)
-    CATEGORY = "promptcontrol"
+    RETURN_TYPES = ("PC_SCHEDULE",)
+    CATEGORY = "promptcontrol/schedule"
     FUNCTION = "apply"
 
     def apply(self, prompt_schedule, mask1=None, mask2=None, mask3=None, mask4=None):
@@ -65,7 +94,7 @@ class PCScheduleAddMasks:
         return (p,)
 
 
-class PCScheduleSettings:
+class PCSettings:
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -83,8 +112,8 @@ class PCScheduleSettings:
             },
         }
 
-    RETURN_TYPES = ("SCHEDULE_SETTINGS",)
-    CATEGORY = "promptcontrol"
+    RETURN_TYPES = ("PC_SETTINGS",)
+    CATEGORY = "promptcontrol/schedule"
     FUNCTION = "apply"
 
     def apply(
@@ -118,14 +147,14 @@ class PCPromptFromSchedule:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "prompt_schedule": ("PROMPT_SCHEDULE",),
+                "prompt_schedule": ("PC_SCHEDULE",),
                 "at": ("FLOAT", {"min": 0.0, "max": 1.0, "step": 0.01}),
             },
             "optional": {"tags": ("STRING", {"default": ""})},
         }
 
     RETURN_TYPES = ("STRING",)
-    CATEGORY = "promptcontrol"
+    CATEGORY = "promptcontrol/schedule"
     FUNCTION = "apply"
 
     def apply(self, prompt_schedule, at, tags=""):
@@ -144,10 +173,22 @@ class PromptToSchedule:
             },
         }
 
-    RETURN_TYPES = ("PROMPT_SCHEDULE",)
-    CATEGORY = "promptcontrol"
+    RETURN_TYPES = ("PC_SCHEDULE",)
+    CATEGORY = "promptcontrol/schedule"
     FUNCTION = "parse"
 
     def parse(self, text, settings=None):
         schedules = parse_prompt_schedules(text)
         return (schedules,)
+
+
+NODE_CLASS_MAPPINGS = {
+    "PCPromptToSchedule": PromptToSchedule,
+    "PCSettings": PCScheduleSettings,
+    "PCScheduleAddMasks": PCScheduleAddMasks,
+    "PCApplySettings": PCApplySettings,
+    "PCPromptFromSchedule": PCPromptFromSchedule,
+    "PCFilterSchedule": FilterSchedule,
+}
+
+NODE_DISPLAY_NAME_MAPPINGS = {}
