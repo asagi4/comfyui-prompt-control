@@ -230,3 +230,10 @@ NODE_CLASS_MAPPINGS = {
     "PCEncodeSchedule": PCEncodeSchedule,
     "PCEncodeSingle": PCEncodeSingle,
 }
+
+NODE_DISPLAY_NAME_MAPPINGS = {
+    "PCLoraHooksFromSchedule": "PC Create LoRA Hooks",
+    "PCLoraHooksFromScheduleWithOptimizationTest": "PC Create LoRA Hooks (with model optimization) (EXPERIMENTAL)",
+    "PCEncodeSchedule": "PC Encode Schedule",
+    "PCEncodeSingle": "PC Encode Single Prompt (no scheduling)",
+}
