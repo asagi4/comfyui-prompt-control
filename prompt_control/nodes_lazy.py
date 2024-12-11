@@ -12,7 +12,7 @@ class PCEncodeLazy:
     def INPUT_TYPES(s):
         return {
             "required": {"clip": ("CLIP",), "prompt": ("STRING", {"multiline": True})},
-            "optional": {"defaults": ("SCHEDULE_DEFAULTS",)},
+            #"optional": {"defaults": ("SCHEDULE_DEFAULTS",)},
             "hidden": {"dynprompt": "DYNPROMPT", "unique_id": "UNIQUE_ID"},
         }
 
@@ -21,7 +21,7 @@ class PCEncodeLazy:
     CATEGORY = "promptcontrol/_experimental"
     FUNCTION = "apply"
 
-    def apply(self, clip, prompt, dynprompt, unique_id, defaults=None):
+    def apply(self, clip, prompt, dynprompt, unique_id):
         schedules = parse_prompt_schedules(prompt)
         graph = GraphBuilder(f"PCEncodeLazy-{unique_id}")
 
