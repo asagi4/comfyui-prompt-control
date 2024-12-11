@@ -22,7 +22,7 @@ See [features](#features) below. Things you can control via the prompt:
 - Prompt masking with cutoff
 - SDXL parameters
 
-If you find prompt scheduling inconvenient, `PCEncodePrompt` can be used as a drop-in replacement for `CLIPTextEncode` to get everything else.
+If you find prompt scheduling inconvenient, `PCEncodeSingle` can be used as a drop-in replacement for `CLIPTextEncode` to get everything else.
 
 [This example workflow](workflows/example.json?raw=1) implements a two-pass workflow illustrating most scheduling features.
 
@@ -58,7 +58,7 @@ See the [syntax documentation](doc/syntax.md)
 
 ## Advanced CLIP encoding
 
-If you use `PCEncodeSchedule` or `PCEncodePrompt`. advanced encodings are available automatically. Thanks to BlenderNeko for the original code.
+If you use `PCEncodeSchedule` or `PCEncodeSingle`. advanced encodings are available automatically. Thanks to BlenderNeko for the original code.
 
 You can use the syntax `STYLE(weight_interpretation, normalization)` in a prompt to affect how prompts are interpreted.
 
@@ -126,7 +126,7 @@ The hooks can be a bit slow sometimes, especially in cases where the LoRA spec d
 
 Encodes all prompts in a schedule. Pass in a `CLIP` object with hooks attached for LoRA scheduling, then use the resulting `CONDITIONING` normally
 
-## PCEncodePrompt
+## PCEncodeSingle
 
 Encodes a single prompt *without* scheduling or LoRA loading features (but including everything else).
 
