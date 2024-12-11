@@ -14,7 +14,7 @@ Nodes marked "experimental" are very likely to change or disappear completely, o
 
 ## What can it do?
 
-Things you can control via the prompt:
+See [features](#features) below. Things you can control via the prompt:
 - Weight interpretation types (comfy, A1111, etc.)
 - Prompt editing and filtering without multiple samplers
 - LoRA loading and scheduling via ComfyUI's hook system
@@ -160,6 +160,16 @@ LoRAs are *not* included in the text prompt, though they are logged.
 ## PCScheduleAddMasks
 
 Add masks to a schedule object, for use with IMASK (see [syntax documentation](doc/syntax.md))
+
+# Experimental nodes
+
+- `PCEncodeLazy` is an experiment that uses ComfyUI's lazy graph execution mechanism to dynamically generate a graph of `PCEncodeSingle` and `SetConditioningTimestepRange` nodes from a prompt with schedules. This has the advantage that if a part of the schedule doesn't change, ComfyUI's caching mechanism allows you to avoid re-encoding the non-changed part.
+
+for example, if you first encode `[cat:dog:0.1]` and later change that to `[cat:dog:0.5]`, no re-encoding takes place.
+
+for added fun, put `NODE(NodeClassName)` in a prompt to switch to using any other node (the default is to use `PCEncodeSingle`)
+
+Note that the node can't have required parameters besides a single CLIP and the text prompt.
 
 # Legacy nodes
 

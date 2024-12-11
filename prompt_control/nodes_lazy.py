@@ -2,6 +2,8 @@ import logging
 from .parser import parse_prompt_schedules
 from comfy_execution.graph_utils import GraphBuilder
 
+from .prompts import get_function
+
 log = logging.getLogger("comfyui-prompt-control")
 
 
@@ -30,7 +32,11 @@ class PCEncodeLazy:
         start_pct = 0.0
         for end_pct, c in schedules:
             p = c["prompt"]
-            node = graph.node("PCEncodeSingle")
+            p, classnames = get_function(p, "NODE", ["PCEncodeSingle"])
+            classname = "PCEncodeSingle"
+            if classnames:
+                classname = classnames[0]
+            node = graph.node(classname)
             timestep = graph.node("ConditioningSetTimestepRange")
             node.set_input("clip", this_node["inputs"]["clip"])
             node.set_input("prompt", p)
