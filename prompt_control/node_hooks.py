@@ -67,6 +67,9 @@ class PCLoraHooksFromScheduleWithOptimizationTest:
                 log.info("Returning cached models")
                 model, clip = self.last_modelclip
             else:
+                self.last_modelclip = None
+                self.last_loras = None
+                # Should we force GC here?
                 for lora, info in non_scheduled.items():
                     path = lora_name_to_file(lora)
                     if path is None:
