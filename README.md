@@ -167,9 +167,9 @@ Add masks to a schedule object, for use with IMASK (see [syntax documentation](d
 
 for example, if you first encode `[cat:dog:0.1]` and later change that to `[cat:dog:0.5]`, no re-encoding takes place.
 
-for added fun, put `NODE(NodeClassName)` in a prompt to switch to using any other node (the default is to use `PCEncodeSingle`)
+for added fun, put `NODE(NodeClassName, paramname)` in a prompt to encode the text using any other node (the default is to use `PCEncodeSingle` and `text`)
 
-Note that the node can't have required parameters besides a single CLIP and the text prompt.
+Note that the node can't have required parameters besides a single CLIP parameter (which must be named `clip`) and the text prompt, and it must return a `CONDITIONING` as its first return value.
 
 # Legacy nodes
 

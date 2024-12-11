@@ -32,14 +32,16 @@ class PCEncodeLazy:
         start_pct = 0.0
         for end_pct, c in schedules:
             p = c["prompt"]
-            p, classnames = get_function(p, "NODE", ["PCEncodeSingle"])
+            p, classnames = get_function(p, "NODE", ["PCEncodeSingle", "text"])
             classname = "PCEncodeSingle"
+            paramname = "text"
             if classnames:
                 classname = classnames[0][0]
+                paramname = classnames[0][1]
             node = graph.node(classname)
             timestep = graph.node("ConditioningSetTimestepRange")
             node.set_input("clip", this_node["inputs"]["clip"])
-            node.set_input("text", p)
+            node.set_input(paramname, p)
             timestep.set_input("conditioning", node.out(0))
             timestep.set_input("start", start_pct)
             timestep.set_input("end", end_pct)
