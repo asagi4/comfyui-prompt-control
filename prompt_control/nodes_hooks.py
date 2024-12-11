@@ -27,65 +27,6 @@ class PCLoraHooksFromSchedule:
         return (hooks,)
 
 
-class PCLoraHooksFromScheduleWithOptimizationTest:
-    # Cache model
-    last_loras = None
-    last_modelclip = None
-
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {"prompt_schedule": ("PROMPT_SCHEDULE",)},
-            "optional": {
-                "model": (
-                    "MODEL",
-                    {
-                        "tooltip": "OPTIONAL model, passing it in enables an optimization to load the LoRA directly instead of creating a hook"
-                    },
-                ),
-                "clip": ("CLIP", {"tooltip": "OPTIONAL clip, like model"}),
-            },
-        }
-
-    RETURN_TYPES = ("HOOKS", "MODEL", "CLIP")
-    OUTPUT_TOOLTIPS = (
-        "set of hooks created from the prompt schedule",
-        "optional output model with non-scheduled LoRAs applied, if an input model is provided",
-        "ditto for clip",
-    )
-    CATEGORY = "promptcontrol/_experimental"
-    FUNCTION = "apply"
-
-    def apply(self, prompt_schedule, model=None, clip=None):
-
-        consolidated = consolidate_schedule(prompt_schedule)
-
-        non_scheduled = {}
-        if model is not None:
-            loader = nodes.LoraLoader()
-            non_scheduled = find_nonscheduled_loras(consolidated)
-            if self.last_loras == non_scheduled and self.last_modelclip:
-                log.info("Returning cached models")
-                model, clip = self.last_modelclip
-            else:
-                self.last_modelclip = None
-                self.last_loras = None
-                # Should we force GC here?
-                for lora, info in non_scheduled.items():
-                    path = lora_name_to_file(lora)
-                    if path is None:
-                        log.info("LoRA not found: %s", lora)
-                        continue
-                    log.info("Attaching %s to model", lora)
-                    model, clip = loader.load_lora(model, clip, path, info["weight"], info["weight_clip"])
-                self.last_modelclip = model, clip
-                self.last_loras = non_scheduled
-
-        hooks = lora_hooks_from_schedule(consolidated, non_scheduled)
-
-        return hooks, model, clip
-
-
 class PCEncodeSchedule:
     @classmethod
     def INPUT_TYPES(s):
