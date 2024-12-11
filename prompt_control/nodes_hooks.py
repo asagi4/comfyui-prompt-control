@@ -12,7 +12,7 @@ class PCLoraHooksFromSchedule:
     @classmethod
     def INPUT_TYPES(s):
         return {
-            "required": {"prompt_schedule": ("PROMPT_SCHEDULE",)},
+            "required": {"prompt_schedule": ("PC_SCHEDULE",)},
         }
 
     RETURN_TYPES = ("HOOKS",)

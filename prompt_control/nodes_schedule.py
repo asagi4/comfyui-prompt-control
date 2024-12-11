@@ -22,7 +22,7 @@ class PCEncodeSchedule:
     @classmethod
     def INPUT_TYPES(s):
         return {
-            "required": {"clip": ("CLIP",), "prompt_schedule": ("PROMPT_SCHEDULE",)},
+            "required": {"clip": ("CLIP",), "prompt_schedule": ("PC_SCHEDULE",)},
         }
 
     RETURN_TYPES = ("CONDITIONING",)
@@ -37,7 +37,7 @@ class FilterSchedule:
     @classmethod
     def INPUT_TYPES(s):
         return {
-            "required": {"prompt_schedule": ("PROMPT_SCHEDULE",)},
+            "required": {"prompt_schedule": ("PC_SCHEDULE",)},
             "optional": {
                 "tags": ("STRING", {"default": ""}),
                 "start": ("FLOAT", {"min": 0.00, "max": 1.00, "default": 0.0, "step": 0.01}),
@@ -45,7 +45,7 @@ class FilterSchedule:
             },
         }
 
-    RETURN_TYPES = ("PROMPT_SCHEDULE",)
+    RETURN_TYPES = ("PC_SCHEDULE",)
     CATEGORY = "promptcontrol/schedule"
     FUNCTION = "apply"
 
@@ -61,9 +61,9 @@ class FilterSchedule:
 class PCApplySettings:
     @classmethod
     def INPUT_TYPES(s):
-        return {"required": {"prompt_schedule": ("PROMPT_SCHEDULE",), "settings": ("SCHEDULE_SETTINGS",)}}
+        return {"required": {"prompt_schedule": ("PC_SCHEDULE",), "settings": ("PC_SETTINGS",)}}
 
-    RETURN_TYPES = ("PROMPT_SCHEDULE",)
+    RETURN_TYPES = ("PC_SCHEDULE",)
     CATEGORY = "promptcontrol/schedule"
     FUNCTION = "apply"
 
@@ -75,7 +75,7 @@ class PCScheduleAddMasks:
     @classmethod
     def INPUT_TYPES(s):
         return {
-            "required": {"prompt_schedule": ("PROMPT_SCHEDULE",)},
+            "required": {"prompt_schedule": ("PC_SCHEDULE",)},
             "optional": {
                 "mask1": ("MASK",),
                 "mask2": ("MASK",),
@@ -84,7 +84,7 @@ class PCScheduleAddMasks:
             },
         }
 
-    RETURN_TYPES = ("PROMPT_SCHEDULE",)
+    RETURN_TYPES = ("PC_SCHEDULE",)
     CATEGORY = "promptcontrol/schedule"
     FUNCTION = "apply"
 
@@ -94,7 +94,7 @@ class PCScheduleAddMasks:
         return (p,)
 
 
-class PCScheduleSettings:
+class PCSettings:
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -112,7 +112,7 @@ class PCScheduleSettings:
             },
         }
 
-    RETURN_TYPES = ("SCHEDULE_SETTINGS",)
+    RETURN_TYPES = ("PC_SETTINGS",)
     CATEGORY = "promptcontrol/schedule"
     FUNCTION = "apply"
 
@@ -147,7 +147,7 @@ class PCPromptFromSchedule:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "prompt_schedule": ("PROMPT_SCHEDULE",),
+                "prompt_schedule": ("PC_SCHEDULE",),
                 "at": ("FLOAT", {"min": 0.0, "max": 1.0, "step": 0.01}),
             },
             "optional": {"tags": ("STRING", {"default": ""})},
@@ -173,7 +173,7 @@ class PromptToSchedule:
             },
         }
 
-    RETURN_TYPES = ("PROMPT_SCHEDULE",)
+    RETURN_TYPES = ("PC_SCHEDULE",)
     CATEGORY = "promptcontrol/schedule"
     FUNCTION = "parse"
 
@@ -184,7 +184,7 @@ class PromptToSchedule:
 
 NODE_CLASS_MAPPINGS = {
     "PCPromptToSchedule": PromptToSchedule,
-    "PCScheduleSettings": PCScheduleSettings,
+    "PCSettings": PCScheduleSettings,
     "PCScheduleAddMasks": PCScheduleAddMasks,
     "PCApplySettings": PCApplySettings,
     "PCPromptFromSchedule": PCPromptFromSchedule,

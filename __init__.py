@@ -19,7 +19,7 @@ else:
 
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
-print("TUNK", __name__)
+
 nodes = ['base', 'lazy', 'schedule']
 if importlib.util.find_spec("comfy.hooks"):
     nodes.append('hook')
