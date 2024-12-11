@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+import importlib
 
 
 log = logging.getLogger("comfyui-prompt-control")
@@ -10,7 +11,7 @@ if not log.handlers:
     h.setFormatter(logging.Formatter("[%(levelname)s] PromptControl: %(message)s"))
     log.addHandler(h)
 
-if os.environ.get("COMFYUI_PC_DEBUG"):
+if os.environ.get("PROMPTCONTROL_DEBUG"):
     log.setLevel(logging.DEBUG)
 else:
     log.setLevel(logging.INFO)
@@ -18,28 +19,16 @@ else:
 
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
-
-from .prompt_control.node_other import NODE_CLASS_MAPPINGS as o_mappings, NODE_DISPLAY_NAME_MAPPINGS as o_display
-from .prompt_control.nodes_lazy import NODE_CLASS_MAPPINGS as lazy_mappings, NODE_DISPLAY_NAME_MAPPINGS as lazy_display
-
-NODE_CLASS_MAPPINGS.update(o_mappings)
-NODE_CLASS_MAPPINGS.update(lazy_mappings)
-NODE_DISPLAY_NAME_MAPPINGS.update(o_display)
-NODE_DISPLAY_NAME_MAPPINGS.update(lazy_display)
-
-import importlib
-
+print("TUNK", __name__)
+nodes = ['base', 'lazy', 'schedule']
 if importlib.util.find_spec("comfy.hooks"):
-    from .prompt_control.nodes_hooks import (
-        NODE_CLASS_MAPPINGS as hook_mappings,
-        NODE_DISPLAY_NAME_MAPPINGS as hook_display,
-    )
-
-    NODE_CLASS_MAPPINGS.update(hook_mappings)
-    NODE_DISPLAY_NAME_MAPPINGS.update(hook_display)
+    nodes.append('hook')
 else:
     log.warning(
         "Your ComfyUI version is too old, can't import comfy.hooks for PCEncodeSchedule and PCLoraHooksFromSchedule. Update your installation."
     )
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "comfy"))
+for node in ['schedule', 'lazy', 'base']: 
+    mod = importlib.import_module(f".prompt_control.nodes_{node}", package=__name__)
+    NODE_CLASS_MAPPINGS.update(mod.NODE_CLASS_MAPPINGS)
+    NODE_DISPLAY_NAME_MAPPINGS.update(mod.NODE_DISPLAY_NAME_MAPPINGS)

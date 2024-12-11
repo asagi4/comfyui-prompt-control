@@ -77,8 +77,6 @@ Normalizations are:
 
 The normalization calculations are independent operations and you can combine them with `+`, eg `STYLE(A1111, length+mean)` or `STYLE(comfy, mean+length)`, or even something silly like `STYLE(perp, mean+length+mean+length)`
 
-For the legacy nodes, you need to have [Advanced CLIP Encoding nodes](https://github.com/BlenderNeko/ComfyUI_ADV_CLIP_emb/tree/master) cloned into your `custom_nodes` for more options will be available.
-
 The style can be specified separately for each AND:ed prompt, but the first prompt is special; later prompts will "inherit" it as default. For example:
 
 ```
@@ -177,10 +175,6 @@ Note that the node can't have required parameters besides a single CLIP paramete
 Another lazy node that will construct a graph of `LoraLoader`s and `CreateHookLora`s as necessary to provide the necessary LoRA scheduling.
 
 If you have `apply_hooks` set to true, you **do not** need to apply the `HOOKS`  output to a CLIP model separately.
-
-# Legacy nodes
-
-See [here](doc/legacy.md)
 
 # Known issues
 

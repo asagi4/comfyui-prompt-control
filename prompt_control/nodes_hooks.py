@@ -17,44 +17,13 @@ class PCLoraHooksFromSchedule:
 
     RETURN_TYPES = ("HOOKS",)
     OUTPUT_TOOLTIPS = ("set of hooks created from the prompt schedule",)
-    CATEGORY = "promptcontrol/v2"
+    CATEGORY = "promptcontrol/schedule"
     FUNCTION = "apply"
 
     def apply(self, prompt_schedule):
         consolidated = consolidate_schedule(prompt_schedule)
         hooks = lora_hooks_from_schedule(consolidated, {})
         return (hooks,)
-
-
-class PCEncodeSchedule:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {"clip": ("CLIP",), "prompt_schedule": ("PROMPT_SCHEDULE",)},
-        }
-
-    RETURN_TYPES = ("CONDITIONING",)
-    CATEGORY = "promptcontrol/v2"
-    FUNCTION = "apply"
-
-    def apply(self, clip, prompt_schedule):
-        return (encode_schedule(clip, prompt_schedule),)
-
-
-class PCTextEncode:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {"clip": ("CLIP",), "text": ("STRING", {"multiline": True})},
-            "optional": {"defaults": ("SCHEDULE_DEFAULTS",)},
-        }
-
-    RETURN_TYPES = ("CONDITIONING",)
-    CATEGORY = "promptcontrol/v2"
-    FUNCTION = "apply"
-
-    def apply(self, clip, text, defaults=None):
-        return (encode_prompt(clip, text, 0, 1.0, defaults or {}, None),)
 
 
 def consolidate_schedule(prompt_schedule):
@@ -140,16 +109,6 @@ def lora_hooks_from_schedule(schedules, non_scheduled):
         return hooks
 
 
-def debug_conds(conds):
-    r = []
-    for i, c in enumerate(conds):
-        x = c[1].copy()
-        if "pooled_output" in x:
-            del x["pooled_output"]
-        r.append((i, x))
-    return r
-
-
 def encode_schedule(clip, schedules):
     start_pct = 0.0
     conds = []
@@ -160,18 +119,13 @@ def encode_schedule(clip, schedules):
             conds.extend(cond)
         start_pct = end_pct
 
-    log.debug("Final cond info: %s", debug_conds(conds))
     return conds
 
 
 NODE_CLASS_MAPPINGS = {
     "PCLoraHooksFromSchedule": PCLoraHooksFromSchedule,
-    "PCEncodeSchedule": PCEncodeSchedule,
-    "PCTextEncode": PCTextEncode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "PCLoraHooksFromSchedule": "PC Create LoRA Hooks",
-    "PCEncodeSchedule": "PC Encode Schedule",
-    "PCTextEncode": "PC Text Encode (no scheduling)",
+    "PCLoraHooksFromSchedule": "PC Create LoRA Hooks from Schedule",
 }
