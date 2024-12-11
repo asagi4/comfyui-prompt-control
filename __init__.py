@@ -37,7 +37,7 @@ NODE_DISPLAY_NAME_MAPPINGS.update(lazy_display)
 import importlib
 
 if importlib.util.find_spec("comfy.hooks"):
-    from .prompt_control.node_hooks import (
+    from .prompt_control.nodes_hooks import (
         NODE_CLASS_MAPPINGS as hook_mappings,
         NODE_DISPLAY_NAME_MAPPINGS as hook_display,
     )

@@ -22,7 +22,7 @@ class PromptControlSimple:
 
     RETURN_TYPES = ("MODEL", "CONDITIONING", "CONDITIONING", "MODEL", "CONDITIONING", "CONDITIONING")
     RETURN_NAMES = ("model", "positive", "negative", "model_filtered", "pos_filtered", "neg_filtered")
-    CATEGORY = "promptcontrol"
+    CATEGORY = "promptcontrol/_legacy"
     FUNCTION = "apply"
 
     def apply(self, model, clip, positive, negative, tags="", start=0.0, end=1.0):

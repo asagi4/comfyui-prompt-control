@@ -143,7 +143,7 @@ class ScheduleToCond:
         }
 
     RETURN_TYPES = ("CONDITIONING",)
-    CATEGORY = "promptcontrol"
+    CATEGORY = "promptcontrol/_legacy"
     FUNCTION = "apply"
 
     def apply(self, clip, prompt_schedule):
@@ -164,7 +164,7 @@ class EditableCLIPEncode:
         }
 
     RETURN_TYPES = ("CONDITIONING",)
-    CATEGORY = "promptcontrol/old"
+    CATEGORY = "promptcontrol/_donotuse"
     FUNCTION = "parse"
 
     def parse(self, clip, text, filter_tags=""):

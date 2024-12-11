@@ -16,7 +16,7 @@ class PCEncodeLazy:
 
     RETURN_TYPES = ("CONDITIONING",)
     OUTPUT_TOOLTIPS = ("A fully encoded and scheduled conditioning",)
-    CATEGORY = "promptcontrol/_unstable"
+    CATEGORY = "promptcontrol/_experimental"
     FUNCTION = "apply"
 
     def apply(self, clip, prompt, dynprompt, unique_id, defaults=None):

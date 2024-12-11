@@ -141,7 +141,7 @@ class PCWrapGuider:
             },
         }
 
-    CATEGORY = "promptcontrol"
+    CATEGORY = "promptcontrol/_legacy"
     FUNCTION = "apply"
     RETURN_TYPES = ("GUIDER",)
 
@@ -201,7 +201,7 @@ class ScheduleToModel:
         }
 
     RETURN_TYPES = ("MODEL",)
-    CATEGORY = "promptcontrol"
+    CATEGORY = "promptcontrol/_legacy"
     FUNCTION = "apply"
 
     def apply(self, model, prompt_schedule):
@@ -219,7 +219,7 @@ class PCSplitSampling:
         }
 
     RETURN_TYPES = ("MODEL",)
-    CATEGORY = "promptcontrol"
+    CATEGORY = "promptcontrol/_legacy"
     FUNCTION = "apply"
 
     def apply(self, model, split_sampling):
@@ -239,7 +239,7 @@ class LoRAScheduler:
         }
 
     RETURN_TYPES = ("MODEL",)
-    CATEGORY = "promptcontrol/old"
+    CATEGORY = "promptcontrol/_donotuse"
     FUNCTION = "apply"
 
     def apply(self, model, text):

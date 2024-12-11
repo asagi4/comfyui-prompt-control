@@ -18,7 +18,7 @@ class PCLoraHooksFromSchedule:
 
     RETURN_TYPES = ("HOOKS",)
     OUTPUT_TOOLTIPS = ("set of hooks created from the prompt schedule",)
-    CATEGORY = "promptcontrol/_unstable"
+    CATEGORY = "promptcontrol/v2"
     FUNCTION = "apply"
 
     def apply(self, prompt_schedule):
@@ -53,7 +53,7 @@ class PCLoraHooksFromScheduleWithOptimizationTest:
         "optional output model with non-scheduled LoRAs applied, if an input model is provided",
         "ditto for clip",
     )
-    CATEGORY = "promptcontrol/_unstable"
+    CATEGORY = "promptcontrol/_experimental"
     FUNCTION = "apply"
 
     def apply(self, prompt_schedule, model=None, clip=None):
@@ -94,7 +94,7 @@ class PCEncodeSchedule:
         }
 
     RETURN_TYPES = ("CONDITIONING",)
-    CATEGORY = "promptcontrol/_unstable"
+    CATEGORY = "promptcontrol/v2"
     FUNCTION = "apply"
 
     def apply(self, clip, prompt_schedule):
@@ -110,7 +110,7 @@ class PCEncodeSingle:
         }
 
     RETURN_TYPES = ("CONDITIONING",)
-    CATEGORY = "promptcontrol/_unstable"
+    CATEGORY = "promptcontrol/v2"
     FUNCTION = "apply"
 
     def apply(self, clip, prompt, defaults=None):
