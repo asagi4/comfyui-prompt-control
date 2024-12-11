@@ -1,5 +1,5 @@
 import logging
-from ..parser import parse_prompt_schedules
+from .parser import parse_prompt_schedules
 
 log = logging.getLogger("comfyui-prompt-control")
 
@@ -151,3 +151,15 @@ class PromptToSchedule:
     def parse(self, text, settings=None):
         schedules = parse_prompt_schedules(text)
         return (schedules,)
+
+
+NODE_CLASS_MAPPINGS = {
+    "PCPromptToSchedule": PromptToSchedule,
+    "PCScheduleSettings": PCScheduleSettings,
+    "PCScheduleAddMasks": PCScheduleAddMasks,
+    "PCApplySettings": PCApplySettings,
+    "PCPromptFromSchedule": PCPromptFromSchedule,
+    "PCFilterSchedule": FilterSchedule,
+}
+
+NODE_DISPLAY_NAME_MAPPINGS = {}

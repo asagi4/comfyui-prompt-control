@@ -1,8 +1,8 @@
 all: format check
 	@echo "Done"
 check:
-	pyflakes *.py */*.py */*/*.py
+	pyflakes *.py */*.py
 format:
-	black -l 120 *.py */*.py */*/*.py
+	black -l 120 *.py */*.py
 
 .PHONY: check format all
