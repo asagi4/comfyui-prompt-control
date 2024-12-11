@@ -14,17 +14,21 @@ class PCLazyLoraLoader:
     @classmethod
     def INPUT_TYPES(s):
         return {
-            "required": {"text": ("STRING", {"multiline": True}), "model": ("MODEL",), "clip": ("CLIP",)},
-            # "optional": {"defaults": ("SCHEDULE_DEFAULTS",)},
+            "required": {
+                "text": ("STRING", {"multiline": True}),
+                "model": ("MODEL",),
+                "clip": ("CLIP",),
+                "apply_hooks": ("BOOLEAN", {"default": True}),
+            },
             "hidden": {"dynprompt": "DYNPROMPT", "unique_id": "UNIQUE_ID"},
         }
 
     RETURN_TYPES = ("MODEL", "CLIP", "HOOKS")
-    OUTPUT_TOOLTIPS = ("Returns hooks with",)
+    OUTPUT_TOOLTIPS = ("Returns a model and clip with LoRAs scheduled",)
     CATEGORY = "promptcontrol/_experimental"
     FUNCTION = "apply"
 
-    def apply(self, model, clip, text, dynprompt, unique_id):
+    def apply(self, model, clip, text, apply_hooks, dynprompt, unique_id):
         schedule = parse_prompt_schedules(text)
         consolidated = consolidate_schedule(schedule)
         non_scheduled = find_nonscheduled_loras(consolidated)
@@ -115,6 +119,13 @@ class PCLazyLoraLoader:
                 n.set_input("hooks_B", h.out(0))
                 res = n
             res = res.out(0)
+        if apply_hooks:
+            n = graph.node("SetClipHooks")
+            n.set_input("clip", clipinput)
+            n.set_input("hooks", res)
+            n.set_input("apply_to_conds", True)
+            n.set_input("schedule_clip", True)
+            clipinput = n.out(0)
 
         r = graph.finalize()
 
