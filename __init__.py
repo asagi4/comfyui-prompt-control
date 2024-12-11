@@ -30,19 +30,9 @@ else:
 import importlib
 
 if importlib.util.find_spec("comfy.hooks"):
-    from .prompt_control.node_hooks import (
-        PCLoraHooksFromSchedule,
-        PCLoraHooksFromScheduleWithOptimizationTest,
-        PCEncodeSchedule,
-        PCEncodeSingle,
-    )
+    from .prompt_control.node_hooks import NODE_CLASS_MAPPINGS
 
-    maps = {
-        "PCLoraHooksFromSchedule": PCLoraHooksFromSchedule,
-        "PCLoraHooksFromScheduleWithOptimizationTest": PCLoraHooksFromScheduleWithOptimizationTest,
-        "PCEncodeSchedule": PCEncodeSchedule,
-        "PCEncodeSingle": PCEncodeSingle,
-    }
+    maps = NODE_CLASS_MAPPINGS
 else:
     log.warning(
         "Your ComfyUI version is too old, can't import comfy.hooks for PCEncodeSchedule and PCLoraHooksFromSchedule. Update your installation."

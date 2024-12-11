@@ -218,3 +218,11 @@ def encode_schedule(clip, schedules):
 
     log.debug("Final cond info: %s", debug_conds(conds))
     return conds
+
+
+NODE_CLASS_MAPPINGS = {
+    "PCLoraHooksFromSchedule": PCLoraHooksFromSchedule,
+    "PCLoraHooksFromScheduleWithOptimizationTest": PCLoraHooksFromScheduleWithOptimizationTest,
+    "PCEncodeSchedule": PCEncodeSchedule,
+    "PCEncodeSingle": PCEncodeSingle,
+}
