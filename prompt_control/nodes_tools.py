@@ -3,7 +3,25 @@ import logging
 log = logging.getLogger("comfyui-prompt-control")
 
 
-class PCAddMasksToCLIP:
+class PCAddMaskToCLIP:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {"clip": ("CLIP",)},
+            "optional": {
+                "mask": ("MASK",),
+            },
+        }
+
+    RETURN_TYPES = ("CLIP",)
+    CATEGORY = "promptcontrol/v2"
+    FUNCTION = "apply"
+
+    def apply(self, clip, mask=None):
+        return PCAddMaskToCLIPMany().apply(clip, mask1=mask)
+
+
+class PCAddMaskToCLIPMany:
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -22,7 +40,7 @@ class PCAddMasksToCLIP:
 
     def apply(self, clip, mask1=None, mask2=None, mask3=None, mask4=None):
         clip = clip.clone()
-        current_masks = clip.patcher.model_options.get("x-pc.masks", [])
+        current_masks = clip.patcher.model_options.get("x-promptcontrol.masks", [])
         current_masks.extend(m for m in (mask1, mask2, mask3, mask4) if m is not None)
         clip.patcher.model_options["x-promptcontrol.masks"] = current_masks
         return (clip,)
@@ -75,16 +93,18 @@ class PCSetPCTextEncodeSettings:
             "sdxl_cheight": sdxl_crop_h,
         }
         clip = clip.clone()
-        clip.patcher.model_options["x-promptcontrol.default_settings"] = settings
+        clip.patcher.model_options["x-promptcontrol.settings"] = settings
         return (clip,)
 
 
 NODE_CLASS_MAPPINGS = {
     "PCSetPCTextEncodeSettings": PCSetPCTextEncodeSettings,
-    "PCAddMasksToCLIP": PCAddMasksToCLIP,
+    "PCAddMaskToCLIP": PCAddMaskToCLIP,
+    "PCAddMaskToCLIPMany": PCAddMaskToCLIPMany,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "PCSetTextEncodeSettings": "PC Set PCTextEncode Defaults",
-    "PCAddMasksToCLIP": "PC Attach Custom Masks (for IMASK)",
+    "PCSetTextEncodeSettings": "PC: Configure PCTextEncode",
+    "PCAddMaskToCLIP": "PC: Attach Mask",
+    "PCAddMaskToCLIPMany": "PC: Attach Mask (multi)",
 }

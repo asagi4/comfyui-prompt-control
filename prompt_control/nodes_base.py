@@ -15,8 +15,10 @@ class PCTextEncode:
     CATEGORY = "promptcontrol"
     FUNCTION = "apply"
 
-    def apply(self, clip, text, defaults=None):
-        return (encode_prompt(clip, text, 0, 1.0, defaults or {}, None),)
+    def apply(self, clip, text):
+        defaults = clip.patcher.model_options.get("x-promptcontrol.defaults", {})
+        masks = clip.patcher.model_options.get("x-promptcontrol.masks", None)
+        return (encode_prompt(clip, text, 0, 1.0, defaults, masks),)
 
 
 NODE_CLASS_MAPPINGS = {
