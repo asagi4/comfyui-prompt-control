@@ -2,25 +2,27 @@ import logging
 import comfy.utils
 import comfy.hooks
 import folder_paths
-from .prompts import encode_prompt
 from .utils import consolidate_schedule
+from .parser import parse_prompt_schedules
 
 log = logging.getLogger("comfyui-prompt-control")
 
 
-class PCLoraHooksFromSchedule:
+class PCLoraHooksFromText:
     @classmethod
     def INPUT_TYPES(s):
         return {
-            "required": {"prompt_schedule": ("PC_SCHEDULE",)},
+            "required": {"text": ("STRING",)},
         }
 
     RETURN_TYPES = ("HOOKS",)
     OUTPUT_TOOLTIPS = ("set of hooks created from the prompt schedule",)
-    CATEGORY = "promptcontrol/schedule"
+    CATEGORY = "promptcontrol/v2"
     FUNCTION = "apply"
+    EXPERIMENTAL = True
 
-    def apply(self, prompt_schedule):
+    def apply(self, text):
+        prompt_schedule = parse_prompt_schedules(text)
         consolidated = consolidate_schedule(prompt_schedule)
         hooks = lora_hooks_from_schedule(consolidated, {})
         return (hooks,)
@@ -77,23 +79,10 @@ def lora_hooks_from_schedule(schedules, non_scheduled):
         return hooks
 
 
-def encode_schedule(clip, schedules):
-    start_pct = 0.0
-    conds = []
-    for end_pct, c in schedules:
-        if start_pct < end_pct:
-            prompt = c["prompt"]
-            cond = encode_prompt(clip, prompt, start_pct, end_pct, schedules.defaults, schedules.masks)
-            conds.extend(cond)
-        start_pct = end_pct
-
-    return conds
-
-
 NODE_CLASS_MAPPINGS = {
-    "PCLoraHooksFromSchedule": PCLoraHooksFromSchedule,
+    "PCLoraHooksFromText": PCLoraHooksFromText,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "PCLoraHooksFromSchedule": "PC Create LoRA Hooks from Schedule",
+    "PCLoraHooksFromText": "PC LoRA Hooks From Text (non-lazy)",
 }
