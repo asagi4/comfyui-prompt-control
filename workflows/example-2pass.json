@@ -1,0 +1,1979 @@
+{
+  "last_node_id": 127,
+  "last_link_id": 263,
+  "nodes": [
+    {
+      "id": 10,
+      "type": "CheckpointLoaderSimple",
+      "pos": [
+        -1440,
+        -1485
+      ],
+      "size": [
+        358.77117919921875,
+        98
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            240,
+            251,
+            259
+          ],
+          "slot_index": 0,
+          "shape": 3,
+          "label": "MODEL"
+        },
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            241,
+            246
+          ],
+          "slot_index": 1,
+          "shape": 3,
+          "label": "CLIP"
+        },
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            151
+          ],
+          "slot_index": 2,
+          "shape": 3,
+          "label": "VAE"
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CheckpointLoaderSimple"
+      },
+      "widgets_values": [
+        "XL/noobai-eps-v1.0.safetensors"
+      ]
+    },
+    {
+      "id": 11,
+      "type": "Reroute",
+      "pos": [
+        -600,
+        -930
+      ],
+      "size": [
+        82,
+        26
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "",
+          "type": "*",
+          "link": 251
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            159
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "showOutputText": true,
+        "horizontal": false
+      }
+    },
+    {
+      "id": 24,
+      "type": "PrimitiveNode",
+      "pos": [
+        -630,
+        -1140
+      ],
+      "size": [
+        210,
+        82
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            83,
+            91
+          ],
+          "slot_index": 0,
+          "widget": {
+            "name": "seed"
+          }
+        }
+      ],
+      "title": "Seed",
+      "properties": {
+        "Run widget replace on values": false
+      },
+      "widgets_values": [
+        2,
+        "fixed"
+      ],
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 26,
+      "type": "EmptyLatentImage",
+      "pos": [
+        -645,
+        -855
+      ],
+      "size": [
+        210,
+        106
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            82
+          ],
+          "shape": 3,
+          "label": "LATENT"
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "EmptyLatentImage"
+      },
+      "widgets_values": [
+        1024,
+        1024,
+        1
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 28,
+      "type": "LatentUpscaleBy",
+      "pos": [
+        435,
+        -720
+      ],
+      "size": [
+        210,
+        82
+      ],
+      "flags": {},
+      "order": 35,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 85,
+          "label": "samples"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            86
+          ],
+          "slot_index": 0,
+          "shape": 3,
+          "label": "LATENT"
+        }
+      ],
+      "title": "Second pass upscale",
+      "properties": {
+        "Node name for S&R": "LatentUpscaleBy"
+      },
+      "widgets_values": [
+        "nearest-exact",
+        1.5
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 29,
+      "type": "VAEDecode",
+      "pos": [
+        -285,
+        -1065
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 34,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 84,
+          "label": "samples"
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 141,
+          "label": "vae"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            45
+          ],
+          "slot_index": 0,
+          "shape": 3,
+          "label": "IMAGE"
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 31,
+      "type": "PreviewImage",
+      "pos": [
+        -60,
+        -945
+      ],
+      "size": [
+        435,
+        375
+      ],
+      "flags": {},
+      "order": 36,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 45,
+          "label": "images"
+        }
+      ],
+      "outputs": [],
+      "title": "First pass output",
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 32,
+      "type": "VAEDecode",
+      "pos": [
+        795,
+        -1110
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 38,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 87,
+          "label": "samples"
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 179,
+          "label": "vae"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            48
+          ],
+          "slot_index": 0,
+          "shape": 3,
+          "label": "IMAGE"
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 33,
+      "type": "PreviewImage",
+      "pos": [
+        945,
+        -1095
+      ],
+      "size": [
+        426,
+        369
+      ],
+      "flags": {},
+      "order": 39,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 48,
+          "label": "images"
+        }
+      ],
+      "outputs": [],
+      "title": "Second pass output",
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": [],
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 50,
+      "type": "KSampler",
+      "pos": [
+        -315,
+        -1020
+      ],
+      "size": [
+        210,
+        446
+      ],
+      "flags": {},
+      "order": 33,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 159,
+          "slot_index": 0,
+          "label": "model"
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 218,
+          "slot_index": 1,
+          "label": "positive"
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 262,
+          "slot_index": 2,
+          "label": "negative"
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 82,
+          "slot_index": 3,
+          "label": "latent_image"
+        },
+        {
+          "name": "seed",
+          "type": "INT",
+          "link": 83,
+          "slot_index": 4,
+          "widget": {
+            "name": "seed"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            84,
+            85
+          ],
+          "slot_index": 0,
+          "shape": 3,
+          "label": "LATENT"
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "KSampler"
+      },
+      "widgets_values": [
+        2,
+        "randomize",
+        29,
+        7,
+        "euler_ancestral",
+        "karras",
+        1
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 51,
+      "type": "KSampler",
+      "pos": [
+        720,
+        -1080
+      ],
+      "size": [
+        210,
+        446
+      ],
+      "flags": {},
+      "order": 37,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 243,
+          "slot_index": 0,
+          "label": "model"
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 245,
+          "slot_index": 1,
+          "label": "positive"
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 263,
+          "slot_index": 2,
+          "label": "negative"
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 86,
+          "slot_index": 3,
+          "label": "latent_image"
+        },
+        {
+          "name": "seed",
+          "type": "INT",
+          "link": 91,
+          "slot_index": 4,
+          "widget": {
+            "name": "seed"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            87
+          ],
+          "slot_index": 0,
+          "shape": 3,
+          "label": "LATENT"
+        }
+      ],
+      "title": "KSampler (2nd)",
+      "properties": {
+        "Node name for S&R": "KSampler"
+      },
+      "widgets_values": [
+        2,
+        "randomize",
+        20,
+        8,
+        "euler",
+        "karras",
+        0.67
+      ],
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 59,
+      "type": "Note",
+      "pos": [
+        -390,
+        -1845
+      ],
+      "size": [
+        315,
+        435
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "This sets default values for MASK, AREA and SDXL functions. \"steps\" is currently unused, but it exists for future functionality.\n\nIn this workflow, the settings are only applied to the positive prompt.\n\nNOTE: You still need to have the function call in the prompt! \n\nIf you set the defaults with this, you won't need MASK_SIZE(), and you can call SDXL() without parameters.\n\nFor sdxl, target_w and target_h should match your generation size (the SDXL aspect ratio bucket) and sdxl_width / sdxl_height should be what the image's size \"should be\" if it weren't scaled down (or up) to an SDXL-compatible size.\n\nIt's complicated. Play around with them.\n\nDepending on the model, you can even get better results by not setting these options at all (ie. omit the SDXL() call from the prompt.)"
+      ],
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 60,
+      "type": "LoadImage",
+      "pos": [
+        -735,
+        -1725
+      ],
+      "size": [
+        315,
+        314
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null,
+          "label": "IMAGE"
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            248
+          ],
+          "slot_index": 1,
+          "label": "MASK"
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "example.png",
+        "image"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 71,
+      "type": "Note",
+      "pos": [
+        -210,
+        -1335
+      ],
+      "size": [
+        300,
+        135
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "The negative cond demonstrates PCTextEncode; it does *not* support scheduling, but other syntax still works"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 76,
+      "type": "Reroute",
+      "pos": [
+        -600,
+        -975
+      ],
+      "size": [
+        75,
+        26
+      ],
+      "flags": {},
+      "order": 23,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "",
+          "type": "*",
+          "link": 151,
+          "slot_index": 0
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            141,
+            179
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "showOutputText": true,
+        "horizontal": false
+      }
+    },
+    {
+      "id": 83,
+      "type": "Note",
+      "pos": [
+        -45,
+        -1725
+      ],
+      "size": [
+        406.24371337890625,
+        299.6196594238281
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "Some functionality not explored here:\n\n- AREA \n- MASK compositing\n- the NOISE function \n- the CLIP_L function\n- the SDXL function\n- Probably some others too\n\nRead the README in the repository for more information on available functions."
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 90,
+      "type": "Note",
+      "pos": [
+        -1755,
+        -1665
+      ],
+      "size": [
+        600,
+        75
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "You could add the LoRAs to any of the other prompts and use PCLazyLoraLoader on it, but it's separated here for clarity"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 97,
+      "type": "Note",
+      "pos": [
+        -1965,
+        -915
+      ],
+      "size": [
+        300,
+        135
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "let's change the logo on the shirt with a mask (apply the mask only up to 0.4 to speed up things)"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 98,
+      "type": "Note",
+      "pos": [
+        -2175,
+        -720
+      ],
+      "size": [
+        510,
+        195
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "finally, test a custom mask. Copy a gen to the clipspace, paste it into LoadImage and mask approximately the location of the other eye.\n\nAlso try enabling the second pass to create a see what adding the \"realistic\" tag to the prompt does. (TODO: not implemented yet)"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 99,
+      "type": "Note",
+      "pos": [
+        -1755,
+        -1545
+      ],
+      "size": [
+        270,
+        135
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "Use noobai XL EPS version 1.0 to reproduce things. It's nothing fancy, though. "
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 100,
+      "type": "Note",
+      "pos": [
+        -2025,
+        -1350
+      ],
+      "size": [
+        360,
+        165
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "You *can* have the LoRA schedule mixed with the rest of the prompt, but this is clearer. This same schedule is used for *both* passes. This schedule uses a LoRA between 10% and 50% of timesteps"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 101,
+      "type": "Note",
+      "pos": [
+        -1965,
+        -1125
+      ],
+      "size": [
+        300,
+        135
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "Basic scheduling with A1111 weight interpretation. Schedules can be nested"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 102,
+      "type": "PCLazyTextEncode",
+      "pos": [
+        -1005,
+        -1155
+      ],
+      "size": [
+        285.6000061035156,
+        60
+      ],
+      "flags": {},
+      "order": 29,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 252,
+          "label": "clip"
+        },
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 210,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            216
+          ],
+          "slot_index": 0,
+          "label": "CONDITIONING"
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PCLazyTextEncode"
+      },
+      "widgets_values": [
+        "STYLE(A1111) [best quality, masterpiece,:0.2] 1girl, t-shirt, green eyes, black hair, multicolored shirt, upper body, fox ears, logo on shirt, [[white:simple:0.2] background,::0.6]"
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 104,
+      "type": "PrimitiveNode",
+      "pos": [
+        -1575,
+        -1335
+      ],
+      "size": [
+        525,
+        150
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            242,
+            256
+          ],
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "properties": {
+        "Run widget replace on values": false
+      },
+      "widgets_values": [
+        "[<lora:mylora:1>:0.1,0.5]\nThe rest of the prompt is ignored by PCLazyLoraLoader\n"
+      ],
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 105,
+      "type": "PrimitiveNode",
+      "pos": [
+        -1575,
+        -1140
+      ],
+      "size": [
+        525,
+        150
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            210
+          ],
+          "slot_index": 0,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "properties": {
+        "Run widget replace on values": false
+      },
+      "widgets_values": [
+        "STYLE(A1111) [best quality, masterpiece,:0.2] 1girl, t-shirt, green eyes, black hair, multicolored shirt, upper body, fox ears, logo on shirt, [[white:simple:0.2] background,::0.6]"
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 107,
+      "type": "PrimitiveNode",
+      "pos": [
+        -1575,
+        -945
+      ],
+      "size": [
+        525,
+        150
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            211
+          ],
+          "slot_index": 0,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "properties": {
+        "Run widget replace on values": false
+      },
+      "widgets_values": [
+        "[best quality, masterpiece,:0.2] 1girl, t-shirt, green eyes, black hair, multicolored shirt, upper body, fox ears, logo on shirt, [[white:simple:0.2] background,::0.6] [AND MASK(0.25 0.75, 0.5 1, 2)::0.4] large heart symbol on shirt, multicolored shirt, "
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 108,
+      "type": "PCLazyTextEncode",
+      "pos": [
+        -1005,
+        -1035
+      ],
+      "size": [
+        285.6000061035156,
+        54
+      ],
+      "flags": {},
+      "order": 30,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 253,
+          "label": "clip"
+        },
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 211,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": null,
+          "label": "CONDITIONING"
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PCLazyTextEncode"
+      },
+      "widgets_values": [
+        "[best quality, masterpiece,:0.2] 1girl, t-shirt, green eyes, black hair, multicolored shirt, upper body, fox ears, logo on shirt, [[white:simple:0.2] background,::0.6] [AND MASK(0.25 0.75, 0.5 1, 2)::0.4] large heart symbol on shirt, multicolored shirt, "
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 109,
+      "type": "PCLazyTextEncode",
+      "pos": [
+        -1005,
+        -915
+      ],
+      "size": [
+        285.6000061035156,
+        54
+      ],
+      "flags": {},
+      "order": 31,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 254,
+          "label": "clip"
+        },
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 213,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": null,
+          "label": "CONDITIONING"
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PCLazyTextEncode"
+      },
+      "widgets_values": [
+        "[best quality, masterpiece,:0.2] [realistic,:HR] 1girl, t-shirt, green eyes, black hair, multicolored shirt, upper body, fox ears, logo on shirt,  [[white:simple:0.2] background,::0.6] [AND MASK(0.25 0.75, 0.5 1, 2)::0.4] large heart symbol on shirt, multicolored shirt, [heterochromia [AND IMASK(0)::0.9] (pink eyes):0.2]"
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 112,
+      "type": "PrimitiveNode",
+      "pos": [
+        -150,
+        -480
+      ],
+      "size": [
+        525,
+        150
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            213,
+            239
+          ],
+          "slot_index": 0,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "properties": {
+        "Run widget replace on values": false
+      },
+      "widgets_values": [
+        "[best quality, masterpiece,:0.2] [realistic,:HR] 1girl, t-shirt, green eyes, black hair, multicolored shirt, upper body, fox ears, logo on shirt,  [[white:simple:0.2] background,::0.6] [AND MASK(0.25 0.75, 0.5 1, 2)::0.4] large heart symbol on shirt, multicolored shirt, [heterochromia [AND IMASK(0)::0.9] (pink eyes):0.2]"
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 114,
+      "type": "PCTextEncode",
+      "pos": [
+        -630,
+        -1335
+      ],
+      "size": [
+        390,
+        165
+      ],
+      "flags": {},
+      "order": 28,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 261,
+          "label": "clip"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            262,
+            263
+          ],
+          "slot_index": 0,
+          "label": "CONDITIONING"
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PCTextEncode"
+      },
+      "widgets_values": [
+        "STYLE(compel, mean) nsfw, (worst quality, low quality,:1.3) normal quality, blurry background, text, watermark, bad hands,"
+      ],
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 115,
+      "type": "Note",
+      "pos": [
+        -990,
+        -1290
+      ],
+      "size": [
+        255,
+        75
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "Pick one of these and plug it in the reroute"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 116,
+      "type": "Reroute",
+      "pos": [
+        -630,
+        -1020
+      ],
+      "size": [
+        140.8000030517578,
+        26
+      ],
+      "flags": {},
+      "order": 32,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "",
+          "type": "*",
+          "link": 216
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            218
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "showOutputText": true,
+        "horizontal": false
+      },
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 118,
+      "type": "PCSetPCTextEncodeSettings",
+      "pos": [
+        -1065,
+        -1830
+      ],
+      "size": [
+        315,
+        250
+      ],
+      "flags": {},
+      "order": 22,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 246,
+          "label": "clip"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            247
+          ],
+          "label": "CLIP",
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PCSetPCTextEncodeSettings"
+      },
+      "widgets_values": [
+        0,
+        512,
+        512,
+        1024,
+        1024,
+        1024,
+        1024,
+        0,
+        0
+      ],
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 119,
+      "type": "Note",
+      "pos": [
+        -1065,
+        -1980
+      ],
+      "size": [
+        525,
+        90
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "Settings and masks (for IMASK) are attached to CLIP. These are completely optional. Draw a mask on the image to affect prompts using IMASK"
+      ],
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 120,
+      "type": "Reroute",
+      "pos": [
+        -960,
+        -1485
+      ],
+      "size": [
+        75,
+        26
+      ],
+      "flags": {},
+      "order": 26,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "",
+          "type": "*",
+          "link": 260
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            258,
+            261
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "showOutputText": true,
+        "horizontal": false
+      }
+    },
+    {
+      "id": 123,
+      "type": "PCLazyTextEncodeAdvanced",
+      "pos": [
+        405,
+        -930
+      ],
+      "size": [
+        252,
+        126
+      ],
+      "flags": {},
+      "order": 24,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 244,
+          "label": "clip"
+        },
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 239,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            245
+          ],
+          "label": "CONDITIONING",
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PCLazyTextEncodeAdvanced"
+      },
+      "widgets_values": [
+        "[best quality, masterpiece,:0.2] [realistic,:HR] 1girl, t-shirt, green eyes, black hair, multicolored shirt, upper body, fox ears, logo on shirt,  [[white:simple:0.2] background,::0.6] [AND MASK(0.25 0.75, 0.5 1, 2)::0.4] large heart symbol on shirt, multicolored shirt, [heterochromia [AND IMASK(0)::0.9] (pink eyes):0.2]",
+        "hr",
+        1,
+        1
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 124,
+      "type": "PCLazyLoraLoaderAdvanced",
+      "pos": [
+        405,
+        -1170
+      ],
+      "size": [
+        243.60000610351562,
+        182
+      ],
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 240,
+          "label": "model"
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 241,
+          "label": "clip"
+        },
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 242,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            243
+          ],
+          "label": "MODEL",
+          "slot_index": 0
+        },
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            244
+          ],
+          "label": "CLIP",
+          "slot_index": 1
+        },
+        {
+          "name": "HOOKS",
+          "type": "HOOKS",
+          "links": null,
+          "label": "HOOKS"
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PCLazyLoraLoaderAdvanced"
+      },
+      "widgets_values": [
+        "[<lora:mylora:1>:0.1,0.5]\nThe rest of the prompt is ignored by PCLazyLoraLoader\n",
+        true,
+        "hr",
+        1,
+        1
+      ],
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 125,
+      "type": "PCAddMaskToCLIP",
+      "pos": [
+        -720,
+        -1815
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "flags": {},
+      "order": 25,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 247,
+          "label": "clip"
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": 248,
+          "shape": 7,
+          "label": "mask"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            260
+          ],
+          "label": "CLIP",
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "PCAddMaskToCLIP"
+      },
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 126,
+      "type": "PCLazyLoraLoader",
+      "pos": [
+        -990,
+        -810
+      ],
+      "size": [
+        243.60000610351562,
+        110
+      ],
+      "flags": {},
+      "order": 27,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 259,
+          "label": "model"
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 258,
+          "label": "clip"
+        },
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 256,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": null,
+          "label": "MODEL"
+        },
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            252,
+            253,
+            254
+          ],
+          "label": "CLIP"
+        },
+        {
+          "name": "HOOKS",
+          "type": "HOOKS",
+          "links": null,
+          "label": "HOOKS"
+        }
+      ],
+      "title": "PC: Schedule LoRAs (1st pass)",
+      "properties": {
+        "Node name for S&R": "PCLazyLoraLoader"
+      },
+      "widgets_values": [
+        "[<lora:mylora:1>:0.1,0.5]\nThe rest of the prompt is ignored by PCLazyLoraLoader\n",
+        true
+      ],
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 127,
+      "type": "Note",
+      "pos": [
+        375,
+        -1320
+      ],
+      "size": [
+        315,
+        105
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "text": ""
+      },
+      "widgets_values": [
+        "Filter prompts for second pass. Cut off everything before 1.0"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    }
+  ],
+  "links": [
+    [
+      45,
+      29,
+      0,
+      31,
+      0,
+      "IMAGE"
+    ],
+    [
+      48,
+      32,
+      0,
+      33,
+      0,
+      "IMAGE"
+    ],
+    [
+      82,
+      26,
+      0,
+      50,
+      3,
+      "LATENT"
+    ],
+    [
+      83,
+      24,
+      0,
+      50,
+      4,
+      "INT"
+    ],
+    [
+      84,
+      50,
+      0,
+      29,
+      0,
+      "LATENT"
+    ],
+    [
+      85,
+      50,
+      0,
+      28,
+      0,
+      "LATENT"
+    ],
+    [
+      86,
+      28,
+      0,
+      51,
+      3,
+      "LATENT"
+    ],
+    [
+      87,
+      51,
+      0,
+      32,
+      0,
+      "LATENT"
+    ],
+    [
+      91,
+      24,
+      0,
+      51,
+      4,
+      "INT"
+    ],
+    [
+      141,
+      76,
+      0,
+      29,
+      1,
+      "VAE"
+    ],
+    [
+      151,
+      10,
+      2,
+      76,
+      0,
+      "*"
+    ],
+    [
+      159,
+      11,
+      0,
+      50,
+      0,
+      "MODEL"
+    ],
+    [
+      179,
+      76,
+      0,
+      32,
+      1,
+      "VAE"
+    ],
+    [
+      210,
+      105,
+      0,
+      102,
+      1,
+      "STRING"
+    ],
+    [
+      211,
+      107,
+      0,
+      108,
+      1,
+      "STRING"
+    ],
+    [
+      213,
+      112,
+      0,
+      109,
+      1,
+      "STRING"
+    ],
+    [
+      216,
+      102,
+      0,
+      116,
+      0,
+      "*"
+    ],
+    [
+      218,
+      116,
+      0,
+      50,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      239,
+      112,
+      0,
+      123,
+      1,
+      "STRING"
+    ],
+    [
+      240,
+      10,
+      0,
+      124,
+      0,
+      "MODEL"
+    ],
+    [
+      241,
+      10,
+      1,
+      124,
+      1,
+      "CLIP"
+    ],
+    [
+      242,
+      104,
+      0,
+      124,
+      2,
+      "STRING"
+    ],
+    [
+      243,
+      124,
+      0,
+      51,
+      0,
+      "MODEL"
+    ],
+    [
+      244,
+      124,
+      1,
+      123,
+      0,
+      "CLIP"
+    ],
+    [
+      245,
+      123,
+      0,
+      51,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      246,
+      10,
+      1,
+      118,
+      0,
+      "CLIP"
+    ],
+    [
+      247,
+      118,
+      0,
+      125,
+      0,
+      "CLIP"
+    ],
+    [
+      248,
+      60,
+      1,
+      125,
+      1,
+      "MASK"
+    ],
+    [
+      251,
+      10,
+      0,
+      11,
+      0,
+      "*"
+    ],
+    [
+      252,
+      126,
+      1,
+      102,
+      0,
+      "CLIP"
+    ],
+    [
+      253,
+      126,
+      1,
+      108,
+      0,
+      "CLIP"
+    ],
+    [
+      254,
+      126,
+      1,
+      109,
+      0,
+      "CLIP"
+    ],
+    [
+      256,
+      104,
+      0,
+      126,
+      2,
+      "STRING"
+    ],
+    [
+      258,
+      120,
+      0,
+      126,
+      1,
+      "CLIP"
+    ],
+    [
+      259,
+      10,
+      0,
+      126,
+      0,
+      "MODEL"
+    ],
+    [
+      260,
+      125,
+      0,
+      120,
+      0,
+      "*"
+    ],
+    [
+      261,
+      120,
+      0,
+      114,
+      0,
+      "CLIP"
+    ],
+    [
+      262,
+      114,
+      0,
+      50,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      263,
+      114,
+      0,
+      51,
+      2,
+      "CONDITIONING"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 3,
+      "title": "First pass",
+      "bounding": [
+        -330,
+        -1140,
+        710,
+        578.5999755859375
+      ],
+      "color": "#8A8",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 4,
+      "title": "Second pass + upscale (optional)",
+      "bounding": [
+        720,
+        -1185,
+        671,
+        559.5999755859375
+      ],
+      "color": "#8A8",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {
+    "links_ontop": false
+  },
+  "extra": {
+    "ds": {
+      "scale": 0.6303940863128653,
+      "offset": [
+        2133.457498240631,
+        1882.596316851661
+      ]
+    },
+    "groupNodes": {},
+    "controller_panel": {
+      "controllers": {},
+      "hidden": true,
+      "highlight": true,
+      "version": 2,
+      "default_order": []
+    },
+    "ue_links": []
+  },
+  "version": 0.4
+}
