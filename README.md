@@ -25,6 +25,8 @@ Unless I run into bugs or significant annoyances that require changing the inter
 
 If you really need them, check out the [legacy branch](https://github.com/asagi4/comfyui-prompt-control/tree/legacy). However, I will not fix bugs in that branch, and I strongly recommend just migrating your workflows to the new nodes.
 
+You can have both installed at the same time; none of the nodes conflict.
+
 ## What can it do?
 
 See [features](#features) below. Things you can control via the prompt:
