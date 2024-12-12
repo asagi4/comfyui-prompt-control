@@ -6,11 +6,24 @@ Nodes for LoRA and prompt scheduling that make basic operations in ComfyUI compl
 
 Prompt control has been almost completely rewritten. It now uses ComfyUI's lazy execution to build graphs from the text prompt at runtime. This has some advantages:
 
-- There are no more weird sampling hooks that will cause problems with other nodes
-- ComfyUI's will not re-run unchanged parts of the generated graph. This is especially useful for two-pass workflows where previously you'd be forced to re-run the first sampling pass even with filtering. That is no longer the case and it does the right thing.
-- The generated graph is often exactly equivalent to a manually built workflow using native ComfyUI nodes
+- ComfyUI will not re-run unchanged parts of generated graphs. This is especially useful for two-pass workflows where previously you'd be forced to re-run the first sampling pass even with filtering. That is no longer the case and it does the right thing.
+- The generated graph is often exactly equivalent to a manually built workflow using native ComfyUI nodes. There are no more weird sampling hooks that could cause problems with other nodes
 
 Prompt Control also comes with `PCTextEncode`, which provides advanced text encoding with many additional features compared to ComfyUI's base `CLIPTextEncode`.
+
+### Removed features
+
+- Prompt interpolation syntax; it was too cumbersome to maintain
+- LoRA block weight integration; ditto, for now.
+
+
+### Is it stable now?
+
+Unless I run into bugs or significant annoyances that require changing the interface, probably.
+
+### Everything broke, where are the old nodes?
+
+If you really need them, check out the [legacy branch](https://github.com/asagi4/comfyui-prompt-control/tree/legacy). However, I will not fix bugs in that branch, and I strongly recommend just migrating your workflows to the new nodes.
 
 ## What can it do?
 
