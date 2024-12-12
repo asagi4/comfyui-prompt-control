@@ -20,7 +20,7 @@ else:
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 
-nodes = ['base', 'lazy', 'schedule']
+nodes = ['base', 'lazy']
 if importlib.util.find_spec("comfy.hooks"):
     nodes.append('hook')
 else:
@@ -28,7 +28,7 @@ else:
         "Your ComfyUI version is too old, can't import comfy.hooks for PCEncodeSchedule and PCLoraHooksFromSchedule. Update your installation."
     )
 
-for node in ['schedule', 'lazy', 'base']: 
+for node in nodes:
     mod = importlib.import_module(f".prompt_control.nodes_{node}", package=__name__)
     NODE_CLASS_MAPPINGS.update(mod.NODE_CLASS_MAPPINGS)
     NODE_DISPLAY_NAME_MAPPINGS.update(mod.NODE_DISPLAY_NAME_MAPPINGS)
