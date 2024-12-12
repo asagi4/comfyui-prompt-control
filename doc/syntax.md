@@ -49,13 +49,11 @@ with `tags` `x,z` would result in the prompt `a blue cat running in space`
 
 
 ## LoRA Scheduling
-LoRAs can be scheduled by referring to them in a scheduling expression, like so:
+When using the lazy graph building nodes, LoRAs can be scheduled by referring to them in a scheduling expression, like so:
 
 `<lora:fulllora:1> [<lora:partialora:1>::0.5]`
 
 This will schedule `fulllora` for the entire duration of the prompt and `partiallora` until half of sampling is complete.
-
-`PCLoraHooksFromSchedule` creates a properly scheduled `HOOKS` object from LoRA expressions included in the prompt. The older (deprecated) `ScheduleToModel` nodes will monkeypatch ComfyUI sampling and attempt to perform LoRA loading directly.
 
 You can refer to LoRAs by using the filename without extension and subdirectories will also be searched. For example, `<lora:cats:1>`. will match both `cats.safetensors` and `sd15/animals/cats.safetensors`. If there are multiple LoRAs with the same name, the first match will be loaded.
 
@@ -80,12 +78,6 @@ Might be useful with Jinja templating (see https://github.com/asagi4/comfyui-uti
 [SEQ<% for x in steps(0.1, 0.9, 0.1) %>:<lora:test:<= sin(x*pi) + 0.1 =>>:<= x =><% endfor %>]
 ```
 generates a LoRA schedule based on a sinewave
-
-## Prompt interpolation
-
-Note: Not currently supported by `PCEncodeSchedule`
-
-`a red [INT:dog:cat:0.2,0.8:0.05]` will attempt to interpolate the tensors for `a red dog` and `a red cat` between the specified range in as many steps of 0.05 as will fit.
 
 
 # Basic prompt syntax
@@ -167,16 +159,16 @@ You can use `MASK(x1 x2, y1 y2, weight, op)` to specify a region mask for a prom
 
 Similarly, you can use `AREA(x1 x2, y1 y2, weight)` to specify an area for the prompt (see ComfyUI's area composition examples). The area is calculated by ComfyUI relative to your latent size.
 
-#### Custom masks: IMASK and `PCScheduleAddMasks`
+#### Custom masks: IMASK and `PCAddMaskToCLIP`
 
-You can attach custom masks to a `PROMPT_SCHEDULE` with the `PCScheduleAddMasks` node and then refer to those masks in the prompt using `IMASK(index, weight, op)`. Indexing starts from zero, so 0 is the first attached mask etc. `PCSCheduleAddMasks` ignores empty inputs, so if you only add a mask to the `mask4` input, it will still have index 0.
+You can attach custom masks to a `CLIP` with the `PC: Attach Mask` nodes and then refer to those masks in the prompt using `IMASK(index, weight, op)`. Indexing starts from zero, so 0 is the first attached mask etc. `PCSCheduleAddMasks` ignores empty inputs, so if you only add a mask to the `mask4` input, it will still have index 0.
 
-Applying `PCScheduleAddMasks` multiple times *appends* masks to a schedule rather than overriding existing ones, so if you need more than 4, you can just use it more than once.
+Applying the nodes multiple times *appends* masks rather than overriding existing ones, so if you need more than 4, you can just use it more than once.
 
 #### Behaviour of masks
 If multiple `MASK`s are specified, they are combined together with ComfyUI's `MaskComposite` node, with `op` specifying the operation to use (default `multiply`). In this case, the combined mask weight can be set with `MASKW(weight)` (defaults to 1.0).
 
-Masks assume a size of `(512, 512)`, unless overridden with `PCScheduleSettings` and pixel values will be relative to that. ComfyUI will scale the mask to match the image resolution. You can change it manually by using `MASK_SIZE(width, height)` anywhere in the prompt,
+Masks assume a size of `(512, 512)`, unless overridden with `PC: Configure PCTextEncode` and pixel values will be relative to that. ComfyUI will scale the mask to match the image resolution. You can change it manually by using `MASK_SIZE(width, height)` anywhere in the prompt,
 
 These are handled per `AND`-ed prompt, so in `prompt1 AND MASK(...) prompt2`, the mask will only affect prompt2.
 

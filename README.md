@@ -2,15 +2,15 @@
 
 Nodes for LoRA and prompt scheduling that make basic operations in ComfyUI completely prompt-controllable.
 
-LoRA and prompt scheduling should produce identical output to the equivalent ComfyUI workflow using multiple samplers or the various conditioning manipulation nodes. If you find situations where this is not the case, please report a bug.
-
 ## Prompt Control v2
 
-Prompt control has been almost completely rewritten.
+Prompt control has been almost completely rewritten. It now uses ComfyUI's lazy execution to build graphs from the text prompt at runtime. This has some advantages:
 
-It now uses ComfyUI's lazy execution to build graphs from the text prompt at runtime; this means that its output can be exactly equivalent to using native ComfyUI nodes (because that's what it does)
+- There are no more weird sampling hooks that will cause problems with other nodes
+- ComfyUI's will not re-run unchanged parts of the generated graph. This is especially useful for two-pass workflows where previously you'd be forced to re-run the first sampling pass even with filtering. That is no longer the case and it does the right thing.
+- The generated graph is often exactly equivalent to a manually built workflow using native ComfyUI nodes
 
-In addition to building graphs, `PCTextEncode` provides an advanced text encoding node with many additional features compared to ComfyUI's base `CLIPTextEncode`.
+Prompt Control also comes with `PCTextEncode`, which provides advanced text encoding with many additional features compared to ComfyUI's base `CLIPTextEncode`.
 
 ## What can it do?
 
@@ -30,7 +30,7 @@ If you find prompt scheduling inconvenient for some reason, `PCTextEncode` can b
 
 [This example workflow](workflows/example-lazy.json?raw=1) shows LoRA scheduling and prompt editing and compares it with the same prompt implemented with built-in ComfyUI nodes.
 
-[This older example workflow](workflows/example.json?raw=1) implements a two-pass workflow illustrating more feeatures, including custom masks and filtering that are not yet available with the lazy nodes.
+[This example workflow](workflows/example.json?raw=1) implements a two-pass workflow illustrating more features, including custom masks and filtering.
 
 The tools in this repository combine well with the macro and wildcard functionality in [comfyui-utility-nodes](https://github.com/asagi4/comfyui-utility-nodes)
 
@@ -50,7 +50,7 @@ Then restart ComfyUI afterwards.
 
 # Core nodes
 
-## PCLazyTextEncode
+## PCLazyTextEncode and PCLazyTextEncodeAvanced
 
 `PCLazyTextEncode` uses ComfyUI's lazy graph execution mechanism to generate a graph of `PCTextEncode` and `SetConditioningTimestepRange` nodes from a prompt with schedules. This has the advantage that if a part of the schedule doesn't change, ComfyUI's caching mechanism allows you to avoid re-encoding the non-changed part.
 
@@ -58,11 +58,15 @@ for example, if you first encode `[cat:dog:0.1]` and later change that to `[cat:
 
 for added fun, put `NODE(NodeClassName, paramname)` in a prompt to generate a graph using **any other node** that's compatible. The node can't have required parameters besides a single CLIP parameter (which must be named `clip`) and the text prompt, and it must return a `CONDITIONING` as its first return value.
 
-## PCLazyLoraLoader
+The advanced node enables filtering the prompt for multi-pass workflows.
+
+## PCLazyLoraLoader and PCLazyLoraLoaderAdvanced
 
 This node reads LoRA expressions from the scheduled prompt and constructs a graph of `LoraLoader`s and `CreateHookLora`s as necessary to provide the necessary LoRA scheduling.
 
 If you have `apply_hooks` set to true, you **do not** need to apply the `HOOKS`  output to a CLIP model separately; it's provided in case you want to use it elsewhere.
+
+The advanced node enables filtering the prompt for multi-pass workflows.
 
 ## PCTextEncode
 
@@ -70,8 +74,13 @@ Encodes a single prompt with advanced (non-scheduling) syntax enabled. This is w
 
 Note: `PCTextEncode` **does not** ignore `<lora:...:1>` and will treat it as part of the prompt. To use a combined prompt for LoRAs and your input, use `PCLazyTextEncode` and `PCLazyLoraLoader`
 
-For the rest, see [schedule nodes](doc/schedule.md)
+## PCAddMaskToCLIP
 
+This node attaches masks to a `CLIP` model so that they can be referred to when using the `IMASK` custom mask function of `PCTextEncode`.
+
+## PCSetTextEncodeSettings
+
+This node configures `PCTextEncode` default values for some functions by attaching the information to a `CLIP` model.
 
 # Features
 ## Scheduling and LoRA loading
@@ -86,7 +95,7 @@ ComfyUI does not use the step number to determine whether to apply conds; instea
 
 ## Advanced CLIP encoding
 
-If you use `PCTextEncode`. advanced encodings are available automatically. Thanks to BlenderNeko for the original code.
+If you use `PCTextEncode`, advanced encodings are available automatically. Thanks to BlenderNeko for the original code.
 
 Use the syntax `STYLE(weight_interpretation, normalization)` in a prompt to affect how prompts are interpreted.
 
