@@ -43,9 +43,9 @@ See the [syntax documentation](doc/syntax.md)
 If you find prompt scheduling inconvenient for some reason, `PCTextEncode` can be used as a drop-in replacement for `CLIPTextEncode` to get everything else.
 
 
-[This example workflow](workflows/example-lazy.json?raw=1) shows LoRA scheduling and prompt editing and compares it with the same prompt implemented with built-in ComfyUI nodes.
+[This workflow](workflows/example-lazy.json?raw=1) shows LoRA scheduling and prompt editing and compares it with the same prompt implemented with built-in ComfyUI nodes.
 
-[This example workflow](workflows/example.json?raw=1) implements a two-pass workflow illustrating more features, including custom masks and filtering.
+[Here](workflows/example-2pass.json?raw=1) is a two-pass workflow illustrating more features, including custom masks and filtering.
 
 The tools in this repository combine well with the macro and wildcard functionality in [comfyui-utility-nodes](https://github.com/asagi4/comfyui-utility-nodes)
 
