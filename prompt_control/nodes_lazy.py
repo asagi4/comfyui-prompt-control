@@ -16,11 +16,11 @@ class PCLazyLoraLoader:
         return {
             "required": {
                 "text": ("STRING", {"multiline": True}),
-                "model": ("MODEL",),
-                "clip": ("CLIP",),
+                "model": ("MODEL", {"rawLink": True}),
+                "clip": ("CLIP", {"rawLink": True}),
                 "apply_hooks": ("BOOLEAN", {"default": True}),
             },
-            "hidden": {"dynprompt": "DYNPROMPT", "unique_id": "UNIQUE_ID"},
+            "hidden": {"unique_id": "UNIQUE_ID"},
         }
 
     RETURN_TYPES = ("MODEL", "CLIP", "HOOKS")
@@ -28,28 +28,24 @@ class PCLazyLoraLoader:
     CATEGORY = "promptcontrol"
     FUNCTION = "apply"
 
-    def apply(self, model, clip, text, apply_hooks, dynprompt, unique_id):
+    def apply(self, model, clip, text, apply_hooks, unique_id):
         schedule = parse_prompt_schedules(text)
         consolidated = consolidate_schedule(schedule)
         non_scheduled = find_nonscheduled_loras(consolidated)
         graph = GraphBuilder(f"PCLazyLoraLoader-{unique_id}")
-        this_node = dynprompt.get_node(unique_id)
-
-        modelinput = this_node["inputs"]["model"]
-        clipinput = this_node["inputs"]["clip"]
         for lora, info in non_scheduled.items():
             path = lora_name_to_file(lora)
             if path is None:
                 log.info("Lazy expansion ignoring nonexistent LoRA %s", lora)
                 continue
             loader = graph.node("LoraLoader")
-            loader.set_input("model", modelinput)
-            loader.set_input("clip", clipinput)
+            loader.set_input("model", model)
+            loader.set_input("clip", clip)
             loader.set_input("strength_model", info["weight"])
             loader.set_input("strength_clip", info["weight_clip"])
             loader.set_input("lora_name", path)
-            modelinput = loader.out(0)
-            clipinput = loader.out(1)
+            model = loader.out(0)
+            clip = loader.out(1)
 
         hook_nodes = {}
         start_pct = 0.0
@@ -121,24 +117,24 @@ class PCLazyLoraLoader:
             res = res.out(0)
         if apply_hooks:
             n = graph.node("SetClipHooks")
-            n.set_input("clip", clipinput)
+            n.set_input("clip", clip)
             n.set_input("hooks", res)
             n.set_input("apply_to_conds", True)
             n.set_input("schedule_clip", True)
-            clipinput = n.out(0)
+            clip = n.out(0)
 
         r = graph.finalize()
 
-        return {"result": (modelinput, clipinput, res), "expand": r}
+        return {"result": (model, clip, res), "expand": r}
 
 
 class PCLazyTextEncode:
     @classmethod
     def INPUT_TYPES(s):
         return {
-            "required": {"clip": ("CLIP",), "text": ("STRING", {"multiline": True})},
+            "required": {"clip": ("CLIP", {"rawLink": True}), "text": ("STRING", {"multiline": True})},
             # "optional": {"defaults": ("SCHEDULE_DEFAULTS",)},
-            "hidden": {"dynprompt": "DYNPROMPT", "unique_id": "UNIQUE_ID"},
+            "hidden": {"unique_id": "UNIQUE_ID"},
         }
 
     RETURN_TYPES = ("CONDITIONING",)
@@ -146,12 +142,9 @@ class PCLazyTextEncode:
     CATEGORY = "promptcontrol"
     FUNCTION = "apply"
 
-    def apply(self, clip, text, dynprompt, unique_id):
+    def apply(self, clip, text, unique_id):
         schedules = parse_prompt_schedules(text)
         graph = GraphBuilder(f"PCEncodeLazy-{unique_id}")
-
-        this_node = dynprompt.get_node(unique_id)
-        print("Lazy", this_node)
 
         nodes = []
         start_pct = 0.0
@@ -165,7 +158,7 @@ class PCLazyTextEncode:
                 paramname = classnames[0][1]
             node = graph.node(classname)
             timestep = graph.node("ConditioningSetTimestepRange")
-            node.set_input("clip", this_node["inputs"]["clip"])
+            node.set_input("clip", clip)
             node.set_input(paramname, p)
             timestep.set_input("conditioning", node.out(0))
             timestep.set_input("start", start_pct)
