@@ -20,7 +20,7 @@ else:
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 
-nodes = ['base', 'lazy']
+nodes = ['base', 'lazy', 'tools']
 if importlib.util.find_spec("comfy.hooks"):
     nodes.append('hook')
 else:
