@@ -65,7 +65,7 @@ Then restart ComfyUI afterwards.
 
 # Core nodes
 
-## PCLazyTextEncode and PCLazyTextEncodeAvanced
+## PCLazyTextEncode and PCLazyTextEncodeAdvanced
 
 `PCLazyTextEncode` uses ComfyUI's lazy graph execution mechanism to generate a graph of `PCTextEncode` and `SetConditioningTimestepRange` nodes from a prompt with schedules. This has the advantage that if a part of the schedule doesn't change, ComfyUI's caching mechanism allows you to avoid re-encoding the non-changed part.
 
