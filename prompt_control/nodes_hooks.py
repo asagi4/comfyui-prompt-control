@@ -2,88 +2,30 @@ import logging
 import comfy.utils
 import comfy.hooks
 import folder_paths
-from .prompts import encode_prompt
-from .utils import lora_name_to_file
+from .utils import consolidate_schedule
+from .parser import parse_prompt_schedules
 
 log = logging.getLogger("comfyui-prompt-control")
 
 
-class PCLoraHooksFromSchedule:
+class PCLoraHooksFromText:
     @classmethod
     def INPUT_TYPES(s):
         return {
-            "required": {"prompt_schedule": ("PROMPT_SCHEDULE",)},
+            "required": {"text": ("STRING",)},
         }
 
     RETURN_TYPES = ("HOOKS",)
     OUTPUT_TOOLTIPS = ("set of hooks created from the prompt schedule",)
     CATEGORY = "promptcontrol/v2"
     FUNCTION = "apply"
+    EXPERIMENTAL = True
 
-    def apply(self, prompt_schedule):
+    def apply(self, text):
+        prompt_schedule = parse_prompt_schedules(text)
         consolidated = consolidate_schedule(prompt_schedule)
         hooks = lora_hooks_from_schedule(consolidated, {})
         return (hooks,)
-
-
-class PCEncodeSchedule:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {"clip": ("CLIP",), "prompt_schedule": ("PROMPT_SCHEDULE",)},
-        }
-
-    RETURN_TYPES = ("CONDITIONING",)
-    CATEGORY = "promptcontrol/v2"
-    FUNCTION = "apply"
-
-    def apply(self, clip, prompt_schedule):
-        return (encode_schedule(clip, prompt_schedule),)
-
-
-class PCTextEncode:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {"clip": ("CLIP",), "text": ("STRING", {"multiline": True})},
-            "optional": {"defaults": ("SCHEDULE_DEFAULTS",)},
-        }
-
-    RETURN_TYPES = ("CONDITIONING",)
-    CATEGORY = "promptcontrol/v2"
-    FUNCTION = "apply"
-
-    def apply(self, clip, text, defaults=None):
-        return (encode_prompt(clip, text, 0, 1.0, defaults or {}, None),)
-
-
-def consolidate_schedule(prompt_schedule):
-    prev_loras = {}
-    consolidated = []
-    for end_pct, c in reversed(list(prompt_schedule)):
-        loras = c["loras"]
-        if loras != prev_loras:
-            consolidated.append((end_pct, loras))
-        prev_loras = loras
-    return list(reversed(consolidated))
-
-
-def find_nonscheduled_loras(consolidated_schedule):
-    consolidated_schedule = list(consolidated_schedule)
-    if not consolidated_schedule:
-        return {}
-    last_end, candidate_loras = consolidated_schedule[0]
-    print(candidate_loras)
-    to_remove = set()
-    for candidate, weights in candidate_loras.items():
-        for end, loras in consolidated_schedule[1:]:
-            last_end = end
-            if loras.get(candidate) != weights:
-                to_remove.add(candidate)
-    # No candidates if the schedule does not span full time
-    if last_end < 1.0:
-        return {}
-    return {k: v for (k, v) in candidate_loras.items() if k not in to_remove}
 
 
 def lora_hooks_from_schedule(schedules, non_scheduled):
@@ -95,12 +37,9 @@ def lora_hooks_from_schedule(schedules, non_scheduled):
         nonlocal lora_cache
         hooks = []
         hook_kf = comfy.hooks.HookKeyframeGroup()
-        for lora, info in loras.items():
-            if non_scheduled.get(lora) == info:
-                log.info("Skipping %s from hook, it's loaded directly on model", lora)
-                continue
-            path = lora_name_to_file(lora)
-            if not path:
+        for path, info in loras.items():
+            if non_scheduled.get(path) == info:
+                log.info("Skipping %s from hook, it's loaded directly on model", path)
                 continue
             if path not in lora_cache:
                 lora_cache[path] = comfy.utils.load_torch_file(
@@ -140,38 +79,10 @@ def lora_hooks_from_schedule(schedules, non_scheduled):
         return hooks
 
 
-def debug_conds(conds):
-    r = []
-    for i, c in enumerate(conds):
-        x = c[1].copy()
-        if "pooled_output" in x:
-            del x["pooled_output"]
-        r.append((i, x))
-    return r
-
-
-def encode_schedule(clip, schedules):
-    start_pct = 0.0
-    conds = []
-    for end_pct, c in schedules:
-        if start_pct < end_pct:
-            prompt = c["prompt"]
-            cond = encode_prompt(clip, prompt, start_pct, end_pct, schedules.defaults, schedules.masks)
-            conds.extend(cond)
-        start_pct = end_pct
-
-    log.debug("Final cond info: %s", debug_conds(conds))
-    return conds
-
-
 NODE_CLASS_MAPPINGS = {
-    "PCLoraHooksFromSchedule": PCLoraHooksFromSchedule,
-    "PCEncodeSchedule": PCEncodeSchedule,
-    "PCTextEncode": PCTextEncode,
+    "PCLoraHooksFromText": PCLoraHooksFromText,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "PCLoraHooksFromSchedule": "PC Create LoRA Hooks",
-    "PCEncodeSchedule": "PC Encode Schedule",
-    "PCTextEncode": "PC Text Encode (no scheduling)",
+    "PCLoraHooksFromText": "PC LoRA Hooks From Text (non-lazy)",
 }

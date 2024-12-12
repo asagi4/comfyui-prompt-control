@@ -7,6 +7,47 @@ import folder_paths
 log = logging.getLogger("comfyui-prompt-control")
 
 
+def consolidate_schedule(prompt_schedule):
+    prev_loras = {}
+    not_found = []
+    consolidated = []
+    for end_pct, c in reversed(list(prompt_schedule)):
+        loras = {}
+        for k, v in c["loras"].items():
+            if k in not_found:
+                continue
+            path = lora_name_to_file(k)
+            if path is None:
+                not_found.append(k)
+                continue
+            loras[path] = v
+
+        if loras != prev_loras:
+            consolidated.append((end_pct, loras))
+        prev_loras = loras
+    for k in not_found:
+        log.warning("LoRA '%s' not found, ignoring...", k)
+    return list(reversed(consolidated))
+
+
+def find_nonscheduled_loras(consolidated_schedule):
+    consolidated_schedule = list(consolidated_schedule)
+    if not consolidated_schedule:
+        return {}
+    last_end, candidate_loras = consolidated_schedule[0]
+    print(candidate_loras)
+    to_remove = set()
+    for candidate, weights in candidate_loras.items():
+        for end, loras in consolidated_schedule[1:]:
+            last_end = end
+            if loras.get(candidate) != weights:
+                to_remove.add(candidate)
+    # No candidates if the schedule does not span full time
+    if last_end < 1.0:
+        return {}
+    return {k: v for (k, v) in candidate_loras.items() if k not in to_remove}
+
+
 def find_closing_paren(text, start):
     stack = 1
     for i, char in enumerate(text[start:]):

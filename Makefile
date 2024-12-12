@@ -1,8 +1,8 @@
 all: format check
 	@echo "Done"
 check:
-	pyflakes *.py */*.py */*/*.py
+	find . -name "*.py" | xargs pyflakes
 format:
-	black -l 120 *.py */*.py */*/*.py
+	find . -name "*.py" | xargs black -l 120
 
 .PHONY: check format all
