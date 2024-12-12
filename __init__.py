@@ -20,9 +20,9 @@ else:
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 
-nodes = ['base', 'lazy', 'tools']
+nodes = ["base", "lazy", "tools"]
 if importlib.util.find_spec("comfy.hooks"):
-    nodes.append('hook')
+    nodes.append("hooks")
 else:
     log.warning(
         "Your ComfyUI version is too old, can't import comfy.hooks for PCEncodeSchedule and PCLoraHooksFromSchedule. Update your installation."

@@ -3,7 +3,7 @@ import comfy.utils
 import comfy.hooks
 import folder_paths
 from .prompts import encode_prompt
-from .utils import lora_name_to_file
+from .utils import consolidate_schedule
 
 log = logging.getLogger("comfyui-prompt-control")
 
@@ -26,35 +26,6 @@ class PCLoraHooksFromSchedule:
         return (hooks,)
 
 
-def consolidate_schedule(prompt_schedule):
-    prev_loras = {}
-    consolidated = []
-    for end_pct, c in reversed(list(prompt_schedule)):
-        loras = c["loras"]
-        if loras != prev_loras:
-            consolidated.append((end_pct, loras))
-        prev_loras = loras
-    return list(reversed(consolidated))
-
-
-def find_nonscheduled_loras(consolidated_schedule):
-    consolidated_schedule = list(consolidated_schedule)
-    if not consolidated_schedule:
-        return {}
-    last_end, candidate_loras = consolidated_schedule[0]
-    print(candidate_loras)
-    to_remove = set()
-    for candidate, weights in candidate_loras.items():
-        for end, loras in consolidated_schedule[1:]:
-            last_end = end
-            if loras.get(candidate) != weights:
-                to_remove.add(candidate)
-    # No candidates if the schedule does not span full time
-    if last_end < 1.0:
-        return {}
-    return {k: v for (k, v) in candidate_loras.items() if k not in to_remove}
-
-
 def lora_hooks_from_schedule(schedules, non_scheduled):
     start_pct = 0.0
     lora_cache = {}
@@ -64,12 +35,9 @@ def lora_hooks_from_schedule(schedules, non_scheduled):
         nonlocal lora_cache
         hooks = []
         hook_kf = comfy.hooks.HookKeyframeGroup()
-        for lora, info in loras.items():
-            if non_scheduled.get(lora) == info:
-                log.info("Skipping %s from hook, it's loaded directly on model", lora)
-                continue
-            path = lora_name_to_file(lora)
-            if not path:
+        for path, info in loras.items():
+            if non_scheduled.get(path) == info:
+                log.info("Skipping %s from hook, it's loaded directly on model", path)
                 continue
             if path not in lora_cache:
                 lora_cache[path] = comfy.utils.load_torch_file(
