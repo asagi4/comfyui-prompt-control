@@ -19,7 +19,7 @@ Prompt Control also comes with `PCTextEncode`, which provides advanced text enco
 
 ### Is it stable now?
 
-Unless I run into bugs or significant annoyances that require changing the interface, probably.
+Unless I run into bugs or significant annoyances that require changing the interface, it probably won't change too much, but until I tag 2.0, everything can change.
 
 ### Everything broke, where are the old nodes?
 
