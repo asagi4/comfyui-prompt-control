@@ -67,7 +67,7 @@ def create_hook_nodes_for_lora(graph, path, info, existing_node, start_pct, end_
     return hook_node, next_keyframe
 
 
-def build_lora_schedule(graph, schedule, model, clip, apply_hooks):
+def build_lora_schedule(graph, schedule, model, clip, apply_hooks=True, return_hooks=True):
     # This gets rid of non-existent LoRAs
     consolidated = consolidate_schedule(schedule)
     non_scheduled = find_nonscheduled_loras(consolidated)
@@ -116,7 +116,12 @@ def build_lora_schedule(graph, schedule, model, clip, apply_hooks):
 
     r = graph.finalize()
 
-    return {"result": (model, clip, res), "expand": r}
+    if return_hooks:
+        ret = (model, clip, res)
+    else:
+        ret = (model, clip)
+
+    return {"result": ret, "expand": r}
 
 
 class PCLazyLoraLoaderAdvanced:
@@ -145,7 +150,7 @@ class PCLazyLoraLoaderAdvanced:
     def apply(self, model, clip, text, apply_hooks, unique_id, tags="", start=0.0, end=1.0):
         schedule = parse_prompt_schedules(text).with_filters(filters=tags, start=start, end=end)
         graph = GraphBuilder(f"PCLazyLoraLoaderAdvanced-{unique_id}")
-        return build_lora_schedule(graph, schedule, model, clip, apply_hooks)
+        return build_lora_schedule(graph, schedule, model, clip, apply_hooks=apply_hooks, return_hooks=True)
 
 
 class PCLazyLoraLoader:
@@ -153,15 +158,17 @@ class PCLazyLoraLoader:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "text": ("STRING", {"multiline": True}),
                 "model": ("MODEL", {"rawLink": True}),
                 "clip": ("CLIP", {"rawLink": True}),
-                "apply_hooks": ("BOOLEAN", {"default": True}),
+                "text": ("STRING", {"multiline": True}),
             },
             "hidden": {"unique_id": "UNIQUE_ID"},
         }
 
-    RETURN_TYPES = ("MODEL", "CLIP", "HOOKS")
+    RETURN_TYPES = (
+        "MODEL",
+        "CLIP",
+    )
     OUTPUT_TOOLTIPS = ("Returns a model and clip with LoRAs scheduled",)
     CATEGORY = "promptcontrol"
     FUNCTION = "apply"
@@ -169,7 +176,7 @@ class PCLazyLoraLoader:
     def apply(self, model, clip, text, apply_hooks, unique_id):
         graph = GraphBuilder(f"PCLazyLoraLoader-{unique_id}")
         schedule = parse_prompt_schedules(text)
-        return build_lora_schedule(graph, schedule, model, clip, apply_hooks)
+        return build_lora_schedule(graph, schedule, model, clip, apply_hooks=True, return_hooks=False)
 
 
 def build_scheduled_prompts(graph, schedules, clip):
