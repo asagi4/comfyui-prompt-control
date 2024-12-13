@@ -4,10 +4,7 @@ Control LoRA and prompt scheduling, advanced text encoding, regional prompting, 
 
 ## Prompt Control v2
 
-Prompt control has been almost completely rewritten. It now uses ComfyUI's lazy execution to build graphs from the text prompt at runtime. This has some advantages:
-
-- ComfyUI will not re-run unchanged parts of generated graphs. This is especially useful for two-pass workflows where previously you'd be forced to re-run the first sampling pass even with filtering. That is no longer the case and it does the right thing.
-- The generated graph is often exactly equivalent to a manually built workflow using native ComfyUI nodes. There are no more weird sampling hooks that could cause problems with other nodes
+Prompt control has been almost completely rewritten. It now uses ComfyUI's lazy execution to build graphs from the text prompt at runtime. The generated graph is often exactly equivalent to a manually built workflow using native ComfyUI nodes. There are no more weird sampling hooks that could cause problems with other nodes
 
 Prompt Control also comes with `PCTextEncode`, which provides advanced text encoding with many additional features compared to ComfyUI's base `CLIPTextEncode`.
 
@@ -168,4 +165,4 @@ The parameters affect how the masked and unmasked prompts are combined to produc
 
 # Known issues
 
-- None at the moment
+- For some reason, ComfyUI isn't caching the dynamic graphs after all. :( I'm sure it did when I tested previously.

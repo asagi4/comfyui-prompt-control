@@ -107,13 +107,13 @@ def build_lora_schedule(graph, schedule, model, clip, apply_hooks=True, return_h
             n.set_input("hooks_B", h.out(0))
             res = n
         res = res.out(0)
-    if apply_hooks:
-        n = graph.node("SetClipHooks")
-        n.set_input("clip", clip)
-        n.set_input("hooks", res)
-        n.set_input("apply_to_conds", True)
-        n.set_input("schedule_clip", True)
-        clip = n.out(0)
+        if apply_hooks:
+            n = graph.node("SetClipHooks")
+            n.set_input("clip", clip)
+            n.set_input("hooks", res)
+            n.set_input("apply_to_conds", True)
+            n.set_input("schedule_clip", True)
+            clip = n.out(0)
 
     r = graph.finalize()
 
@@ -211,7 +211,9 @@ def build_scheduled_prompts(graph, schedules, clip):
         combiner.set_input("conditioning_2", othernode.out(0))
         node = combiner
 
-    return {"result": (node.out(0),), "expand": graph.finalize()}
+    g = graph.finalize()
+
+    return {"result": (node.out(0),), "expand": g}
 
 
 class PCLazyTextEncode:
