@@ -173,7 +173,7 @@ class PCLazyLoraLoader:
     CATEGORY = "promptcontrol"
     FUNCTION = "apply"
 
-    def apply(self, model, clip, text, apply_hooks, unique_id):
+    def apply(self, model, clip, text, unique_id):
         graph = GraphBuilder(f"PCLazyLoraLoader-{unique_id}")
         schedule = parse_prompt_schedules(text)
         return build_lora_schedule(graph, schedule, model, clip, apply_hooks=True, return_hooks=False)
