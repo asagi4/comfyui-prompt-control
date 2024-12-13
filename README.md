@@ -1,6 +1,6 @@
 # ComfyUI prompt control
 
-Nodes for LoRA and prompt scheduling that make basic operations in ComfyUI completely prompt-controllable.
+Control LoRA and prompt scheduling, advanced text encoding, regional prompting, and much more, through your text prompt. Generates dynamic graphs that are literally identical to handcrafted noodle soup.
 
 ## Prompt Control v2
 
