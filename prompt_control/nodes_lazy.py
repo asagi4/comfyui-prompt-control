@@ -24,6 +24,7 @@ def create_lora_loader_nodes(graph, model, clip, loras):
 
 
 def create_hook_nodes_for_lora(graph, path, info, existing_node, start_pct, end_pct):
+    prev_keyframe = None
     next_keyframe = None
     if not existing_node:
         log.debug("Creating hook for %s", path)
