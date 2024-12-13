@@ -23,7 +23,7 @@ Unless I run into bugs or significant annoyances that require changing the inter
 
 ### Everything broke, where are the old nodes?
 
-If you really need them, check out the [legacy branch](https://github.com/asagi4/comfyui-prompt-control/tree/legacy). However, I will not fix bugs in that branch, and I strongly recommend just migrating your workflows to the new nodes.
+If you really need them, you can install the [legacy nodes](https://github.com/asagi4/comfyui-prompt-control-legacy). However, I will not fix bugs in those nodes, and I strongly recommend just migrating your workflows to the new nodes.
 
 You can have both installed at the same time; none of the nodes conflict.
 
