@@ -14,16 +14,13 @@ if lark.__version__ == "0.12.0":
 prompt_parser = lark.Lark(
     r"""
 !start: (prompt | /[][():|]/+)*
-prompt: (emphasized | embedding | scheduled | alternate | sequence | interpolate | loraspec | PLAIN | /</ | />/ | WHITESPACE)+
+prompt: (emphasized | embedding | scheduled | alternate | sequence | loraspec | PLAIN | /</ | />/ | WHITESPACE)+
 !emphasized: "(" prompt? ")"
         | "(" prompt ":" prompt ")"
         | "[" prompt "]"
 scheduled: "[" [prompt ":"] [prompt] ":" _WS? NUMBER ["," NUMBER] "]"
         | "[" [prompt ":"] [prompt] ":" _WS? TAG "]"
 sequence:  "[SEQ" ":" [prompt] ":" NUMBER (":" [prompt] ":" NUMBER)+ "]"
-interpolate.100: "[INT" ":" interp_prompts ":" interp_steps "]"
-interp_prompts: prompt (":" [prompt])+
-interp_steps: NUMBER ("," NUMBER)+ [":" NUMBER]
 alternate: "[" [prompt] ("|" [prompt])+ [":" NUMBER] "]"
 loraspec.99: "<lora:" FILENAME lora_weights [lora_block_weights] ">"
 lora_weights.1: (":" _WS? NUMBER)~1..2
@@ -94,7 +91,6 @@ def clamp(a, b, c):
 
 def get_steps(tree):
     res = [100]
-    interpolation_steps = []
 
     def tostep(s):
         w = float(s) * 100
@@ -116,7 +112,6 @@ def get_steps(tree):
             for i, _ in enumerate(tree.children[:-1]):
                 tree.children[i] = tostep(tree.children[i])
 
-            interpolation_steps.append((tuple(tree.children[:-1]), tree.children[-1]))
             res.extend(tree.children[:-1])
 
         def sequence(self, tree):
@@ -134,7 +129,7 @@ def get_steps(tree):
 
     CollectSteps().visit(tree)
 
-    return sorted(set(interpolation_steps)), sorted(set(res))
+    return sorted(set(res))
 
 
 def at_step(step, filters, tree):
@@ -179,24 +174,6 @@ def at_step(step, filters, tree):
                 else:
                     previous_step = s
             return ""
-
-        def interpolate(self, args):
-            prompts, starts = args
-            starts = starts[:-1]
-            prev_prompt = None
-            if step < starts[0]:
-                return prompts[0]
-            for i, x in enumerate(starts):
-                prev_prompt = prompts[i]
-                if x >= step:
-                    break
-            return prev_prompt
-
-        def interp_steps(self, args):
-            return list(args)
-
-        def interp_prompts(self, args):
-            return ["".join(flatten(a or [])) for a in args]
 
         def alternate(self, args):
             step_size = args[-1]
@@ -268,22 +245,15 @@ def at_step(step, filters, tree):
 
 
 class PromptSchedule(object):
-    def __init__(self, prompt, filters="", start=0.0, end=1.0, defaults=None, masks=None):
+    def __init__(self, prompt, filters="", start=0.0, end=1.0):
         self.filters = filters
         self.start = start
         self.end = end
         self.prompt = prompt.strip()
         self.defaults = {}
-        if defaults:
-            self.defaults = defaults
         self.loaded_loras = {}
 
-        self.interpolations = None
-        self.parsed_prompt = None
-        self.interpolations, self.parsed_prompt = self._parse()
-        self.masks = masks
-        if masks is None:
-            self.masks = []
+        self.parsed_prompt = self._parse()
 
     def __iter__(self):
         # Filter out zero, it's only useful for interpolation
@@ -293,27 +263,14 @@ class PromptSchedule(object):
         filters = [x.strip() for x in self.filters.upper().split(",")]
         try:
             parsed = []
-            interpolations = set()
             tree = prompt_parser.parse(self.prompt)
-            interpolation_steps, steps = get_steps(tree)
-            log.debug("Interpolation steps: %s", interpolation_steps)
+            steps = get_steps(tree)
 
             def f(x):
                 return round(x / 100, 2)
 
             for t in steps:
                 p = at_step(t, filters, tree)
-                for control_points, step in interpolation_steps:
-                    interp_start = None
-                    interp_end = None
-                    if t == control_points[-1]:
-                        interp_start = max(control_points[0], int(self.start * 100))
-                        interp_end = min(control_points[-1], int(self.end * 100))
-                        control_points = tuple(
-                            sorted(set(f(c) for c in control_points if c >= interp_start or c <= interp_end))
-                        )
-                    if interp_start is not None and interp_end is not None and interp_end > interp_start:
-                        interpolations.add((control_points, f(step)))
                 parsed.append([f(t), p])
 
         except lark.exceptions.LarkError as e:
@@ -322,14 +279,9 @@ class PromptSchedule(object):
 
         # Tag filtering may return redundant prompts, so filter them out here
         res = []
-        prev_p = None
         prev_end = -1
 
         for end_at, p in parsed:
-            # Preserve prompt if it ends at the start of an interpolation, otherwise bump its end time
-            if p == prev_p and res[-1][0] not in [x[0][0] for x in interpolations]:
-                res[-1][0] = end_at
-                continue
             if end_at < self.start:
                 continue
             elif end_at <= self.end:
@@ -338,18 +290,12 @@ class PromptSchedule(object):
             elif end_at > self.end and prev_end < self.end:
                 res.append([end_at, p])
                 break
-            prev_p = p
 
         # Always use the last prompt if everything was filtered
         if len(res) == 0:
             res = [[1.0, parsed[-1][1]]]
 
-        return interpolations, res
-
-    def add_masks(self, *masks):
-        for mask in masks:
-            if mask is not None:
-                self.masks.append(mask)
+        return res
 
     def clone(self):
         return self.with_filters()
@@ -363,8 +309,6 @@ class PromptSchedule(object):
             filters=ifspecified(filters, self.filters),
             start=ifspecified(start, self.start),
             end=ifspecified(end, self.end),
-            defaults=ifspecified(defaults, self.defaults),
-            masks=self.masks[:],
         )
         return p
 
@@ -377,23 +321,6 @@ class PromptSchedule(object):
             if x[0] * total_steps >= step:
                 return i, x
         return len(self.parsed_prompt) - 1, self.parsed_prompt[-1]
-
-    def interpolation_at(self, step, total_steps=1):
-        i, x = self.at_step_idx(step, total_steps)
-        for y in self.parsed_prompt[i:]:
-            step = min(y[0], 1.0)
-            if x[1]["prompt"] != y[1]["prompt"]:
-                return step, y
-        return 1.0, self.parsed_prompt[-1]
-
-    def load_loras(self, lora_cache=None):
-        from .utils import Timer, load_loras_from_schedule
-
-        if lora_cache is not None:
-            self.loaded_loras = lora_cache
-        with Timer("PromptSchedule.load_loras()"):
-            self.loaded_loras = load_loras_from_schedule(self.parsed_prompt, self.loaded_loras)
-        return self.loaded_loras
 
 
 def parse_prompt_schedules(prompt):
