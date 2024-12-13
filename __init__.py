@@ -4,6 +4,7 @@
 @nickname: ComfyUI Prompt Control
 @description: Control LoRA and prompt scheduling, advanced text encoding, regional prompting, and much more, through your text prompt. Generates dynamic graphs that are literally identical to handcrafted noodle soup.
 """
+
 import os
 import sys
 import logging
