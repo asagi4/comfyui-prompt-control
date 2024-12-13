@@ -133,9 +133,9 @@ class PCLazyLoraLoaderAdvanced:
                 "text": ("STRING", {"multiline": True}),
                 "model": ("MODEL", {"rawLink": True}),
                 "clip": ("CLIP", {"rawLink": True}),
-                "apply_hooks": ("BOOLEAN", {"default": True}),
             },
             "optional": {
+                "apply_hooks": ("BOOLEAN", {"default": True}),
                 "tags": ("STRING", {"default": ""}),
                 "start": ("FLOAT", {"min": 0.0, "max": 1.0, "default": 0.0, "step": 0.01}),
                 "end": ("FLOAT", {"min": 0.0, "max": 1.0, "default": 1.0, "step": 0.01}),
@@ -148,7 +148,7 @@ class PCLazyLoraLoaderAdvanced:
     CATEGORY = "promptcontrol"
     FUNCTION = "apply"
 
-    def apply(self, model, clip, text, apply_hooks, unique_id, tags="", start=0.0, end=1.0):
+    def apply(self, model, clip, text, unique_id, apply_hooks=True, tags="", start=0.0, end=1.0):
         schedule = parse_prompt_schedules(text).with_filters(filters=tags, start=start, end=end)
         graph = GraphBuilder(f"PCLazyLoraLoaderAdvanced-{unique_id}")
         return build_lora_schedule(graph, schedule, model, clip, apply_hooks=apply_hooks, return_hooks=True)
