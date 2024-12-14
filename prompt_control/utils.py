@@ -35,7 +35,6 @@ def find_nonscheduled_loras(consolidated_schedule):
     if not consolidated_schedule:
         return {}
     last_end, candidate_loras = consolidated_schedule[0]
-    print(candidate_loras)
     to_remove = set()
     for candidate, weights in candidate_loras.items():
         for end, loras in consolidated_schedule[1:]:
