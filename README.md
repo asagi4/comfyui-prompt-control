@@ -165,4 +165,5 @@ The parameters affect how the masked and unmasked prompts are combined to produc
 
 # Known issues
 
-- For some reason, ComfyUI isn't caching the dynamic graphs after all. :( I'm sure it did when I tested previously.
+- ComfyUI's caching mechanism has an issue that makes it unnecessarily invalidate caches for certain inputs; you'll still get some benefit from the lazy nodes, but changing inputs that shouldn't affect downstream nodes (especially if using filtering) will still cause them to be recomputed because ComfyUI doesn't realize the inputs haven't changed.
+I have a way to solve this, but it requires modifying ComfyUI code and I'm not sure that it doesn't break something else.
