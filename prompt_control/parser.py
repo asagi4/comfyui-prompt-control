@@ -5,6 +5,8 @@ from math import ceil
 logging.basicConfig()
 log = logging.getLogger("comfyui-prompt-control")
 
+from functools import lru_cache
+
 if lark.__version__ == "0.12.0":
     x = "Your lark package reports an ancient version (0.12.0) and will not work. If you have the 'lark-parser' package in your Python environment, remove that and *reinstall* lark!"
     log.error(x)
@@ -323,5 +325,6 @@ class PromptSchedule(object):
         return len(self.parsed_prompt) - 1, self.parsed_prompt[-1]
 
 
-def parse_prompt_schedules(prompt):
-    return PromptSchedule(prompt)
+@lru_cache
+def parse_prompt_schedules(prompt, **kwargs):
+    return PromptSchedule(prompt, **kwargs)

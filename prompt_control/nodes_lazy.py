@@ -8,11 +8,13 @@ log = logging.getLogger("comfyui-prompt-control")
 
 from .utils import consolidate_schedule, find_nonscheduled_loras
 
+
 def cache_key_hack(inputs):
     out = inputs.copy()
     if not is_link(inputs["text"]):
         out["text"] = cache_key_from_inputs(**inputs)
     return out
+
 
 def create_lora_loader_nodes(graph, model, clip, loras):
     for path, info in loras.items():
@@ -156,7 +158,7 @@ class PCLazyLoraLoaderAdvanced:
     FUNCTION = "apply"
 
     def apply(self, model, clip, text, unique_id, apply_hooks=True, tags="", start=0.0, end=1.0):
-        schedule = parse_prompt_schedules(text).with_filters(filters=tags, start=start, end=end)
+        schedule = parse_prompt_schedules(text, filters=tags, start=start, end=end)
         graph = GraphBuilder(f"PCLazyLoraLoaderAdvanced-{unique_id}")
         return build_lora_schedule(graph, schedule, model, clip, apply_hooks=apply_hooks, return_hooks=True)
 
@@ -226,7 +228,7 @@ def build_scheduled_prompts(graph, schedules, clip):
 
 
 def cache_key_from_inputs(text, tags="", start=0.0, end=1.0, **kwargs):
-    schedules = parse_prompt_schedules(text).with_filters(start=start, end=end, filters=tags)
+    schedules = parse_prompt_schedules(text, filters=tags, start=start, end=end)
     return [(pct, s["prompt"]) for pct, s in schedules]
 
 
@@ -270,7 +272,7 @@ class PCLazyTextEncodeAdvanced:
     FUNCTION = "apply"
 
     def apply(self, clip, text, unique_id, tags="", start=0.1, end=1.0):
-        schedules = parse_prompt_schedules(text).with_filters(start=start, end=end, filters=tags)
+        schedules = parse_prompt_schedules(text, filters=tags, start=start, end=end)
         graph = GraphBuilder(f"PCLazyTextEncodeAdvanced-{unique_id}")
         return build_scheduled_prompts(graph, schedules, clip)
 
