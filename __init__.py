@@ -15,7 +15,7 @@ log = logging.getLogger("comfyui-prompt-control")
 log.propagate = False
 if not log.handlers:
     h = logging.StreamHandler(sys.stdout)
-    h.setFormatter(logging.Formatter("[%(levelname)s] PromptControl: %(message)s"))
+    h.setFormatter(logging.Formatter("[PromptControl] %(levelname)s: %(message)s"))
     log.addHandler(h)
 
 if os.environ.get("PROMPTCONTROL_DEBUG"):
