@@ -1,6 +1,6 @@
 import logging
 from .parser import parse_prompt_schedules
-from comfy_execution.graph_utils import GraphBuilder
+from comfy_execution.graph_utils import GraphBuilder, is_link
 
 from .prompts import get_function
 
@@ -8,6 +8,11 @@ log = logging.getLogger("comfyui-prompt-control")
 
 from .utils import consolidate_schedule, find_nonscheduled_loras
 
+def cache_key_hack(inputs):
+    out = inputs.copy()
+    if not is_link(inputs["text"]):
+        out["text"] = cache_key_from_inputs(**inputs)
+    return out
 
 def create_lora_loader_nodes(graph, model, clip, loras):
     for path, info in loras.items():
@@ -126,6 +131,8 @@ def build_lora_schedule(graph, schedule, model, clip, apply_hooks=True, return_h
 
 
 class PCLazyLoraLoaderAdvanced:
+    CACHE_KEY = cache_key_hack
+
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -155,6 +162,8 @@ class PCLazyLoraLoaderAdvanced:
 
 
 class PCLazyLoraLoader:
+    CACHE_KEY = cache_key_hack
+
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -216,13 +225,18 @@ def build_scheduled_prompts(graph, schedules, clip):
     return {"result": (node.out(0),), "expand": g}
 
 
+def cache_key_from_inputs(text, tags="", start=0.0, end=1.0, **kwargs):
+    schedules = parse_prompt_schedules(text).with_filters(start=start, end=end, filters=tags)
+    return [(pct, s["prompt"]) for pct, s in schedules]
+
+
 class PCLazyTextEncode:
+    CACHE_KEY = cache_key_hack
+
     @classmethod
     def INPUT_TYPES(s):
         return {
             "required": {"clip": ("CLIP", {"rawLink": True}), "text": ("STRING", {"multiline": True})},
-            # "optional": {"defaults": ("SCHEDULE_DEFAULTS",)},
-            "hidden": {"unique_id": "UNIQUE_ID"},
         }
 
     RETURN_TYPES = ("CONDITIONING",)
@@ -230,13 +244,15 @@ class PCLazyTextEncode:
     CATEGORY = "promptcontrol"
     FUNCTION = "apply"
 
-    def apply(self, clip, text, unique_id):
+    def apply(self, clip, text):
         schedules = parse_prompt_schedules(text)
-        graph = GraphBuilder(f"PCEncodeLazy-{unique_id}")
+        graph = GraphBuilder()
         return build_scheduled_prompts(graph, schedules, clip)
 
 
 class PCLazyTextEncodeAdvanced:
+    CACHE_KEY = cache_key_hack
+
     @classmethod
     def INPUT_TYPES(s):
         return {
