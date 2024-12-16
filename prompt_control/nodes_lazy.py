@@ -34,7 +34,7 @@ def create_hook_nodes_for_lora(graph, path, info, existing_node, start_pct, end_
     prev_keyframe = None
     next_keyframe = None
     if not existing_node:
-        log.debug("Creating hook for %s", path)
+        log.debug("Creating hook for %s, weight=%s, weight_clip=%s", path, info["weight"], info["weight_clip"])
         hook_node = graph.node("CreateHookLora")
         hook_node.set_input("lora_name", path)
         hook_node.set_input("strength_model", info["weight"])
@@ -67,7 +67,7 @@ def create_hook_nodes_for_lora(graph, path, info, existing_node, start_pct, end_
     next_keyframe.set_input("strength_mult", 1.0)
     prev_hook_kf = next_keyframe.out(0)
     if end_pct < 1.0:
-        log.debug("Creating end keyframe for %s, start=%s", path, start_pct)
+        log.debug("Creating end keyframe for %s, start=%s", path, end_pct)
         next_keyframe = graph.node("CreateHookKeyframe")
         next_keyframe.set_input("strength_mult", 0.0)
         next_keyframe.set_input("start_percent", end_pct)
