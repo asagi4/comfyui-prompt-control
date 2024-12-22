@@ -43,7 +43,7 @@ class PCTextEncode:
         return PCTextEncodeWithRange(clip, text, 0.0, 1.0)
 
 
-NODE_CLASS_MAPPINGS = {"PCTextEncode": PCTextEncode, "PCTextEncodewithRange": PCTextEncodeWithRange}
+NODE_CLASS_MAPPINGS = {"PCTextEncode": PCTextEncode, "PCTextEncodeWithRange": PCTextEncodeWithRange}
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "PCTextEncode": "PC Text Encode (no scheduling)",
