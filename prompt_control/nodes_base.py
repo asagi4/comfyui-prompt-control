@@ -40,7 +40,7 @@ class PCTextEncode:
     DESCRIPTION = "Encodes a prompt with extra goodies from Prompt Control. This node does *not* support scheduling"
 
     def apply(self, clip, text):
-        return PCTextEncodeWithRange(clip, text, 0.0, 1.0)
+        return PCTextEncodeWithRange.apply(self, clip, text, 0.0, 1.0)
 
 
 NODE_CLASS_MAPPINGS = {"PCTextEncode": PCTextEncode, "PCTextEncodeWithRange": PCTextEncodeWithRange}
