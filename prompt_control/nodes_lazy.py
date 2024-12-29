@@ -10,12 +10,19 @@ from .utils import consolidate_schedule, find_nonscheduled_loras
 import json
 
 
-
-def cache_key_hack(inputs):
+def _cache_key(cachekey, inputs):
     out = inputs.copy()
     if not is_link(inputs["text"]):
-        out["text"] = cache_key_from_inputs(**inputs)
+        out["text"] = cache_key_from_inputs(cachekey, **inputs)
     return out
+
+
+def cache_key_prompt(inputs):
+    return _cache_key("prompt", inputs)
+
+
+def cache_key_lora(inputs):
+    return _cache_key("loras", inputs)
 
 
 def create_lora_loader_nodes(graph, model, clip, loras):
@@ -135,7 +142,7 @@ def build_lora_schedule(graph, schedule, model, clip, apply_hooks=True, return_h
 
 
 class PCLazyLoraLoaderAdvanced:
-    CACHE_KEY = cache_key_hack
+    CACHE_KEY = cache_key_lora
 
     @classmethod
     def INPUT_TYPES(s):
@@ -166,7 +173,7 @@ class PCLazyLoraLoaderAdvanced:
 
 
 class PCLazyLoraLoader:
-    CACHE_KEY = cache_key_hack
+    CACHE_KEY = cache_key_lora
 
     @classmethod
     def INPUT_TYPES(s):
@@ -226,13 +233,13 @@ def build_scheduled_prompts(graph, schedules, clip):
     return {"result": (node.out(0),), "expand": g}
 
 
-def cache_key_from_inputs(text, tags="", start=0.0, end=1.0, **kwargs):
+def cache_key_from_inputs(cachekey, text, tags="", start=0.0, end=1.0, **kwargs):
     schedules = parse_prompt_schedules(text, filters=tags, start=start, end=end)
-    return [(pct, s["prompt"]) for pct, s in schedules]
+    return [(pct, s[cachekey]) for pct, s in schedules]
 
 
 class PCLazyTextEncode:
-    CACHE_KEY = cache_key_hack
+    CACHE_KEY = cache_key_prompt
 
     @classmethod
     def INPUT_TYPES(s):
@@ -252,7 +259,7 @@ class PCLazyTextEncode:
 
 
 class PCLazyTextEncodeAdvanced:
-    CACHE_KEY = cache_key_hack
+    CACHE_KEY = cache_key_prompt
 
     @classmethod
     def INPUT_TYPES(s):
