@@ -7,6 +7,8 @@ from .prompts import get_function
 log = logging.getLogger("comfyui-prompt-control")
 
 from .utils import consolidate_schedule, find_nonscheduled_loras
+import json
+
 
 
 def cache_key_hack(inputs):
@@ -229,6 +231,7 @@ def build_scheduled_prompts(graph, schedules, clip):
         node = combiner
 
     g = graph.finalize()
+    log.debug("Built graph: %s", json.dumps(g))
 
     return {"result": (node.out(0),), "expand": g}
 
