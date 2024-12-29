@@ -135,7 +135,7 @@ These functions are applied to each prompt chunk **after** `BREAK`, `AND` etc. h
 
 Multiple instances of these functions are applied in the order they appear in the prompt.
 
-**NOTE:** These functions are *not* smart about syntax and will break emphasis if the separator occurs inside parentheses. I might fix this at some point, but for now, keep this in mind.
+**NOTE** To avoid breaking emphasis syntax, the functions ignore any separators inside parentheses
 
 For example:
 - `SHIFT(1) cat, dog, tiger, mouse` does a shift and results in `dog, tiger, mouse, cat`. (whitespace may vary)

@@ -2,7 +2,9 @@ from pathlib import Path
 import re
 import logging
 
-import folder_paths
+# Allow testing
+if __name__ != "__main__":
+    import folder_paths
 
 log = logging.getLogger("comfyui-prompt-control")
 
@@ -45,6 +47,26 @@ def find_nonscheduled_loras(consolidated_schedule):
     if last_end < 1.0:
         return {}
     return {k: v for (k, v) in candidate_loras.items() if k not in to_remove}
+
+
+def smarter_split(separator, string):
+    """Does not break () when splitting"""
+    splits = []
+    prev = 0
+    stack = 0
+    escape = False
+    for idx, x in enumerate(string):
+        if x == "(" and not escape:
+            stack += 1
+        elif x == ")" and not escape:
+            stack = max(0, stack - 1)
+        elif x == separator and stack == 0:
+            splits.append(string[prev:idx])
+            prev = idx + 1
+        escape = x == "\\"
+
+    splits.append(string[prev : idx + 1])
+    return splits
 
 
 def find_closing_paren(text, start):

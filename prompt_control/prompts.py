@@ -4,7 +4,7 @@ import torch
 from functools import partial
 from comfy_extras.nodes_mask import FeatherMask, MaskComposite
 
-from .utils import safe_float, get_function, parse_floats
+from .utils import safe_float, get_function, parse_floats, smarter_split
 from .adv_encode import advanced_encode_from_tokens
 from .cutoff import process_cuts
 from .parser import parse_cuts
@@ -89,7 +89,8 @@ def shuffle_chunk(shuffle, c):
     }.get(joiner, joiner)
 
     log.info("%s arg=%s sep=%s join=%s", func, shuffle_count, separator, joiner)
-    separated = c.split(separator)
+    separated = smarter_split(separator, c)
+    log.debug("Prompt split into %s", separated)
     if func == "SHIFT":
         shuffle_count = shuffle_count % len(separated)
         permutation = separated[shuffle_count:] + separated[:shuffle_count]
