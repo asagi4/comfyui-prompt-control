@@ -88,7 +88,7 @@ def shuffle_chunk(shuffle, c):
         "separator": separator,
     }.get(joiner, joiner)
 
-    log.info("%s arg=%s sep=%s join=%s", func, shuffle_count, separator, joiner)
+    log.debug("%s arg=%s sep=%s join=%s", func, shuffle_count, separator, joiner)
     separated = smarter_split(separator, c)
     log.debug("Prompt split into %s", separated)
     if func == "SHIFT":
