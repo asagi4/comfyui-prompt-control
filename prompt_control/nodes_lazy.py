@@ -132,6 +132,7 @@ def build_lora_schedule(graph, schedule, model, clip, apply_hooks=True, return_h
             clip = n.out(0)
 
     r = graph.finalize()
+    log.debug("LazyLoraLoader built graph: %s", json.dumps(r))
 
     if return_hooks:
         ret = (model, clip, res)
