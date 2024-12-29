@@ -20,5 +20,7 @@ A clear and concise description of what the bug is.
 Information needed to trigger the problem.
 If possible, attach a workflow to reproduce the problem
 
+If a workflow works, but isn't producing the correct output, please enable debug logging with the `PCSetLogLevel` node (from `promptcontrol/tools`) and run your workflow with debug logging enabled, and copy the outputs here.
+
 **Expected behavior**
 A description of what you expected to happen.
