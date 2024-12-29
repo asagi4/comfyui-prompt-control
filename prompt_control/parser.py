@@ -4,8 +4,10 @@ from math import ceil
 
 logging.basicConfig()
 log = logging.getLogger("comfyui-prompt-control")
+import re
 
 from functools import lru_cache
+from .utils import get_function
 
 if lark.__version__ == "0.12.0":
     from sys import executable
@@ -45,6 +47,7 @@ TAG: /[A-Z_]+/
 """,
     lexer="dynamic",
 )
+
 
 cut_parser = lark.Lark(
     r"""
@@ -333,6 +336,34 @@ class PromptSchedule(object):
         return len(self.parsed_prompt) - 1, self.parsed_prompt[-1]
 
 
+def replace_defs(text):
+    text, defs = get_function(text, "DEF", defaults=None)
+    res = text
+    prevres = text
+    replacements = []
+    for d in defs:
+        r = d.split("=", 1)
+        if len(r) != 2 or not r[0].strip():
+            log.warning("Ignoring invalid DEF(%s)", d)
+            continue
+        replacements.append(r[0].strip(), r[1].strip())
+    iterations = 0
+    while True:
+        iterations += 1
+        if iterations > 10:
+            log.error("Unable to resolve DEFs, make sure there are no cycles!")
+            return text
+        for search, replace in replacements:
+            res = re.sub(rf"\b{re.escape(search)}\b", replace, res)
+        if res == prevres:
+            break
+        prevres = res
+    if res != text:
+        log.info("DEFs expanded to: %s", res)
+    return res
+
+
 @lru_cache
 def parse_prompt_schedules(prompt, **kwargs):
+    prompt = replace_defs(prompt)
     return PromptSchedule(prompt, **kwargs)

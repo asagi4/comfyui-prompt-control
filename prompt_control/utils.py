@@ -3,8 +3,13 @@ import re
 import logging
 
 # Allow testing
-if __name__ != "__main__":
-    import folder_paths
+try:
+    from folder_paths import get_filename_list
+except ImportError:
+
+    def get_filename_list(x):
+        raise NotImplementedError("How did you get here?")
+
 
 log = logging.getLogger("comfyui-prompt-control")
 
@@ -140,7 +145,7 @@ def safe_float(f, default):
 
 
 def lora_name_to_file(name):
-    filenames = folder_paths.get_filename_list("loras")
+    filenames = get_filename_list("loras")
     # Return exact matches as is
     if name in filenames:
         return name
