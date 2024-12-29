@@ -30,14 +30,22 @@ NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 
 nodes = ["base", "lazy", "tools"]
+optional_nodes = ["attnmask"]
 if importlib.util.find_spec("comfy.hooks"):
-    nodes.append("hooks")
+    nodes.extend(["hooks"])
 else:
-    log.warning(
-        "Your ComfyUI version is too old, can't import comfy.hooks for PCEncodeSchedule and PCLoraHooksFromSchedule. Update your installation."
-    )
+    log.error("Your ComfyUI version is too old, can't import comfy.hooks. Update your installation.")
 
 for node in nodes:
     mod = importlib.import_module(f".prompt_control.nodes_{node}", package=__name__)
     NODE_CLASS_MAPPINGS.update(mod.NODE_CLASS_MAPPINGS)
     NODE_DISPLAY_NAME_MAPPINGS.update(mod.NODE_DISPLAY_NAME_MAPPINGS)
+
+for node in optional_nodes:
+    try:
+        mod = importlib.import_module(f".prompt_control.nodes_{node}", package=__name__)
+        NODE_CLASS_MAPPINGS.update(mod.NODE_CLASS_MAPPINGS)
+        NODE_DISPLAY_NAME_MAPPINGS.update(mod.NODE_DISPLAY_NAME_MAPPINGS)
+    except ImportError:
+        log.info(f"Could not import optional nodes: {node}; continuing anyway")
+
