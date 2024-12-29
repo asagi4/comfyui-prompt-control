@@ -196,7 +196,6 @@ class PCLazyLoraLoader:
 def build_scheduled_prompts(graph, schedules, clip):
     nodes = []
     start_pct = 0.0
-    prompt_cache = {}
     for end_pct, c in schedules:
         p = c["prompt"]
         p, classnames = get_function(p, "NODE", ["PCTextEncode", "text"])
@@ -205,12 +204,9 @@ def build_scheduled_prompts(graph, schedules, clip):
         if classnames:
             classname = classnames[0][0]
             paramname = classnames[0][1]
-        node = prompt_cache.get((p, classname, paramname))
-        if not node:
-            node = graph.node(classname)
-            node.set_input("clip", clip)
-            node.set_input(paramname, p)
-            prompt_cache[(p, classname, paramname)] = node
+        node = graph.node(classname)
+        node.set_input("clip", clip)
+        node.set_input(paramname, p)
         timestep = graph.node("ConditioningSetTimestepRange")
         timestep.set_input("conditioning", node.out(0))
         timestep.set_input("start", start_pct)
