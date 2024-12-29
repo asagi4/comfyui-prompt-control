@@ -199,8 +199,8 @@ def build_scheduled_prompts(graph, schedules, clip):
     prompt_cache = {}
     for end_pct, c in schedules:
         p = c["prompt"]
-        p, classnames = get_function(p, "NODE", ["PCTextEncodeWithRange", "text"])
-        classname = "PCTextEncodeWithRange"
+        p, classnames = get_function(p, "NODE", ["PCTextEncode", "text"])
+        classname = "PCTextEncode"
         paramname = "text"
         if classnames:
             classname = classnames[0][0]
@@ -211,17 +211,11 @@ def build_scheduled_prompts(graph, schedules, clip):
             node.set_input("clip", clip)
             node.set_input(paramname, p)
             prompt_cache[(p, classname, paramname)] = node
-        # Normally, ComfyUI encodes a prompt for every hook attached to the CLIP model. Passing the start and end directly to the encoder allows ComfyUI to skip encoding for hooks outside the range.
-        if classname == "PCTextEncodeWithRange":
-            node.set_input("start", start_pct)
-            node.set_input("end", end_pct)
-            nodes.append(node)
-        else:
-            timestep = graph.node("ConditioningSetTimestepRange")
-            timestep.set_input("conditioning", node.out(0))
-            timestep.set_input("start", start_pct)
-            timestep.set_input("end", end_pct)
-            nodes.append(timestep)
+        timestep = graph.node("ConditioningSetTimestepRange")
+        timestep.set_input("conditioning", node.out(0))
+        timestep.set_input("start", start_pct)
+        timestep.set_input("end", end_pct)
+        nodes.append(timestep)
         start_pct = end_pct
     node = nodes[0]
     for othernode in nodes[1:]:
