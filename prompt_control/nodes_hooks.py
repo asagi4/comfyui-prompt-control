@@ -84,5 +84,5 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "PCLoraHooksFromText": "PC LoRA Hooks From Text (non-lazy)",
+    "PCLoraHooksFromText": "PC: LoRA Hooks From Text (non-lazy)",
 }

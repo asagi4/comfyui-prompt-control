@@ -16,7 +16,7 @@ class PCTextEncodeWithRange:
         }
 
     RETURN_TYPES = ("CONDITIONING",)
-    CATEGORY = "promptcontrol/advanced"
+    CATEGORY = "promptcontrol/tools"
     FUNCTION = "apply"
     DESCRIPTION = "Like PCTextEncode, but if you know the range you need for a prompt, can be slightly more efficient when you have LoRAs scheduled on a CLIP model"
 
@@ -46,6 +46,6 @@ class PCTextEncode:
 NODE_CLASS_MAPPINGS = {"PCTextEncode": PCTextEncode, "PCTextEncodeWithRange": PCTextEncodeWithRange}
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "PCTextEncode": "PC Text Encode (no scheduling)",
-    "PCTextEncodeWithRange": "PC Text Encode with Range (no scheduling)",
+    "PCTextEncode": "PC: Text Encode (no scheduling)",
+    "PCTextEncodeWithRange": "PC: Text Encode with Range (no scheduling)",
 }

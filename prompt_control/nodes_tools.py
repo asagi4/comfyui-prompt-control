@@ -3,6 +3,32 @@ import logging
 log = logging.getLogger("comfyui-prompt-control")
 
 
+class PCSetLogLevel:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "clip": ("CLIP",),
+            },
+            "optional": {
+                "level": (["INFO", "DEBUG", "WARNING", "ERROR"], {"default": "INFO"}),
+            },
+        }
+
+    def apply(self, clip, level="INFO"):
+        log.setLevel(getattr(logging, level))
+        log.info("Set logging level to %s", level)
+        return (clip,)
+
+    RETURN_TYPES = ("CLIP",)
+    CATEGORY = "promptcontrol/tools"
+    DESCRIPTION = (
+        "A debug node to configure Prompt Control logging level. Pass a CLIP through it before you run any PC nodes"
+    )
+
+    FUNCTION = "apply"
+
+
 class PCAddMaskToCLIP:
     @classmethod
     def INPUT_TYPES(s):
@@ -14,7 +40,7 @@ class PCAddMaskToCLIP:
         }
 
     RETURN_TYPES = ("CLIP",)
-    CATEGORY = "promptcontrol/v2"
+    CATEGORY = "promptcontrol/tools"
     FUNCTION = "apply"
 
     def apply(self, clip, mask=None):
@@ -35,7 +61,7 @@ class PCAddMaskToCLIPMany:
         }
 
     RETURN_TYPES = ("CLIP",)
-    CATEGORY = "promptcontrol/v2"
+    CATEGORY = "promptcontrol/tools"
     FUNCTION = "apply"
 
     def apply(self, clip, mask1=None, mask2=None, mask3=None, mask4=None):
@@ -65,7 +91,7 @@ class PCSetPCTextEncodeSettings:
         }
 
     RETURN_TYPES = ("CLIP",)
-    CATEGORY = "promptcontrol/v2"
+    CATEGORY = "promptcontrol/tools"
     FUNCTION = "apply"
 
     def apply(
@@ -101,10 +127,12 @@ NODE_CLASS_MAPPINGS = {
     "PCSetPCTextEncodeSettings": PCSetPCTextEncodeSettings,
     "PCAddMaskToCLIP": PCAddMaskToCLIP,
     "PCAddMaskToCLIPMany": PCAddMaskToCLIPMany,
+    "PCSetLogLevel": PCSetLogLevel,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "PCSetTextEncodeSettings": "PC: Configure PCTextEncode",
+    "PCSetPCTextEncodeSettings": "PC: Configure PCTextEncode",
     "PCAddMaskToCLIP": "PC: Attach Mask",
     "PCAddMaskToCLIPMany": "PC: Attach Mask (multi)",
+    "PCSetLogLevel": "PC: Configure Logging (for debug)",
 }
