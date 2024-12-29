@@ -117,7 +117,7 @@ def build_lora_schedule(graph, schedule, model, clip, apply_hooks=True, return_h
     # Finally, combine all hooks and optionally apply
     if len(hooks) > 0:
         res = hooks[0]
-        for h in hooks[:1]:
+        for h in hooks[1:]:
             n = graph.node("CombineHooks2")
             n.set_input("hooks_A", res.out(0))
             n.set_input("hooks_B", h.out(0))
