@@ -12,7 +12,8 @@ import json
 
 def _cache_key(cachekey, inputs):
     out = inputs.copy()
-    if not is_link(inputs["text"]):
+    text = inputs.get("text")
+    if text is not None and not is_link(text):
         out["text"] = cache_key_from_inputs(cachekey, **inputs)
     return out
 
