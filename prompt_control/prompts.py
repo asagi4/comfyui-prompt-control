@@ -9,6 +9,21 @@ from .adv_encode import advanced_encode_from_tokens
 from .cutoff import process_cuts
 from .parser import parse_cuts
 
+try:
+    from .nodes_attnmask import create_attention_hook
+    from comfy.hooks import set_hooks_for_conditioning
+
+    def set_cond_attnmask(cond, mask):
+        hook = create_attention_hook(mask)
+        return set_hooks_for_conditioning(cond, hooks=hook)
+
+except ImportError:
+
+    def set_cond_attnmask(cond, mask):
+        log.info("Attention masking is not available")
+        return cond
+
+
 log = logging.getLogger("comfyui-prompt-control")
 
 AVAILABLE_STYLES = ["comfy", "perp", "A1111", "compel", "comfy++", "down_weight"]
@@ -430,6 +445,11 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
     # TODO: is this still needed?
     # scale = sum(abs(weight(p)[0]) for p in prompts if not ("AREA(" in p or "MASK(" in p))
     for prompt in prompts:
+        attn = False
+        if "ATTN()" in prompt:
+            prompt = prompt.replace("ATTN()", "")
+            attn = True
+            log.info("Using attention masking for prompt segment")
         prompt, mask, mask_weight = get_mask(prompt, mask_size, masks)
         w, opts, prompt = weight(prompt)
         text, noise_w, generator = get_noise(text)
@@ -452,6 +472,11 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
         settings["start_percent"] = start_pct
         settings["end_percent"] = end_pct
         x = encode_prompt_segment(clip, prompt, settings, style, normalization)
+        if attn and mask is not None:
+            mask = settings.pop("mask")
+            strength = settings.pop("mask_strength")
+            x = set_cond_attnmask(x, mask * strength)
+
         conds.extend(x)
 
     return conds
