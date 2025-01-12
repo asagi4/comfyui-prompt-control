@@ -195,3 +195,10 @@ The order of the `FEATHER` and `MASK` calls doesn't matter; you can have `FEATHE
 
 ## Miscellaneous
 - `<emb:xyz>` is alternative syntax for `embedding:xyz` to work around a syntax conflict with `[embedding:xyz:0.5]` which is parsed as a schedule that switches from `embedding` to `xyz`.
+
+# Experimental features
+
+Experimental features are unstable and may disappear or break without warning.
+
+## Attention masking
+- Use `ATTN()` in combination with `MASK()` or `IMASK()` to enable attention masking. Currently, it's pretty slow and only works with SDXL. You need to have a recent enough version of ComfyUI for this to work.

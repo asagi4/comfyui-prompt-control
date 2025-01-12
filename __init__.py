@@ -48,4 +48,3 @@ for node in optional_nodes:
         NODE_DISPLAY_NAME_MAPPINGS.update(mod.NODE_DISPLAY_NAME_MAPPINGS)
     except ImportError:
         log.info(f"Could not import optional nodes: {node}; continuing anyway")
-
