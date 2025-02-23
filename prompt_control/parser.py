@@ -346,7 +346,7 @@ def replace_defs(text):
         if len(r) != 2 or not r[0].strip():
             log.warning("Ignoring invalid DEF(%s)", d)
             continue
-        replacements.append(r[0].strip(), r[1].strip())
+        replacements.append((r[0].strip(), r[1].strip()))
     iterations = 0
     while True:
         iterations += 1
