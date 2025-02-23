@@ -1,4 +1,5 @@
 import logging
+from .parser import parse_prompt_schedules
 
 log = logging.getLogger("comfyui-prompt-control")
 
@@ -42,6 +43,7 @@ class PCAddMaskToCLIP:
     RETURN_TYPES = ("CLIP",)
     CATEGORY = "promptcontrol/tools"
     FUNCTION = "apply"
+    DESCRIPTION = "Attaches a mask to a CLIP object so that they can be referred to in a prompt using IMASK(). Using this node multiple times adds more masks rather than replacing existing ones."
 
     def apply(self, clip, mask=None):
         return PCAddMaskToCLIPMany().apply(clip, mask1=mask)
@@ -63,6 +65,7 @@ class PCAddMaskToCLIPMany:
     RETURN_TYPES = ("CLIP",)
     CATEGORY = "promptcontrol/tools"
     FUNCTION = "apply"
+    DESCRIPTION = "Multi-input version of PCAddMaskToCLIP, for convenience"
 
     def apply(self, clip, mask1=None, mask2=None, mask3=None, mask4=None):
         clip = clip.clone()
@@ -93,6 +96,7 @@ class PCSetPCTextEncodeSettings:
     RETURN_TYPES = ("CLIP",)
     CATEGORY = "promptcontrol/tools"
     FUNCTION = "apply"
+    DESCRIPTION = "Configures default values for PCTextEncode"
 
     def apply(
         self,
@@ -123,11 +127,35 @@ class PCSetPCTextEncodeSettings:
         return (clip,)
 
 
+class PCExtractScheduledPrompt:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "text": ("STRING", {"multiline": True}),
+                "at": ("FLOAT", {"min": 0.0, "max": 1.0, "default": 1.0, "step": 0.01}),
+            },
+            "optional": {"tags": ("STRING", {"default": ""})},
+        }
+
+    RETURN_TYPES = ("STRING",)
+    CATEGORY = "promptcontrol/tools"
+    FUNCTION = "apply"
+    DESCRIPTION = "Parses the input prompt and returns the prompt scheduled at the specified point"
+
+    def apply(self, text, at, tags=""):
+        schedule = parse_prompt_schedules(text, filters=tags)
+        _, entry = schedule.at_step(at, total_steps=1)
+        prompt_text = entry.get("prompt", "")
+        return (prompt_text,)
+
+
 NODE_CLASS_MAPPINGS = {
     "PCSetPCTextEncodeSettings": PCSetPCTextEncodeSettings,
     "PCAddMaskToCLIP": PCAddMaskToCLIP,
     "PCAddMaskToCLIPMany": PCAddMaskToCLIPMany,
     "PCSetLogLevel": PCSetLogLevel,
+    "PCExtractScheduledPrompt": PCExtractScheduledPrompt,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -135,4 +163,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "PCAddMaskToCLIP": "PC: Attach Mask",
     "PCAddMaskToCLIPMany": "PC: Attach Mask (multi)",
     "PCSetLogLevel": "PC: Configure Logging (for debug)",
+    "PCExtractScheduledPrompt": "PC: Extract Scheduled Prompt",
 }
