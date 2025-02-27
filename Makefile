@@ -1,4 +1,4 @@
-all: format check
+all: format check test
 	@echo "Done"
 check:
 	find . -name "*.py" | xargs pyflakes
