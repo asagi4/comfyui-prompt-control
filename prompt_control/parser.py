@@ -308,7 +308,15 @@ class PromptSchedule(object):
         if len(res) == 0:
             res = [[1.0, parsed[-1][1]]]
 
-        return res
+        final = [res[0]]
+
+        # Clean up duplicates
+        for p in res[1:]:
+            if p[1] != final[-1][1]:
+                final.append(p)
+            else:
+                final[-1][0] = p[0]
+        return final
 
     def clone(self):
         return self.with_filters()
