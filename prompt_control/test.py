@@ -3,6 +3,10 @@ from .parser import parse_prompt_schedules as parse
 
 
 class TestParser(unittest.TestCase):
+    def assertPrompt(self, p, step, text):
+        self.assertEqual(p[0], step)
+        self.assertEqual(p[1]["prompt"], text)
+
     def test_no_scheduling(self):
         p = parse("This is a (basic:0.6) (prompt) with [no scheduling] features")
         expected = [1.0, {"prompt": "This is a (basic:0.6) (prompt) with [no scheduling] features", "loras": {}}]
@@ -140,6 +144,22 @@ class TestParser(unittest.TestCase):
         }
         for k in prompts:
             self.assertEqual(p.at_step(k), [prompts[k][0], {"prompt": prompts[k][1], "loras": {}}])
+
+    def test_alternating(self):
+        p = parse("[cat|dog|tiger]")
+        p2 = parse("[cat|dog|tiger:0.1]")
+        p3 = parse("[cat|[dog|wolf]|tiger]")
+        p4 = parse("[cat|[dog:wolf<lora:canine:1>:0.5]:0.2]")
+
+        self.assertEqual(p.parsed_prompt, p2.parsed_prompt)
+        for i, x in enumerate(["cat", "wolf", "tiger", "cat", "dog", "tiger", "cat", "wolf", "tiger", "cat"]):
+            step = round((i * 0.1) + 0.1, 2)
+            self.assertPrompt(p3.at_step(step), step, x)
+
+        for i, x in enumerate(["cat", "dog", "cat", "wolf", "cat"]):
+            step = round((i * 0.2) + 0.2, 2)
+            self.assertPrompt(p4.at_step(step), step, x)
+        self.assertEqual(p4.at_step(0.7)[1]["loras"], {"canine": {"weight": 1.0, "weight_clip": 1.0}})
 
 
 if __name__ == "__main__":
