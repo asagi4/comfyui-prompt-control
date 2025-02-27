@@ -32,7 +32,7 @@ prompt: (emphasized | embedding | scheduled | alternate | sequence | loraspec | 
         | "[" prompt "]"
 scheduled: "[" [prompt ":"] [prompt] ":" _WS? NUMBER ["," NUMBER] "]"
         | "[" [prompt ":"] [prompt] ":" _WS? TAG "]"
-sequence:  "[SEQ" ":" [prompt] ":" NUMBER (":" [prompt] ":" NUMBER)+ "]"
+sequence.5:  "[SEQ" ":" [prompt] ":" NUMBER (":" [prompt] ":" NUMBER)* "]"
 alternate: "[" [prompt] ("|" [prompt])+ [":" NUMBER] "]"
 loraspec.99: "<lora:" FILENAME lora_weights [lora_block_weights] ">"
 lora_weights.1: (":" _WS? NUMBER)~1..2
