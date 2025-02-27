@@ -105,9 +105,7 @@ class TestParser(unittest.TestCase):
         )
         p2 = p.with_filters(filters="hr, xyz")
 
-        # TODO: for some reason, this does not deduplicate
-        # self.assertEqual(p2.at_step(0), p2.at_step(1))
-        self.assertEqual(p2.at_step(0)[1]["prompt"], p2.at_step(1)[1]["prompt"])
+        self.assertEqual(p2.at_step(0), p2.at_step(1))
 
     def test_def(self):
         p = parse("DEF(X=0.5) [a:b:X] DEF(test=[c:X]) test test")
