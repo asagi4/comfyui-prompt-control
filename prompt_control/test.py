@@ -60,12 +60,12 @@ class TestParser(unittest.TestCase):
         self.assertEqual(p.at_step(1), expected2)
 
     def test_seq(self):
-        p = parse("This is a sequence of [SEQ:a:0.2::0.5:c:0.8]")
-        p2 = parse("This is a sequence of [[a:[c:0.5]:0.2]::0.8]")
+        p = parse("This is a sequence of [SEQ:a:0.2::0.5:c:0.8][SEQ: and x:0.8]")
+        p2 = parse("This is a sequence of [[a:[c:0.5]:0.2]::0.8][ and x::0.8]")
         prompts = {
-            0.2: "This is a sequence of a",
-            0.5: "This is a sequence of ",
-            0.8: "This is a sequence of c",
+            0.2: "This is a sequence of a and x",
+            0.5: "This is a sequence of  and x",
+            0.8: "This is a sequence of c and x",
             1.0: "This is a sequence of ",
         }
         self.assertEqual(p.parsed_prompt, p2.parsed_prompt)
