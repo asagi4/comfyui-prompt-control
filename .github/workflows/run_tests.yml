@@ -1,0 +1,10 @@
+name: Execute tests
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "*/*.py"
+
+jobs:
+  tests:
+    uses: ./.github/workflows/tests.yml
