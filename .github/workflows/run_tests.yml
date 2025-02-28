@@ -1,9 +1,6 @@
 name: Execute tests
 on:
-  workflow_dispatch:
   push:
-    paths:
-      - "*/*.py"
 
 jobs:
   tests:
