@@ -2,6 +2,8 @@
 
 Control LoRA and prompt scheduling, advanced text encoding, regional prompting, and much more, through your text prompt. Generates dynamic graphs that are literally identical to handcrafted noodle soup.
 
+A `Basic Text to Image` template is included with the extension, and can be loaded from ComfyUI's template library.
+
 ## Prompt Control v2
 
 Prompt control has been almost completely rewritten. It now uses ComfyUI's lazy execution to build graphs from the text prompt at runtime. The generated graph is often exactly equivalent to a manually built workflow using native ComfyUI nodes. There are no more weird sampling hooks that could cause problems with other nodes
@@ -38,8 +40,6 @@ See [features](#features) below. Things you can control via the prompt:
 See the [syntax documentation](doc/syntax.md)
 
 If you find prompt scheduling inconvenient for some reason, `PCTextEncode` can be used as a drop-in replacement for `CLIPTextEncode` to get everything else.
-
-A `Basic Text to Image` template is included with the extension, and can be loaded from ComfyUI's template library.
 
 [This workflow](workflows/example-lazy.json?raw=1) shows LoRA scheduling and prompt editing and compares it with the same prompt implemented with built-in ComfyUI nodes.
 
