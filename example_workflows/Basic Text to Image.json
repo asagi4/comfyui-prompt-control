@@ -290,7 +290,7 @@
           "slot_index": 0
         }
       ],
-      "title": "Positive prompt (with LoRAs)",
+      "title": "Negative prompt",
       "properties": {
         "Run widget replace on values": false
       },
