@@ -96,7 +96,7 @@
       "title": "PC: Schedule Prompt (positive)",
       "properties": {
         "cnr_id": "comfyui-prompt-control",
-        "ver": "bd1c69a51762f5e7bfc6d6054fab86ddf2739d2f",
+        "ver": "2.0.0-beta.7",
         "Node name for S&R": "PCLazyTextEncode"
       },
       "widgets_values": [
@@ -160,7 +160,7 @@
       ],
       "properties": {
         "cnr_id": "comfyui-prompt-control",
-        "ver": "bd1c69a51762f5e7bfc6d6054fab86ddf2739d2f",
+        "ver": "2.0.0-beta.7",
         "Node name for S&R": "PCLazyLoraLoader"
       },
       "widgets_values": [
@@ -344,7 +344,7 @@
       "title": "PC: Schedule Prompt (negative)",
       "properties": {
         "cnr_id": "comfyui-prompt-control",
-        "ver": "bd1c69a51762f5e7bfc6d6054fab86ddf2739d2f",
+        "ver": "2.0.0-beta.7",
         "Node name for S&R": "PCLazyTextEncode"
       },
       "widgets_values": [
