@@ -39,6 +39,7 @@ See the [syntax documentation](doc/syntax.md)
 
 If you find prompt scheduling inconvenient for some reason, `PCTextEncode` can be used as a drop-in replacement for `CLIPTextEncode` to get everything else.
 
+A `Basic Text to Image` template is included with the extension, and can be loaded from ComfyUI's template library.
 
 [This workflow](workflows/example-lazy.json?raw=1) shows LoRA scheduling and prompt editing and compares it with the same prompt implemented with built-in ComfyUI nodes.
 
