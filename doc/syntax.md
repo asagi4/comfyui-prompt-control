@@ -24,12 +24,12 @@ a [red:[blue::0.7]:0.5] cat
 
 switches from `a red cat` to `a blue cat` at 0.5 and to `a cat` at 0.7
 
-
-**Note:** As a special case, `[cat:0.5]` is like `[:cat:0.5]` meaning it switches from empty to `cat` at 0.5. Currently, `[:cat:0.5]` doesn't actually parse correctly, so you **must** use the shortcut form
+**Note:** As a special case, `[cat:0.5]` is equivalent to `[:cat:0.5]` meaning it switches from empty to `cat` at 0.5.
 
 ### Range expressions
 
 You can also use `a [during:after:0.3,0.7]` as a shortcut. The prompt be `a` until 0.3, `a during` until 0.7, and then `a after`. This form is equivalent to `[[during:after:0.7]:0.3]`
+
 For convenience, `[during:0.1,0.4]` is equivalent to `[during::0.1,0.4]`
 
 ## Tag selection
@@ -79,7 +79,6 @@ Might be useful with Jinja templating (see https://github.com/asagi4/comfyui-uti
 ```
 generates a LoRA schedule based on a sinewave
 
-
 # Basic prompt syntax
 
 This syntax is also available in outside scheduled prompts, where applicable.
@@ -97,7 +96,6 @@ The A111-style syntax `<lora:loraname:weight>` can be used to load LoRAs via the
 cat :1 AND dog :2
 ```
 The weight defaults to 1 and are normalized so that `a:2 AND b:2` is equal to `a AND b`. `AND` is processed after schedule parsing, so you can change the weight mid-prompt: `cat:[1:2:0.5] AND dog`
-
 
 ## Functions
 
