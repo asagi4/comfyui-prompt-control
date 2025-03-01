@@ -669,7 +669,15 @@
   ],
   "groups": [],
   "config": {},
-  "extra": {},
+  "extra": {
+    "ds": {
+      "scale": 0.8,
+      "offset": [
+        588,
+        1260
+      ]
+    }
+  },
   "version": 0.4,
   "models": [{
     "name": "NoobAI-XL-Vpred-v1.0.safetensors",
