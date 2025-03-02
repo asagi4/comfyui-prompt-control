@@ -170,7 +170,7 @@ class PCLazyLoraLoaderAdvanced:
 
     def apply(self, model, clip, text, unique_id, apply_hooks=True, tags="", start=0.0, end=1.0):
         schedule = parse_prompt_schedules(text, filters=tags, start=start, end=end)
-        graph = GraphBuilder(f"PCLazyLoraLoaderAdvanced-{unique_id}")
+        graph = GraphBuilder(unique_id)
         return build_lora_schedule(graph, schedule, model, clip, apply_hooks=apply_hooks, return_hooks=True)
 
 
@@ -197,7 +197,7 @@ class PCLazyLoraLoader:
     FUNCTION = "apply"
 
     def apply(self, model, clip, text, unique_id):
-        graph = GraphBuilder(f"PCLazyLoraLoader-{unique_id}")
+        graph = GraphBuilder(unique_id)
         schedule = parse_prompt_schedules(text)
         return build_lora_schedule(graph, schedule, model, clip, apply_hooks=True, return_hooks=False)
 
