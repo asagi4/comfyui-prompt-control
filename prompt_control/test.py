@@ -99,6 +99,18 @@ class TestParser(unittest.TestCase):
         for k, v in prompts.items():
             self.assertPrompt(p, k, v[0], v[1])
 
+        p = parse("DEF(X=[($1):($1:$2):$2])X(test;0.7)")
+        p2 = parse("[(test):(test:0.7):0.7]")
+        self.assertEqual(p.parsed_prompt, p2.parsed_prompt)
+
+        p = parse("DEF(X=[($1):($1:$2):$2])DEF(Y=X(test;$1))Y(0.7) Y(0.5)")
+        p2 = parse("[(test):(test:0.7):0.7] [(test):(test:0.5):0.5]")
+        self.assertEqual(p.parsed_prompt, p2.parsed_prompt)
+
+        with self.assertRaises(ValueError) as c:
+            parse("DEF(X=recurse Y) DEF(Y=recurse X) X")
+        self.assertTrue("Unable to resolve DEFs" in str(c.exception))
+
     def test_misc(self):
         p = parse("[[a:c:0.5]:0.7]")
         p2 = parse("[:[a:c:0.5]:0.7]")
