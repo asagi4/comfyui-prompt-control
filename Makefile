@@ -6,6 +6,6 @@ format:
 	find . -name "*.py" | xargs black -l 120
 
 test:
-	python -m prompt_control.test
+	python -m prompt_control.test_parser
 
 .PHONY: check format all

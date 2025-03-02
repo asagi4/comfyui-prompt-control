@@ -3,7 +3,7 @@ on:
   - workflow_call
 
 jobs:
-  run-tests:
+  run-parser-tests:
     name: Run parser tests
     runs-on: ubuntu-latest
     steps:
@@ -13,4 +13,4 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install -r requirements.txt
-      - run: python -m prompt_control.test
+      - run: python -m prompt_control.test_parser
