@@ -8,4 +8,7 @@ format:
 test:
 	python -m prompt_control.test_parser
 
+test_graph:
+	PYTHONPATH=../../ python -m prompt_control.test_graph
+
 .PHONY: check format all
