@@ -2,7 +2,7 @@ import logging
 from .parser import parse_prompt_schedules
 from comfy_execution.graph_utils import GraphBuilder, is_link
 
-from .prompts import get_function
+from .utils import get_function
 
 log = logging.getLogger("comfyui-prompt-control")
 
