@@ -247,6 +247,7 @@ class PCLazyTextEncode:
     def INPUT_TYPES(s):
         return {
             "required": {"clip": ("CLIP", {"rawLink": True}), "text": ("STRING", {"multiline": True})},
+            "hidden": {"unique_id": "UNIQUE_ID"},
         }
 
     RETURN_TYPES = ("CONDITIONING",)
@@ -254,9 +255,9 @@ class PCLazyTextEncode:
     CATEGORY = "promptcontrol"
     FUNCTION = "apply"
 
-    def apply(self, clip, text):
+    def apply(self, clip, text, unique_id):
         schedules = parse_prompt_schedules(text)
-        graph = GraphBuilder()
+        graph = GraphBuilder(unique_id)
         return build_scheduled_prompts(graph, schedules, clip)
 
 
@@ -281,7 +282,7 @@ class PCLazyTextEncodeAdvanced:
 
     def apply(self, clip, text, unique_id, tags="", start=0.1, end=1.0):
         schedules = parse_prompt_schedules(text, filters=tags, start=start, end=end)
-        graph = GraphBuilder(f"PCLazyTextEncodeAdvanced-{unique_id}")
+        graph = GraphBuilder(unique_id)
         return build_scheduled_prompts(graph, schedules, clip)
 
 
