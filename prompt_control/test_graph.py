@@ -24,12 +24,12 @@ class GraphTests(unittest.TestCase):
         self.assertEqual(
             r,
             {
-                "result": (["UID2", 0],),
+                "result": (["UID-2", 0],),
                 "expand": {
-                    "UID1": {"class_type": "PCTextEncode", "inputs": {"clip": [0, 0], "text": "test"}},
-                    "UID2": {
+                    "UID-1": {"class_type": "PCTextEncode", "inputs": {"clip": [0, 0], "text": "test"}},
+                    "UID-2": {
                         "class_type": "ConditioningSetTimestepRange",
-                        "inputs": {"conditioning": ["UID1", 0], "start": 0.0, "end": 1.0},
+                        "inputs": {"conditioning": ["UID-1", 0], "start": 0.0, "end": 1.0},
                     },
                 },
             },
@@ -38,30 +38,30 @@ class GraphTests(unittest.TestCase):
         self.assertEqual(
             r,
             {
-                "result": (["UID8", 0],),
+                "result": (["UID-8", 0],),
                 "expand": {
-                    "UID1": {"class_type": "PCTextEncode", "inputs": {"clip": [0, 0], "text": "simple  prompt"}},
-                    "UID2": {
+                    "UID-1": {"class_type": "PCTextEncode", "inputs": {"clip": [0, 0], "text": "simple  prompt"}},
+                    "UID-2": {
                         "class_type": "ConditioningSetTimestepRange",
-                        "inputs": {"conditioning": ["UID1", 0], "start": 0.0, "end": 0.1},
+                        "inputs": {"conditioning": ["UID-1", 0], "start": 0.0, "end": 0.1},
                     },
-                    "UID3": {"class_type": "PCTextEncode", "inputs": {"clip": [0, 0], "text": "simple test prompt"}},
-                    "UID4": {
+                    "UID-3": {"class_type": "PCTextEncode", "inputs": {"clip": [0, 0], "text": "simple test prompt"}},
+                    "UID-4": {
                         "class_type": "ConditioningSetTimestepRange",
-                        "inputs": {"conditioning": ["UID3", 0], "start": 0.1, "end": 0.5},
+                        "inputs": {"conditioning": ["UID-3", 0], "start": 0.1, "end": 0.5},
                     },
-                    "UID5": {"class_type": "PCTextEncode", "inputs": {"clip": [0, 0], "text": "simple  prompt"}},
-                    "UID6": {
+                    "UID-5": {"class_type": "PCTextEncode", "inputs": {"clip": [0, 0], "text": "simple  prompt"}},
+                    "UID-6": {
                         "class_type": "ConditioningSetTimestepRange",
-                        "inputs": {"conditioning": ["UID5", 0], "start": 0.5, "end": 1.0},
+                        "inputs": {"conditioning": ["UID-5", 0], "start": 0.5, "end": 1.0},
                     },
-                    "UID7": {
+                    "UID-7": {
                         "class_type": "ConditioningCombine",
-                        "inputs": {"conditioning_1": ["UID2", 0], "conditioning_2": ["UID4", 0]},
+                        "inputs": {"conditioning_1": ["UID-2", 0], "conditioning_2": ["UID-4", 0]},
                     },
-                    "UID8": {
+                    "UID-8": {
                         "class_type": "ConditioningCombine",
-                        "inputs": {"conditioning_1": ["UID7", 0], "conditioning_2": ["UID6", 0]},
+                        "inputs": {"conditioning_1": ["UID-7", 0], "conditioning_2": ["UID-6", 0]},
                     },
                 },
             },
@@ -95,7 +95,7 @@ class GraphTests(unittest.TestCase):
         self.assertEqual(
             result,
             {
-                "UID1": {
+                "UID-1": {
                     "class_type": "LoraLoader",
                     "inputs": {
                         "model": [0, 1],
@@ -111,7 +111,7 @@ class GraphTests(unittest.TestCase):
         self.assertEqual(
             result,
             {
-                "UID1": {
+                "UID-1": {
                     "class_type": "LoraLoader",
                     "inputs": {
                         "model": [0, 1],
@@ -121,11 +121,11 @@ class GraphTests(unittest.TestCase):
                         "lora_name": "test.safetensors",
                     },
                 },
-                "UID2": {
+                "UID-2": {
                     "class_type": "LoraLoader",
                     "inputs": {
-                        "model": ["UID1", 0],
-                        "clip": ["UID1", 1],
+                        "model": ["UID-1", 0],
+                        "clip": ["UID-1", 1],
                         "strength_model": 0.5,
                         "strength_clip": 0.5,
                         "lora_name": "some/other.safetensors",
@@ -138,7 +138,7 @@ class GraphTests(unittest.TestCase):
         self.assertEqual(
             result,
             {
-                "UID1": {
+                "UID-1": {
                     "class_type": "LoraLoader",
                     "inputs": {
                         "model": [0, 1],
@@ -155,31 +155,31 @@ class GraphTests(unittest.TestCase):
         result2 = PCLazyLoraLoaderAdvanced().apply(model, clip, "prompt [<lora:test:0.5>:0.5]", "UID")["expand"]
         self.assertEqual(result, result2)
         expected = {
-            "UID1": {
+            "UID-1": {
                 "class_type": "CreateHookLora",
                 "inputs": {"lora_name": "test.safetensors", "strength_model": 0.5, "strength_clip": 0.5},
             },
-            "UID2": {
+            "UID-2": {
                 "class_type": "CreateHookKeyframe",
                 "inputs": {"strength_mult": 0.0, "start_percent": 0.0},
             },
-            "UID3": {
+            "UID-3": {
                 "class_type": "CreateHookKeyframe",
                 "inputs": {
                     "start_percent": 0.5,
-                    "prev_hook_kf": ["UID2", 0],
+                    "prev_hook_kf": ["UID-2", 0],
                     "strength_mult": 1.0,
                 },
             },
-            "UID4": {
+            "UID-4": {
                 "class_type": "SetHookKeyframes",
-                "inputs": {"hooks": ["UID1", 0], "hook_kf": ["UID3", 0]},
+                "inputs": {"hooks": ["UID-1", 0], "hook_kf": ["UID-3", 0]},
             },
-            "UID5": {
+            "UID-5": {
                 "class_type": "SetClipHooks",
                 "inputs": {
                     "clip": [0, 0],
-                    "hooks": ["UID4", 0],
+                    "hooks": ["UID-4", 0],
                     "apply_to_conds": True,
                     "schedule_clip": True,
                 },
@@ -192,7 +192,7 @@ class GraphTests(unittest.TestCase):
         self.assertEqual(
             result2,
             {
-                "UID1": {
+                "UID-1": {
                     "class_type": "LoraLoader",
                     "inputs": {
                         "model": [0, 1],
