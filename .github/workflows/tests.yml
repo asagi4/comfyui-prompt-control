@@ -2,6 +2,7 @@ name: Run parser tests
 on:
   - workflow_call
   - workflow_dispatch
+  - push
 
 jobs:
   run-parser-tests:

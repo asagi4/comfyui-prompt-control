@@ -1,7 +1,0 @@
-name: Run tests on push
-on:
-  push:
-
-jobs:
-  tests:
-    uses: ./.github/workflows/tests.yml
