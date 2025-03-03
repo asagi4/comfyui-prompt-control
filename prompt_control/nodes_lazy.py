@@ -87,7 +87,7 @@ def create_hook_nodes_for_lora(graph, path, info, existing_node, start_pct, end_
     return hook_node, next_keyframe
 
 
-def build_lora_schedule(graph, schedule, model, clip, apply_hooks=True, return_hooks=True):
+def build_lora_schedule(graph, schedule, model, clip, apply_hooks=True):
     # This gets rid of non-existent LoRAs
     consolidated = consolidate_schedule(schedule)
     if model is not None:
@@ -130,7 +130,7 @@ def build_lora_schedule(graph, schedule, model, clip, apply_hooks=True, return_h
             n.set_input("hooks_B", h.out(0))
             res = n
         res = res.out(0)
-        if apply_hooks:
+        if clip is not None and apply_hooks:
             n = graph.node("SetClipHooks")
             n.set_input("clip", clip)
             n.set_input("hooks", res)
@@ -138,13 +138,12 @@ def build_lora_schedule(graph, schedule, model, clip, apply_hooks=True, return_h
             n.set_input("schedule_clip", True)
             clip = n.out(0)
 
+    if clip is None:
+        clip = ExecutionBlocker("No clip model provided to PCLazyLoRALoader or PCLazyLoRALoaderAdvanced")
     r = graph.finalize()
     log.debug("LazyLoraLoader built graph: %s", json.dumps(r))
 
-    if return_hooks:
-        ret = (model, clip, res)
-    else:
-        ret = (model, clip)
+    ret = (model, clip, res)
 
     return {"result": ret, "expand": r}
 
@@ -155,12 +154,10 @@ class PCLazyLoraLoaderAdvanced:
     @classmethod
     def INPUT_TYPES(s):
         return {
-            "required": {
+            "optional": {
                 "model": ("MODEL", {"rawLink": True}),
                 "clip": ("CLIP", {"rawLink": True}),
-                "text": ("STRING", {"multiline": True}),
-            },
-            "optional": {
+                "text": ("STRING", {"multiline": True, "default": ""}),
                 "apply_hooks": ("BOOLEAN", {"default": True}),
                 "tags": ("STRING", {"default": ""}),
                 "start": ("FLOAT", {"min": 0.0, "max": 1.0, "default": 0.0, "step": 0.01}),
@@ -174,15 +171,14 @@ class PCLazyLoraLoaderAdvanced:
     CATEGORY = "promptcontrol"
     FUNCTION = "apply"
 
-    def apply(self, model, clip, text, unique_id, apply_hooks=True, tags="", start=0.0, end=1.0):
+    def apply(self, unique_id, model=None, clip=None, text="", apply_hooks=True, tags="", start=0.0, end=1.0):
         schedule = parse_prompt_schedules(text, filters=tags, start=start, end=end)
         graph = GraphBuilder(f"{unique_id}-")
-        return build_lora_schedule(graph, schedule, model, clip, apply_hooks=apply_hooks, return_hooks=True)
+        r = build_lora_schedule(graph, schedule, model, clip, apply_hooks=apply_hooks)
+        return r
 
 
-class PCLazyLoraLoader:
-    CACHE_KEY = cache_key_lora
-
+class PCLazyLoraLoader(PCLazyLoraLoaderAdvanced):
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -198,19 +194,12 @@ class PCLazyLoraLoader:
         "MODEL",
         "CLIP",
     )
-    OUTPUT_TOOLTIPS = ("Returns a model and clip with LoRAs scheduled",)
     CATEGORY = "promptcontrol"
-    FUNCTION = "apply"
 
-    def apply(self, unique_id, model=None, clip=None, text=""):
-        graph = GraphBuilder(f"{unique_id}-")
-        schedule = parse_prompt_schedules(text)
-        if model is None and clip is None:
-            return (
-                ExecutionBlocker("No model input provided to PCLazyLoraLoader"),
-                ExecutionBlocker("No clip input provided to PCLazyLoraLoader"),
-            )
-        return build_lora_schedule(graph, schedule, model, clip, apply_hooks=True, return_hooks=False)
+    def apply(self, *args, **kwargs):
+        r = super().apply(*args, **kwargs)
+        r["result"] = r["result"][:2]
+        return r
 
 
 def build_scheduled_prompts(graph, schedules, clip):
@@ -251,27 +240,6 @@ def cache_key_from_inputs(cachekey, text, tags="", start=0.0, end=1.0, **kwargs)
     return [(pct, s[cachekey]) for pct, s in schedules]
 
 
-class PCLazyTextEncode:
-    CACHE_KEY = cache_key_prompt
-
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {"clip": ("CLIP", {"rawLink": True}), "text": ("STRING", {"multiline": True})},
-            "hidden": {"unique_id": "UNIQUE_ID"},
-        }
-
-    RETURN_TYPES = ("CONDITIONING",)
-    OUTPUT_TOOLTIPS = ("A fully encoded and scheduled conditioning",)
-    CATEGORY = "promptcontrol"
-    FUNCTION = "apply"
-
-    def apply(self, clip, text, unique_id):
-        schedules = parse_prompt_schedules(text)
-        graph = GraphBuilder(f"{unique_id}-")
-        return build_scheduled_prompts(graph, schedules, clip)
-
-
 class PCLazyTextEncodeAdvanced:
     CACHE_KEY = cache_key_prompt
 
@@ -291,10 +259,21 @@ class PCLazyTextEncodeAdvanced:
     CATEGORY = "promptcontrol"
     FUNCTION = "apply"
 
-    def apply(self, clip, text, unique_id, tags="", start=0.1, end=1.0):
+    def apply(self, clip, text, unique_id, tags="", start=0.0, end=1.0):
         schedules = parse_prompt_schedules(text, filters=tags, start=start, end=end)
         graph = GraphBuilder(f"{unique_id}-")
         return build_scheduled_prompts(graph, schedules, clip)
+
+
+class PCLazyTextEncode(PCLazyTextEncodeAdvanced):
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {"clip": ("CLIP", {"rawLink": True}), "text": ("STRING", {"multiline": True})},
+            "hidden": {"unique_id": "UNIQUE_ID"},
+        }
+
+    CATEGORY = "promptcontrol"
 
 
 NODE_CLASS_MAPPINGS = {
