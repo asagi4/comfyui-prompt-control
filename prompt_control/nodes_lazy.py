@@ -1,6 +1,7 @@
 import logging
 from .parser import parse_prompt_schedules
 from comfy_execution.graph_utils import GraphBuilder, is_link
+from comfy_execution.graph import ExecutionBlocker
 
 from .utils import get_function
 
@@ -88,8 +89,12 @@ def create_hook_nodes_for_lora(graph, path, info, existing_node, start_pct, end_
 def build_lora_schedule(graph, schedule, model, clip, apply_hooks=True, return_hooks=True):
     # This gets rid of non-existent LoRAs
     consolidated = consolidate_schedule(schedule)
-    non_scheduled = find_nonscheduled_loras(consolidated)
-    model, clip = create_lora_loader_nodes(graph, model, clip, non_scheduled)
+    if model is not None:
+        non_scheduled = find_nonscheduled_loras(consolidated)
+        model, clip = create_lora_loader_nodes(graph, model, clip, non_scheduled)
+    else:
+        non_scheduled = {}
+        model = ExecutionBlocker("No model provided to PCLazyLoRALoader or PCLazyLoRALoaderAdvanced")
 
     hook_nodes = {}
     start_pct = 0.0
@@ -170,7 +175,7 @@ class PCLazyLoraLoaderAdvanced:
 
     def apply(self, model, clip, text, unique_id, apply_hooks=True, tags="", start=0.0, end=1.0):
         schedule = parse_prompt_schedules(text, filters=tags, start=start, end=end)
-        graph = GraphBuilder(f'{unique_id}-')
+        graph = GraphBuilder(f"{unique_id}-")
         return build_lora_schedule(graph, schedule, model, clip, apply_hooks=apply_hooks, return_hooks=True)
 
 
@@ -180,10 +185,10 @@ class PCLazyLoraLoader:
     @classmethod
     def INPUT_TYPES(s):
         return {
-            "required": {
+            "optional": {
                 "model": ("MODEL", {"rawLink": True}),
                 "clip": ("CLIP", {"rawLink": True}),
-                "text": ("STRING", {"multiline": True}),
+                "text": ("STRING", {"multiline": True, "default": ""}),
             },
             "hidden": {"unique_id": "UNIQUE_ID"},
         }
@@ -196,9 +201,14 @@ class PCLazyLoraLoader:
     CATEGORY = "promptcontrol"
     FUNCTION = "apply"
 
-    def apply(self, model, clip, text, unique_id):
-        graph = GraphBuilder(f'{unique_id}-')
+    def apply(self, unique_id, model=None, clip=None, text=""):
+        graph = GraphBuilder(f"{unique_id}-")
         schedule = parse_prompt_schedules(text)
+        if model is None and clip is None:
+            return (
+                ExecutionBlocker("No model input provided to PCLazyLoraLoader"),
+                ExecutionBlocker("No clip input provided to PCLazyLoraLoader"),
+            )
         return build_lora_schedule(graph, schedule, model, clip, apply_hooks=True, return_hooks=False)
 
 
@@ -257,7 +267,7 @@ class PCLazyTextEncode:
 
     def apply(self, clip, text, unique_id):
         schedules = parse_prompt_schedules(text)
-        graph = GraphBuilder(f'{unique_id}-')
+        graph = GraphBuilder(f"{unique_id}-")
         return build_scheduled_prompts(graph, schedules, clip)
 
 
@@ -282,7 +292,7 @@ class PCLazyTextEncodeAdvanced:
 
     def apply(self, clip, text, unique_id, tags="", start=0.1, end=1.0):
         schedules = parse_prompt_schedules(text, filters=tags, start=start, end=end)
-        graph = GraphBuilder(f'{unique_id}-')
+        graph = GraphBuilder(f"{unique_id}-")
         return build_scheduled_prompts(graph, schedules, clip)
 
 
