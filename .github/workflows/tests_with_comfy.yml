@@ -11,9 +11,10 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
       - name: Check out ComfyUI
-        repository: comfyanonymous/ComfyUI
-        path: ComfyUI
         uses: actions/checkout@v4
+        with:
+          repository: comfyanonymous/ComfyUI
+          path: ComfyUI
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
