@@ -1,6 +1,7 @@
 name: Run tests requiring ComfyUI
 on:
   - workflow_call
+  - workflow_dispatch
 
 jobs:
   run-graph-tests:

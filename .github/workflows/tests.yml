@@ -1,6 +1,7 @@
-name: Run tests
+name: Run parser tests
 on:
   - workflow_call
+  - workflow_dispatch
 
 jobs:
   run-parser-tests:
