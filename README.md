@@ -8,17 +8,13 @@ A `Basic Text to Image` template is included with the extension, and can be load
 
 Prompt control has been almost completely rewritten. It now uses ComfyUI's lazy execution to build graphs from the text prompt at runtime. The generated graph is often exactly equivalent to a manually built workflow using native ComfyUI nodes. There are no more weird sampling hooks that could cause problems with other nodes
 
-Prompt Control also comes with `PCTextEncode`, which provides advanced text encoding with many additional features compared to ComfyUI's base `CLIPTextEncode`.
+Prompt Control comes with `PCTextEncode`, which provides advanced text encoding with many additional features compared to ComfyUI's base `CLIPTextEncode`.
 
 ### Removed features
 
 - Prompt interpolation syntax; it was too cumbersome to maintain
 - LoRA block weight integration; ditto, for now.
 
-
-### Is it stable now?
-
-Unless I run into bugs or significant annoyances that require changing the interface, it probably won't change too much, but until I tag 2.0, everything can change.
 
 ### Everything broke, where are the old nodes?
 
