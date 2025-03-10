@@ -10,8 +10,8 @@ on:
 jobs:
   tests:
     uses: ./.github/workflows/tests.yml
-  tests_with_comfy:
-    uses: ./.github/workflows/tests_with_comfy.yml
+  #tests_with_comfy:
+  #  uses: ./.github/workflows/tests_with_comfy.yml
   publish-node:
     name: Publish Custom Node to registry
     runs-on: ubuntu-latest

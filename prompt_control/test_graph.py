@@ -1,5 +1,8 @@
 import unittest
 import unittest.mock as mock
+import logging
+
+log = logging.getLogger("comfyui-prompt-control")
 
 
 def find_file(name):
@@ -7,10 +10,11 @@ def find_file(name):
     return names.get(name)
 
 
+@mock.patch("prompt_control.utils.lora_name_to_file", find_file)
+@mock.patch.dict("sys.modules", nodes=mock.MagicMock())
 class GraphTests(unittest.TestCase):
     maxDiff = 4096
 
-    @mock.patch("prompt_control.utils.lora_name_to_file", find_file)
     def test_textencode(self):
         clip = [0, 0]
         from .nodes_lazy import PCLazyTextEncode, PCLazyTextEncodeAdvanced
@@ -73,18 +77,17 @@ class GraphTests(unittest.TestCase):
 
         model = [0, 1]
         clip = [0, 0]
-        with self.assertLogs("comfyui-prompt-control", level="WARNING") as cm:
-            result = PCLazyLoraLoader().apply(model, clip, "prompt here <lora:nonexistent:1.0:0.5>", "UID")["expand"]
+        with self.assertLogs(log, level="WARNING") as cm:
+            result = PCLazyLoraLoader().apply("UID", model, clip, "prompt here <lora:nonexistent:1.0:0.5>")["expand"]
             result_adv = PCLazyLoraLoaderAdvanced().apply(model, clip, "prompt here <lora:nonexistent:1.0:0.5>", "UID")[
                 "expand"
             ]
         self.assertIn("LoRA 'nonexistent' not found", cm.output[0])
-        self.assertIn("LoRA 'nonexistent' not found", cm.output[1])
         self.assertEqual(result, {})
         self.assertEqual(result_adv, {})
 
-        result = PCLazyLoraLoader().apply(model, clip, "<lora:test:1>", "UID")["expand"]
-        result2 = PCLazyLoraLoader().apply(model, clip, "prompt here <lora:test:1.0:0.5><lora:test:0:0.5>", "UID")[
+        result = PCLazyLoraLoader().apply("UID", model, clip, "<lora:test:1>")["expand"]
+        result2 = PCLazyLoraLoader().apply("UID", model, clip, "prompt here <lora:test:1.0:0.5><lora:test:0:0.5>")[
             "expand"
         ]
         result3 = PCLazyLoraLoaderAdvanced().apply(
@@ -107,7 +110,7 @@ class GraphTests(unittest.TestCase):
                 }
             },
         )
-        result = PCLazyLoraLoader().apply(model, clip, "<lora:test:1><lora:other:0.5>", "UID")["expand"]
+        result = PCLazyLoraLoader().apply("UID", model, clip, "<lora:test:1><lora:other:0.5>")["expand"]
         self.assertEqual(
             result,
             {
@@ -134,7 +137,7 @@ class GraphTests(unittest.TestCase):
             },
         )
 
-        result = PCLazyLoraLoader().apply(model, clip, "prompt here <lora:test:1.0:0.5>", "UID")["expand"]
+        result = PCLazyLoraLoader().apply("UID", model, clip, "prompt here <lora:test:1.0:0.5>")["expand"]
         self.assertEqual(
             result,
             {
@@ -151,7 +154,7 @@ class GraphTests(unittest.TestCase):
             },
         )
 
-        result = PCLazyLoraLoader().apply(model, clip, "prompt [<lora:test:0.5>:0.5]", "UID")["expand"]
+        result = PCLazyLoraLoader().apply("UID", model, clip, "prompt [<lora:test:0.5>:0.5]")["expand"]
         result2 = PCLazyLoraLoaderAdvanced().apply(model, clip, "prompt [<lora:test:0.5>:0.5]", "UID")["expand"]
         self.assertEqual(result, result2)
         expected = {

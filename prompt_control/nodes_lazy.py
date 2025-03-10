@@ -1,6 +1,7 @@
 import logging
 from .parser import parse_prompt_schedules
 from comfy_execution.graph_utils import GraphBuilder, is_link
+
 from comfy_execution.graph import ExecutionBlocker
 
 from .utils import get_function
@@ -155,9 +156,9 @@ class PCLazyLoraLoaderAdvanced:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "text": ("STRING", {"multiline": True}),
                 "model": ("MODEL", {"rawLink": True}),
                 "clip": ("CLIP", {"rawLink": True}),
+                "text": ("STRING", {"multiline": True}),
             },
             "optional": {
                 "apply_hooks": ("BOOLEAN", {"default": True}),
