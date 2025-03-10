@@ -1,11 +1,11 @@
 name: Run tests requiring ComfyUI
 on:
-  - workflow_call
-  - workflow_dispatch
-  - push:
-      paths:
-        - prompt_control/nodes_lazy.py
-        - prompt_control/utils.py
+  workflow_call:
+  workflow_dispatch:
+  push:
+    paths:
+      - prompt_control/nodes_lazy.py
+      - prompt_control/utils.py
 
 
 jobs:

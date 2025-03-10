@@ -1,10 +1,10 @@
 name: Publish to Comfy registry
 on:
-  - workflow_dispatch
-  - push:
-      branches:
+  workflow_dispatch:
+  push:
+    branches:
       - master
-      paths:
+    paths:
       - "pyproject.toml"
 
 jobs:
