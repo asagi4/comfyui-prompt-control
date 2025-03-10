@@ -1,7 +1,69 @@
 import logging
 from .parser import parse_prompt_schedules
+from .nodes_lazy import NODE_CLASS_MAPPINGS as LAZY_NODES
+import json
+import folder_paths
+from pathlib import Path
+from comfy_execution.graph_utils import is_link
 
 log = logging.getLogger("comfyui-prompt-control")
+
+
+class PCSaveExpandedWorkflow:
+    def __init__(self):
+        self.output_dir = folder_paths.get_output_directory()
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "any": ("*", {}),
+            },
+            "hidden": {
+                "prompt": "DYNPROMPT",
+            },
+        }
+
+    @classmethod
+    def VALIDATE_INPUTS(self, input_types):
+        return True
+
+    OUTPUT_NODE = True
+    RETURN_TYPES = ()
+    CATEGORY = "promptcontrol/tools"
+    DESCRIPTION = "Saves the current expanded dynamic prompt into a JSON file"
+
+    FUNCTION = "apply"
+
+    def apply(self, any, prompt):
+        full_output_folder, filename, counter, subfolder, prefix = folder_paths.get_save_image_path(
+            "pc_workflow_debug", self.output_dir
+        )
+        p = {}
+        input_replace_map = {}
+        for node in prompt.all_node_ids():
+            n = prompt.get_node(node)
+            t = n["class_type"]
+            if t in LAZY_NODES:
+                expanded_prompt = LAZY_NODES[t]().apply(**n["inputs"], unique_id=node)
+                for k in expanded_prompt["expand"]:
+                    p[k] = expanded_prompt["expand"][k]
+                for i, _ in enumerate(expanded_prompt["result"]):
+                    input_replace_map[(node, i)] = [k, i]
+            else:
+                p[node] = n
+        for k in p:
+            for ik in p[k]["inputs"]:
+                x = p[k]["inputs"][ik]
+                if is_link(x) and tuple(x) in input_replace_map:
+                    p[k]["inputs"][ik] = input_replace_map[tuple(x)]
+        file = f"{filename}_{counter:05}_.json"
+        full_path = Path(full_output_folder) / file
+        with open(full_path, "w") as f:
+            log.info(f"Saving workflow to {full_path}")
+            json.dump(p, f)
+
+        return ()
 
 
 class PCSetLogLevel:
@@ -156,6 +218,7 @@ NODE_CLASS_MAPPINGS = {
     "PCAddMaskToCLIPMany": PCAddMaskToCLIPMany,
     "PCSetLogLevel": PCSetLogLevel,
     "PCExtractScheduledPrompt": PCExtractScheduledPrompt,
+    "PCSaveExpandedWorkflow": PCSaveExpandedWorkflow,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -164,4 +227,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "PCAddMaskToCLIPMany": "PC: Attach Mask (multi)",
     "PCSetLogLevel": "PC: Configure Logging (for debug)",
     "PCExtractScheduledPrompt": "PC: Extract Scheduled Prompt",
+    "PCSaveExpandedWorkflow": "PC: Save Expanded Workflow (for debug)",
 }
