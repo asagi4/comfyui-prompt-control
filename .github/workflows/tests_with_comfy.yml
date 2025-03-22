@@ -1,0 +1,27 @@
+name: Run tests requiring ComfyUI
+on:
+  workflow_call:
+  workflow_dispatch:
+  push:
+    paths:
+      - prompt_control/nodes_lazy.py
+      - prompt_control/utils.py
+
+
+jobs:
+  run-graph-tests:
+    name: Run graph tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Check out ComfyUI
+        uses: actions/checkout@v4
+        with:
+          repository: comfyanonymous/ComfyUI
+          path: ComfyUI
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - run: PYTHONPATH=ComfyUI python -m prompt_control.test_graph

@@ -87,10 +87,11 @@ def find_closing_paren(text, start):
     return len(text)
 
 
-def get_function(text, func, defaults, return_func_name=False):
+def get_function(text, func, defaults, return_func_name=False, placeholder=""):
     rex = re.compile(rf"\b{func}\(", re.MULTILINE)
     instances = []
     match = rex.search(text)
+    count = 0
     while match:
         # Match start, content start
         start, after_first_paren = match.span()
@@ -102,8 +103,12 @@ def get_function(text, func, defaults, return_func_name=False):
         else:
             instances.append(args)
 
-        text = text[:start] + text[end + 1 :]
+        if placeholder:
+            text = text[:start] + f"\0{placeholder}{count}\0" + text[end + 1 :]
+        else:
+            text = text[:start] + text[end + 1 :]
         match = rex.search(text)
+        count += 1
     return text, instances
 
 

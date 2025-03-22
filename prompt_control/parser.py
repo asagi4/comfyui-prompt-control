@@ -1,3 +1,4 @@
+# vim: sw=4 ts=4
 import lark
 import logging
 from math import ceil
@@ -30,9 +31,9 @@ prompt: (emphasized | embedding | scheduled | alternate | sequence | loraspec | 
 !emphasized: "(" prompt? ")"
         | "(" prompt ":" prompt ")"
         | "[" prompt "]"
-scheduled: "[" [prompt ":"] [prompt] ":" _WS? NUMBER ["," NUMBER] "]"
-        | "[" [prompt ":"] [prompt] ":" _WS? TAG "]"
-sequence:  "[SEQ" ":" [prompt] ":" NUMBER (":" [prompt] ":" NUMBER)+ "]"
+scheduled: "[" [[prompt] ":"] [prompt] ":" _WS? NUMBER ["," NUMBER] "]"
+        | "[" [[prompt] ":"] [prompt] ":" _WS? TAG "]"
+sequence.5:  "[SEQ" ":" [prompt] ":" NUMBER (":" [prompt] ":" NUMBER)* "]"
 alternate: "[" [prompt] ("|" [prompt])+ [":" NUMBER] "]"
 loraspec.99: "<lora:" FILENAME lora_weights [lora_block_weights] ">"
 lora_weights.1: (":" _WS? NUMBER)~1..2
@@ -308,7 +309,15 @@ class PromptSchedule(object):
         if len(res) == 0:
             res = [[1.0, parsed[-1][1]]]
 
-        return res
+        final = [res[0]]
+
+        # Clean up duplicates
+        for p in res[1:]:
+            if p[1] != final[-1][1]:
+                final.append(p)
+            else:
+                final[-1][0] = p[0]
+        return final
 
     def clone(self):
         return self.with_filters()
@@ -336,7 +345,7 @@ class PromptSchedule(object):
         return len(self.parsed_prompt) - 1, self.parsed_prompt[-1]
 
 
-def replace_defs(text):
+def replace_def(text):
     text, defs = get_function(text, "DEF", defaults=None)
     res = text
     prevres = text
@@ -346,24 +355,42 @@ def replace_defs(text):
         if len(r) != 2 or not r[0].strip():
             log.warning("Ignoring invalid DEF(%s)", d)
             continue
-        replacements.append(r[0].strip(), r[1].strip())
+        replacements.append((r[0].strip(), r[1].strip()))
     iterations = 0
     while True:
         iterations += 1
         if iterations > 10:
-            log.error("Unable to resolve DEFs, make sure there are no cycles!")
+            raise ValueError("Unable to resolve DEFs, make sure there are no cycles!")
             return text
         for search, replace in replacements:
-            res = re.sub(rf"\b{re.escape(search)}\b", replace, res)
+            res = substitute_defcall(res, search, replace)
+            res = substitute_def(res, search, replace)
         if res == prevres:
             break
         prevres = res
-    if res != text:
+    if res.strip() != text.strip():
+        res = res.strip()
         log.info("DEFs expanded to: %s", res)
     return res
 
 
+def substitute_def(text, search, replace):
+    return re.sub(rf"\b{re.escape(search)}\b", replace, text)
+
+
+def substitute_defcall(text, search, replace):
+    text, defns = get_function(text, search, defaults=None, placeholder=f"DEFNCALL{search}")
+    for i, defn in enumerate(defns):
+        ph = f"\0DEFNCALL{search}{i}\0"
+        paramvals = [x.strip() for x in defn.split(";")]
+        r = replace
+        for i, v in enumerate(paramvals):
+            r = re.sub(rf"\${i+1}\b", v, r)
+        text = text.replace(ph, r)
+    return text
+
+
 @lru_cache
 def parse_prompt_schedules(prompt, **kwargs):
-    prompt = replace_defs(prompt)
+    prompt = replace_def(prompt)
     return PromptSchedule(prompt, **kwargs)
