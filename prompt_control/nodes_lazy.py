@@ -162,6 +162,7 @@ class PCLazyLoraLoaderAdvanced:
                 "tags": ("STRING", {"default": ""}),
                 "start": ("FLOAT", {"min": 0.0, "max": 1.0, "default": 0.0, "step": 0.01}),
                 "end": ("FLOAT", {"min": 0.0, "max": 1.0, "default": 1.0, "step": 0.01}),
+                "num_steps": ("INT", {"min": 0, "max": 10000, "default": 0, "step": 1}),
             },
             "hidden": {"unique_id": "UNIQUE_ID"},
         }
@@ -171,8 +172,10 @@ class PCLazyLoraLoaderAdvanced:
     CATEGORY = "promptcontrol"
     FUNCTION = "apply"
 
-    def apply(self, unique_id, model=None, clip=None, text="", apply_hooks=True, tags="", start=0.0, end=1.0):
-        schedule = parse_prompt_schedules(text, filters=tags, start=start, end=end)
+    def apply(
+        self, unique_id, model=None, clip=None, text="", apply_hooks=True, tags="", start=0.0, end=1.0, num_steps=0
+    ):
+        schedule = parse_prompt_schedules(text, filters=tags, start=start, end=end, num_steps=num_steps)
         graph = GraphBuilder(f"{unique_id}-")
         r = build_lora_schedule(graph, schedule, model, clip, apply_hooks=apply_hooks)
         return r
@@ -235,8 +238,8 @@ def build_scheduled_prompts(graph, schedules, clip):
     return {"result": (node.out(0),), "expand": g}
 
 
-def cache_key_from_inputs(cachekey, text, tags="", start=0.0, end=1.0, **kwargs):
-    schedules = parse_prompt_schedules(text, filters=tags, start=start, end=end)
+def cache_key_from_inputs(cachekey, text, tags="", start=0.0, end=1.0, num_steps=0, **kwargs):
+    schedules = parse_prompt_schedules(text, filters=tags, start=start, end=end, num_steps=num_steps)
     return [(pct, s[cachekey]) for pct, s in schedules]
 
 
@@ -251,6 +254,7 @@ class PCLazyTextEncodeAdvanced:
                 "tags": ("STRING", {"default": ""}),
                 "start": ("FLOAT", {"min": 0.0, "max": 1.0, "default": 0.0, "step": 0.01}),
                 "end": ("FLOAT", {"min": 0.0, "max": 1.0, "default": 1.0, "step": 0.01}),
+                "num_steps": ("INT", {"min": 0, "max": 10000, "default": 0, "step": 1}),
             },
             "hidden": {"unique_id": "UNIQUE_ID"},
         }
@@ -259,8 +263,8 @@ class PCLazyTextEncodeAdvanced:
     CATEGORY = "promptcontrol"
     FUNCTION = "apply"
 
-    def apply(self, clip, text, unique_id, tags="", start=0.0, end=1.0):
-        schedules = parse_prompt_schedules(text, filters=tags, start=start, end=end)
+    def apply(self, clip, text, unique_id, tags="", start=0.0, end=1.0, num_steps=0):
+        schedules = parse_prompt_schedules(text, filters=tags, start=start, end=end, num_steps=num_steps)
         graph = GraphBuilder(f"{unique_id}-")
         return build_scheduled_prompts(graph, schedules, clip)
 

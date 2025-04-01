@@ -103,13 +103,25 @@ def clamp(a, b, c):
     return min(max(a, b), c)
 
 
-def get_steps(tree):
-    res = [100]
+def get_steps(tree, num_steps):
+    res = [num_steps or 100]
 
     def tostep(s):
-        w = float(s) * 100
-        w = int(clamp(0, w, 100))
-        return w
+        steps = num_steps or 100
+        if "." in str(s) or not num_steps:
+            w = float(s)
+            value = w * steps
+        else:
+            w = int(s)
+            value = w
+
+        if w > 1 and not num_steps:
+            log.warning(
+                "You haven't configured the number of steps for Prompt Control to use, %s will be clipped to 1.0", w
+            )
+            value = steps
+
+        return int(clamp(0, value, steps))
 
     class CollectSteps(lark.Visitor):
         def scheduled(self, tree):
@@ -131,15 +143,14 @@ def get_steps(tree):
         def sequence(self, tree):
             steps = tree.children[1::2]
             for i, steps in enumerate(steps):
-                w = float(tree.children[i * 2 + 1]) * 100
-                tree.children[i * 2 + 1] = clamp(0, w, 100)
+                w = tostep(tree.children[i * 2 + 1])
+                tree.children[i * 2 + 1] = w
                 res.append(w)
 
         def alternate(self, tree):
-            step_size = int(round(float(tree.children[-1] or 0.1), 2) * 100)
-            step_size = clamp(1, step_size, 100)
+            step_size = tostep(round(float(tree.children[-1] or 0.1), 2))
             tree.children[-1] = step_size
-            res.extend([x for x in range(step_size, 100, step_size)])
+            res.extend([x for x in range(step_size, num_steps or 100, step_size)])
 
     CollectSteps().visit(tree)
 
@@ -259,29 +270,31 @@ def at_step(step, filters, tree):
 
 
 class PromptSchedule(object):
-    def __init__(self, prompt, filters="", start=0.0, end=1.0):
+    # 0 num_steps means unconfigured
+    def __init__(self, prompt, filters="", start=0.0, end=1.0, num_steps=0):
         self.filters = filters
         self.start = start
         self.end = end
+        self.num_steps = num_steps
         self.prompt = prompt.strip()
         self.defaults = {}
         self.loaded_loras = {}
 
-        self.parsed_prompt = self._parse()
+        self.parsed_prompt = self._parse(num_steps)
 
     def __iter__(self):
         # Filter out zero, it's only useful for interpolation
         return (x for x in self.parsed_prompt if x[0] != 0)
 
-    def _parse(self):
+    def _parse(self, num_steps):
         filters = [x.strip() for x in self.filters.upper().split(",")]
         try:
             parsed = []
             tree = prompt_parser.parse(self.prompt)
-            steps = get_steps(tree)
+            steps = get_steps(tree, num_steps=num_steps)
 
             def f(x):
-                return round(x / 100, 2)
+                return round(x / (num_steps or 100), 2)
 
             for t in steps:
                 p = at_step(t, filters, tree)
@@ -331,6 +344,7 @@ class PromptSchedule(object):
             filters=ifspecified(filters, self.filters),
             start=ifspecified(start, self.start),
             end=ifspecified(end, self.end),
+            num_steps=self.num_steps,
         )
         return p
 

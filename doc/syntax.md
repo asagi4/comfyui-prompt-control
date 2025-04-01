@@ -26,6 +26,14 @@ switches from `a red cat` to `a blue cat` at 0.5 and to `a cat` at 0.7
 
 **Note:** As a special case, `[cat:0.5]` is equivalent to `[:cat:0.5]` meaning it switches from empty to `cat` at 0.5.
 
+### Using step numbers with the Advanced nodes
+
+If you provide a non-zero value to `num_steps` to the `Advanced` versions of the lazy LoRA loaders, you will be able to use step numbers in prompts.
+
+For now, a value between 0 and 1.0 will be interpreted as a percentage if it contains a ., and as an absolute step otherwise.
+
+This is just syntactic sugar. Behind the scenes, the values are converted to percentages and have normal ComfyUI scheduling behaviour.
+
 ### Range expressions
 
 You can also use `a [during:after:0.3,0.7]` as a shortcut. The prompt be `a` until 0.3, `a during` until 0.7, and then `a after`. This form is equivalent to `[[during:after:0.7]:0.3]`
