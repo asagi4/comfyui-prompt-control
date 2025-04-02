@@ -28,7 +28,7 @@ switches from `a red cat` to `a blue cat` at 0.5 and to `a cat` at 0.7
 
 ### Using step numbers with the Advanced nodes
 
-If you provide a non-zero value to `num_steps` to the `Advanced` versions of the lazy LoRA loaders, you will be able to use step numbers in prompts.
+If you provide a non-zero value to `num_steps` to the `Advanced` versions of the scheduling nodes, you will be able to use step numbers in prompts.
 
 For now, a value between 0 and 1.0 will be interpreted as a percentage if it contains a ., and as an absolute step otherwise.
 
