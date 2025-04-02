@@ -143,7 +143,6 @@ class PCSetPCTextEncodeSettings:
         return {
             "required": {"clip": ("CLIP",)},
             "optional": {
-                "steps": ("INT", {"default": 0, "min": 0, "max": 10000}),
                 "mask_width": ("INT", {"default": 512, "min": 64, "max": 4096 * 4}),
                 "mask_height": ("INT", {"default": 512, "min": 64, "max": 4096 * 4}),
                 "sdxl_width": ("INT", {"default": 1024, "min": 0, "max": 4096 * 4}),
@@ -163,7 +162,6 @@ class PCSetPCTextEncodeSettings:
     def apply(
         self,
         clip,
-        steps=0,
         mask_width=512,
         mask_height=512,
         sdxl_width=1024,
@@ -174,7 +172,6 @@ class PCSetPCTextEncodeSettings:
         sdxl_crop_h=0,
     ):
         settings = {
-            "steps": steps,
             "mask_width": mask_width,
             "mask_height": mask_height,
             "sdxl_width": sdxl_width,
