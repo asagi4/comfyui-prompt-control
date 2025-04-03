@@ -1,4 +1,6 @@
 {
+  "id": "e820c2fb-9502-45b7-a864-684757dddcdf",
+  "revision": 0,
   "last_node_id": 18,
   "last_link_id": 20,
   "nodes": [
@@ -21,26 +23,26 @@
         {
           "name": "MODEL",
           "type": "MODEL",
+          "slot_index": 0,
           "links": [
             2
-          ],
-          "slot_index": 0
+          ]
         },
         {
           "name": "CLIP",
           "type": "CLIP",
+          "slot_index": 1,
           "links": [
             3
-          ],
-          "slot_index": 1
+          ]
         },
         {
           "name": "VAE",
           "type": "VAE",
+          "slot_index": 2,
           "links": [
-            16
-          ],
-          "slot_index": 2
+            18
+          ]
         }
       ],
       "properties": {
@@ -66,7 +68,7 @@
       "flags": {
         "collapsed": true
       },
-      "order": 8,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
@@ -87,10 +89,10 @@
         {
           "name": "CONDITIONING",
           "type": "CONDITIONING",
+          "slot_index": 0,
           "links": [
             12
-          ],
-          "slot_index": 0
+          ]
         }
       ],
       "title": "PC: Schedule Prompt (positive)",
@@ -109,24 +111,26 @@
       "id": 3,
       "type": "PCLazyLoraLoader",
       "pos": [
-        255,
-        -765
+        257.5,
+        -745
       ],
       "size": [
         210,
-        98
+        78
       ],
       "flags": {},
-      "order": 7,
+      "order": 6,
       "mode": 0,
       "inputs": [
         {
           "name": "model",
+          "shape": 7,
           "type": "MODEL",
           "link": 2
         },
         {
           "name": "clip",
+          "shape": 7,
           "type": "CLIP",
           "link": 3
         },
@@ -143,19 +147,19 @@
         {
           "name": "MODEL",
           "type": "MODEL",
+          "slot_index": 0,
           "links": [
             17
-          ],
-          "slot_index": 0
+          ]
         },
         {
           "name": "CLIP",
           "type": "CLIP",
+          "slot_index": 1,
           "links": [
             5,
             9
-          ],
-          "slot_index": 1
+          ]
         }
       ],
       "properties": {
@@ -181,7 +185,7 @@
         474
       ],
       "flags": {},
-      "order": 10,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
@@ -209,10 +213,10 @@
         {
           "name": "LATENT",
           "type": "LATENT",
+          "slot_index": 0,
           "links": [
             15
-          ],
-          "slot_index": 0
+          ]
         }
       ],
       "properties": {
@@ -242,13 +246,16 @@
         225
       ],
       "flags": {},
-      "order": 5,
+      "order": 1,
       "mode": 0,
       "inputs": [],
       "outputs": [
         {
           "name": "STRING",
           "type": "STRING",
+          "widget": {
+            "name": "text"
+          },
           "links": [
             6,
             7
@@ -277,17 +284,20 @@
         225
       ],
       "flags": {},
-      "order": 4,
+      "order": 2,
       "mode": 0,
       "inputs": [],
       "outputs": [
         {
           "name": "STRING",
           "type": "STRING",
+          "widget": {
+            "name": "text"
+          },
+          "slot_index": 0,
           "links": [
             8
-          ],
-          "slot_index": 0
+          ]
         }
       ],
       "title": "Negative prompt",
@@ -314,7 +324,7 @@
       "flags": {
         "collapsed": true
       },
-      "order": 9,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
@@ -335,10 +345,10 @@
         {
           "name": "CONDITIONING",
           "type": "CONDITIONING",
+          "slot_index": 0,
           "links": [
             13
-          ],
-          "slot_index": 0
+          ]
         }
       ],
       "title": "PC: Schedule Prompt (negative)",
@@ -365,7 +375,7 @@
         106
       ],
       "flags": {},
-      "order": 1,
+      "order": 3,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -402,7 +412,7 @@
         46
       ],
       "flags": {},
-      "order": 11,
+      "order": 10,
       "mode": 0,
       "inputs": [
         {
@@ -420,53 +430,18 @@
         {
           "name": "IMAGE",
           "type": "IMAGE",
+          "slot_index": 0,
           "links": [
             20
-          ],
-          "slot_index": 0
+          ]
         }
       ],
       "properties": {
         "cnr_id": "comfy-core",
         "ver": "0.3.18",
         "Node name for S&R": "VAEDecode"
-      }
-    },
-    {
-      "id": 11,
-      "type": "Reroute",
-      "pos": [
-        1155,
-        -900
-      ],
-      "size": [
-        75,
-        26
-      ],
-      "flags": {},
-      "order": 6,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "",
-          "type": "*",
-          "link": 16
-        }
-      ],
-      "outputs": [
-        {
-          "name": "",
-          "type": "VAE",
-          "links": [
-            18
-          ],
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "showOutputText": false,
-        "horizontal": false
-      }
+      },
+      "widgets_values": []
     },
     {
       "id": 13,
@@ -480,7 +455,7 @@
         105
       ],
       "flags": {},
-      "order": 3,
+      "order": 4,
       "mode": 0,
       "inputs": [],
       "outputs": [],
@@ -503,7 +478,7 @@
         210
       ],
       "flags": {},
-      "order": 2,
+      "order": 5,
       "mode": 0,
       "inputs": [],
       "outputs": [],
@@ -526,7 +501,7 @@
         405
       ],
       "flags": {},
-      "order": 12,
+      "order": 11,
       "mode": 0,
       "inputs": [
         {
@@ -635,14 +610,6 @@
       "LATENT"
     ],
     [
-      16,
-      1,
-      2,
-      11,
-      0,
-      "*"
-    ],
-    [
       17,
       3,
       0,
@@ -651,20 +618,20 @@
       "MODEL"
     ],
     [
-      18,
-      11,
-      0,
-      10,
-      1,
-      "VAE"
-    ],
-    [
       20,
       10,
       0,
       18,
       0,
       "IMAGE"
+    ],
+    [
+      18,
+      1,
+      2,
+      10,
+      1,
+      "VAE"
     ]
   ],
   "groups": [],
@@ -673,10 +640,28 @@
     "ds": {
       "scale": 0.8,
       "offset": [
-        588,
-        1260
+        591.75,
+        1235
       ]
-    }
+    },
+    "linkExtensions": [
+      {
+        "id": 18,
+        "parentId": 1
+      }
+    ],
+    "reroutes": [
+      {
+        "id": 1,
+        "pos": [
+          1273.75,
+          -879.5
+        ],
+        "linkIds": [
+          18
+        ]
+      }
+    ]
   },
   "version": 0.4,
   "models": [{
