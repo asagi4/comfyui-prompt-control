@@ -39,8 +39,6 @@ If you find prompt scheduling inconvenient for some reason, `PCTextEncode` can b
 
 [This workflow](example_workflows/Workflow%20Comparison.json?raw=1) shows LoRA scheduling and prompt editing and compares it with the same prompt implemented with built-in ComfyUI nodes. You can also find it in the template library.
 
-[Here](workflows/example-2pass.json?raw=1) is a two-pass workflow illustrating more features, including custom masks and filtering.
-
 The tools in this repository combine well with the macro and wildcard functionality in [comfyui-utility-nodes](https://github.com/asagi4/comfyui-utility-nodes)
 
 
