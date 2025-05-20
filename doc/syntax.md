@@ -259,6 +259,8 @@ Use `ATTN()` in combination with `MASK()` or `IMASK()` to enable attention maski
 
 ## TE_WEIGHT
 
-For models using multiple text encoders, you can set weights per TE using the syntax `TE_WEIGHT(clipname=weight, clipname2=weight2, ...)` where `clipname` is one of `g`, `l`, or `t5xxl`. For example with SDXL, try `TE_WEIGHT(g=0.25, l=0.75`). The weights are applied as a multiplier to the TE output.
+For models using multiple text encoders, you can set weights per TE using the syntax `TE_WEIGHT(clipname=weight, clipname2=weight2, ...)` where `clipname` is one of the encoder names printed by `TE(help)`. For example with SDXL, try `TE_WEIGHT(g=0.25, l=0.75)`.
+
+The weights are applied as a multiplier to the TE output. You can also override pooled output multipliers using eg. `l_pooled`.
 
 To set a default value for all encoders, use `TE_WEIGHT(all=weight)`
