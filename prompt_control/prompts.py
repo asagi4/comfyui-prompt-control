@@ -211,21 +211,26 @@ def apply_weights(output, te_name, spec):
     if te_name.startswith("clip_"):
         te_name = te_name[5:]
 
+    default = spec.get("all", None)
+
     if isinstance(output, tuple):
         out, pooled = output
-        if te_name in spec:
-            log.info("Weighting %s output by %s", te_name, spec[te_name])
-            out = out * spec[te_name]
+        if te_name in spec or default is not None:
+            w = spec.get(te_name, default)
+            log.info("Weighting %s output by %s", te_name, w)
+            out = out * w
         pkey = te_name + "_pooled"
-        if pkey in spec:
-            log.info("Weighting %s pooled output by %s", te_name, spec[pkey])
-            pooled = pooled * spec[pkey]
+        if pkey in spec or default is not None:
+            w = spec.get(pkey, default)
+            log.info("Weighting %s pooled output by %s", te_name, w)
+            pooled = pooled * w
 
         return out, pooled
     else:
-        if te_name in spec:
-            log.info("Weighting %s output by %s", te_name, spec[te_name])
-            output = output * spec[te_name]
+        if te_name in spec or default is not None:
+            w = spec.get(te_name, default)
+            log.info("Weighting %s output by %s", te_name, w)
+            output = output * w
         return output
 
 
