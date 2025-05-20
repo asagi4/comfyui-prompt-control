@@ -138,6 +138,28 @@ def fix_word_ids(tokens):
     return tokens
 
 
+def tokenize_chunks(clip, text, need_word_ids):
+    chunks = re.split(r"\bBREAK\b", text)
+    token_chunks = []
+    for c in chunks:
+        c, shuffles = get_function(c.strip(), "(SHIFT|SHUFFLE)", ["0", "default", "default"], return_func_name=True)
+        r = c
+        for s in shuffles:
+            r = shuffle_chunk(s, r)
+        if r != c:
+            log.info("Shuffled prompt chunk to %s", r)
+            c = r
+        t = clip.tokenize(c, return_word_ids=need_word_ids)
+        token_chunks.append(t)
+    tokens = token_chunks[0]
+
+    for key in tokens:
+        for c in token_chunks[1:]:
+            tokens[key].extend(c[key])
+
+    return tokens
+
+
 def encode_prompt_segment(
     clip,
     text,
@@ -157,24 +179,8 @@ def encode_prompt_segment(
 
     # defaults=None means there is no argument parsing at all
     text, l_prompts = get_function(text, "CLIP_L", defaults=None)
-    chunks = re.split(r"\bBREAK\b", text)
-    token_chunks = []
     need_word_ids = True
-    for c in chunks:
-        c, shuffles = get_function(c.strip(), "(SHIFT|SHUFFLE)", ["0", "default", "default"], return_func_name=True)
-        r = c
-        for s in shuffles:
-            r = shuffle_chunk(s, r)
-        if r != c:
-            log.info("Shuffled prompt chunk to %s", r)
-            c = r
-        t = clip.tokenize(c, return_word_ids=need_word_ids)
-        token_chunks.append(t)
-    tokens = token_chunks[0]
-
-    for key in tokens:
-        for c in token_chunks[1:]:
-            tokens[key].extend(c[key])
+    tokens = tokenize_chunks(clip, text, need_word_ids)
 
     # Non-SDXL has only "l"
     if "g" in tokens and l_prompts:
