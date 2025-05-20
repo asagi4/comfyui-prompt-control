@@ -120,15 +120,23 @@ The nodes do not treat SDXL models specially, but there are some utilities that 
 
 You can use the function `SDXL(width height, target_width target_height, crop_w crop_h)` to set SDXL prompt parameters. `SDXL()` is equivalent to `SDXL(1024 1024, 1024 1024, 0 0)` unless the default values have been overridden by `PCScheduleSettings`.
 
-To set the `clip_l` prompt, as with `CLIPTextEncodeSDXL`, use the function `CLIP_L(prompt text goes here)`.
+### Multiple text encoders: TE
+
+You can specify per-encoder prompts using the `TE` function. The syntax is as follows:
+`TE(encoder_name=prompt)`. Whitespace surrounding the prompt and encoder name are ignored.
+
+For example:
+```
+TE(l=cat) TE(g = (dog:1.1)) TE(t5xxl=tiger)
+```
+The keys to use depend on what key ComfyUI uses for the encoder; for example `l` for CLIP L, `g` for CLIP G, and `t5xxl` for T5 XXL (Flux text encoder).
+
+Use `TE(help)` to print a help text listing available keys.
 
 Things to note:
-- Multiple instances of `CLIP_L` are joined with a space. That is, `CLIP_L(foo)CLIP_L(bar)` is the same as `CLIP_L(foo bar)`
-- Using `BREAK` isn't supported in it; it'll just parse as the plain word BREAK.
-- similarly, `AND` inside `CLIP_L` does not do anything sensible; `CLIP_L(foo AND bar)` will parse as two prompts `CLIP_L(foo` and `bar)`
-- `CLIP_L` and `SDXL` have no effect on SD 1.5.
-- The rest of the prompt becomes the `clip_g` prompt.
-- If there is no `CLIP_L` or `SDXL`, the prompts will work as with `CLIPTextEncode`.
+- If you set a prompt with `TE`, it will override the prompt outside the function for the specified text encoder.
+- Multiple instances of `TE` are joined with a space. That is, `TE(l=foo)TE(l=bar)` is the same as `TE(l=foo bar)`
+- `AND` inside `TE` does not do anything sensible; `TE(l=foo AND bar)` will parse as two prompts `TE(foo` and `bar)`. `BREAK`, `SHIFT` and `SHUFFLE` do work, however
 
 ### SHUFFLE and SHIFT
 
@@ -252,3 +260,5 @@ Use `ATTN()` in combination with `MASK()` or `IMASK()` to enable attention maski
 ## TE_WEIGHT
 
 For models using multiple text encoders, you can set weights per TE using the syntax `TE_WEIGHT(clipname=weight, clipname2=weight2, ...)` where `clipname` is one of `g`, `l`, or `t5xxl`. For example with SDXL, try `TE_WEIGHT(g=0.25, l=0.75`). The weights are applied as a multiplier to the TE output.
+
+To set a default value for all encoders, use `TE_WEIGHT(all=weight)`

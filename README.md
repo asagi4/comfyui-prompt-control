@@ -28,6 +28,7 @@ See [features](#features) below. Things you can control via the prompt:
 - Prompt editing and filtering without noodle soup
 - LoRA loading and scheduling via ComfyUI's hook system
 - Masking, composition and area control (regional prompting)
+- Per-encoder prompts for models with multiple text encoders, such as SDXL and Flux
 - Prompt operations like `BREAK` and `AND`
 - Weight interpretation types (comfy, A1111, etc.)
 - Prompt masking with [cutoff](#cutoff)

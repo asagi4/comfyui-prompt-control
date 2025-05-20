@@ -179,21 +179,46 @@ def encode_prompt_segment(
 
     # defaults=None means there is no argument parsing at all
     text, l_prompts = get_function(text, "CLIP_L", defaults=None)
+    text, te_prompts = get_function(text, "TE", defaults=None)
     need_word_ids = True
     tokens = tokenize_chunks(clip, text, need_word_ids)
 
-    # Non-SDXL has only "l"
-    if "g" in tokens and l_prompts:
-        text_l = " ".join(l_prompts)
-        log.info("Encoded SDXL CLIP_L prompt: %s", text_l)
-        tokens["l"] = clip.tokenize(text_l, return_word_ids=need_word_ids)["l"]
+    per_te_prompts = {}
+    if l_prompts:
+        log.warning("Note: CLIP_L is deprecated. Use TE(l=prompt) instead")
+        per_te_prompts["l"] = l_prompts
 
-    if "g" in tokens and "l" in tokens and len(tokens["l"]) != len(tokens["g"]):
-        empty = clip.tokenize("", return_word_ids=need_word_ids)
-        while len(tokens["l"]) < len(tokens["g"]):
-            tokens["l"] += empty["l"]
-        while len(tokens["l"]) > len(tokens["g"]):
-            tokens["g"] += empty["g"]
+    for prompt in te_prompts:
+        if prompt.strip() == "help":
+            log.info("Encoders available for TE: %s", ", ".join(tokens.keys()))
+            continue
+        params = prompt.split("=", 1)
+        if len(params) != 2:
+            log.warning("Invalid TE call, ignoring: %s", prompt)
+            continue
+        te = params[0].strip()
+        prompt = params[1].strip()
+        if te not in tokens:
+            log.warning("Invalid TE call, no TE with key '%s', ignoring: %s", te)
+            log.info("Encoders available for TE: %s", ", ".join(tokens.keys()))
+            continue
+        l = per_te_prompts.get(te, [])
+        l.append(prompt)
+        per_te_prompts[te] = l
+
+    if per_te_prompts:
+        for key in per_te_prompts:
+            prompt = " ".join(per_te_prompts[key])
+            tokens[key] = tokenize_chunks(clip, prompt, need_word_ids)[key]
+            log.info("Encoded prompt with TE '%s': %s", key, prompt)
+
+    maxlen = max(len(tokens[k]) for k in tokens)
+    empty = None
+    for k in tokens:
+        while len(tokens[k]) < maxlen:
+            if empty is None:
+                empty = clip.tokenize("", return_word_ids=need_word_ids)
+            tokens[k] += empty[k]
 
     tokens = fix_word_ids(tokens)
 
