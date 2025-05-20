@@ -23,5 +23,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - run: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
       - run: pip install -r requirements.txt -r ComfyUI/requirements.txt
       - run: PYTHONPATH=ComfyUI python -m prompt_control.test_graph
