@@ -17,7 +17,6 @@ def apply(cls, text, **kwargs):
 
 
 @mock.patch("prompt_control.utils.lora_name_to_file", find_file)
-@mock.patch.dict("sys.modules", nodes=mock.MagicMock())
 class GraphTests(unittest.TestCase):
     maxDiff = 4096
 
