@@ -8,7 +8,6 @@ dependencies = ["lark >= 1.1.9"]
 
 [project.urls]
 Repository = "https://github.com/asagi4/comfyui-prompt-control"
-#  Used by Comfy Registry https://comfyregistry.org
 
 [tool.comfy]
 PublisherId = "asagi4"
