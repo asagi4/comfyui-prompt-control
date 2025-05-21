@@ -135,8 +135,6 @@ a (red:1.1) cat with (brown:0.9) spots and a long tail AND STYLE(A1111) an (old:
 ```
 Will interpret the first one using the default ComfyUI behaviour, the second prompt with A1111 and the last prompt with the default again
 
-For things (ie. the code imports) to work, the nodes must be cloned in a directory named exactly `ComfyUI_ADV_CLIP_emb`.
-
 ## Cutoff
 
 NOTE: Cutoff syntax might change at some point; it's pretty clunky.
