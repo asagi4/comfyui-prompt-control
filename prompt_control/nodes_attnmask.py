@@ -6,7 +6,119 @@ from comfy.hooks import TransformerOptionsHook, HookGroup, EnumHookScope
 from comfy.ldm.modules.attention import optimized_attention
 import torch.nn.functional as F
 import torch
-from math import sqrt
+from math import sqrt, gcd
+
+
+def get_mask(mask, batch_size, num_tokens, original_shape):
+    num_conds = mask.shape[0]
+    print(f"get_mask {num_conds=}")
+
+    if original_shape[2] * original_shape[3] == num_tokens:
+        down_sample_rate = 1
+    elif (original_shape[2] // 2) * (original_shape[3] // 2) == num_tokens:
+        down_sample_rate = 2
+    elif (original_shape[2] // 4) * (original_shape[3] // 4) == num_tokens:
+        down_sample_rate = 4
+    else:
+        down_sample_rate = 8
+
+    size = (original_shape[2] // down_sample_rate, original_shape[3] // down_sample_rate)
+    mask_downsample = F.interpolate(mask, size=size, mode="nearest")
+    mask_downsample = mask_downsample.view(num_conds, num_tokens, 1).repeat_interleave(batch_size, dim=0)
+
+    return mask_downsample
+
+
+def lcm(a, b):
+    return a * b // gcd(a, b)
+
+
+def lcm_for_list(numbers):
+    current_lcm = numbers[0]
+    for number in numbers[1:]:
+        current_lcm = lcm(current_lcm, number)
+    return current_lcm
+
+
+def attention_couple_simple(base_mask, conds, masks):
+    num_conds = len(conds) + 1
+    mask = [base_mask] + masks
+    mask = torch.stack(mask, dim=0)
+    assert mask.sum(dim=0).min() > 0, "There are areas that are zero in all masks."
+    self_mask = mask / mask.sum(dim=0, keepdim=True)
+    self_conds = [cond[0][0] for cond in conds]
+    num_tokens = [cond.shape[1] for cond in self_conds]
+    self_batch_size = None
+    print(f"{num_tokens=}")
+
+    def attn2_patch(q, k, v, extra_options):
+        log.info("attn2_patch")
+        nonlocal self_conds
+        nonlocal self_mask
+        nonlocal self_batch_size
+        assert k.mean() == v.mean(), "k and v must be the same."
+        device, dtype = q.device, q.dtype
+
+        if self_conds[0].device != device:
+            self_conds = [cond.to(device, dtype=dtype) for cond in self_conds]
+        if self_mask.device != device:
+            self_mask = self_mask.to(device, dtype=dtype)
+
+        cond_or_unconds = extra_options["cond_or_uncond"]
+        num_chunks = len(cond_or_unconds)
+        self_batch_size = q.shape[0] // num_chunks
+        q_chunks = q.chunk(num_chunks, dim=0)
+        k_chunks = k.chunk(num_chunks, dim=0)
+        lcm_tokens = lcm_for_list(num_tokens + [k.shape[1]])
+        conds_tensor = torch.cat(
+            [cond.repeat(self_batch_size, lcm_tokens // num_tokens[i], 1) for i, cond in enumerate(self_conds)], dim=0
+        )
+
+        qs, ks = [], []
+        for i, cond_or_uncond in enumerate(cond_or_unconds):
+            k_target = k_chunks[i].repeat(1, lcm_tokens // k.shape[1], 1)
+            if cond_or_uncond == 1:  # uncond
+                qs.append(q_chunks[i])
+                ks.append(k_target)
+            else:
+                qs.append(q_chunks[i].repeat(num_conds, 1, 1))
+                ks.append(torch.cat([k_target, conds_tensor], dim=0))
+
+        qs = torch.cat(qs, dim=0)
+        ks = torch.cat(ks, dim=0).to(k)
+
+        return qs, ks, ks
+
+    def attn2_output_patch(out, extra_options):
+        nonlocal self_conds
+        nonlocal self_mask
+        nonlocal self_batch_size
+        log.info(f"attn2_output_patch {self_batch_size}")
+        cond_or_unconds = extra_options["cond_or_uncond"]
+        mask_downsample = get_mask(self_mask, self_batch_size, out.shape[1], extra_options["original_shape"])
+        outputs = []
+        pos = 0
+        for cond_or_uncond in cond_or_unconds:
+            if cond_or_uncond == 1:  # uncond
+                outputs.append(out[pos : pos + self_batch_size])
+                pos += self_batch_size
+            else:
+                log.info(
+                    f"masking {pos=} {num_conds=} {self_batch_size=} {out.shape[1]=} {out.shape[2]=} {mask_downsample.shape=}"
+                )
+                masked_output = (out[pos : pos + num_conds * self_batch_size] * mask_downsample).view(
+                    num_conds, self_batch_size, out.shape[1], out.shape[2]
+                )
+                masked_output = masked_output.sum(dim=0)
+                outputs.append(masked_output)
+                pos += num_conds * self_batch_size
+        return torch.cat(outputs, dim=0)
+
+    transformers_dict = {"patches": {"attn2_output_patch": [attn2_output_patch], "attn2_patch": [attn2_patch]}}
+    hook = TransformerOptionsHook(transformers_dict=transformers_dict, hook_scope=EnumHookScope.HookedOnly)
+    group = HookGroup()
+    group.add(hook)
+    return group
 
 
 class MaskedAttn2:

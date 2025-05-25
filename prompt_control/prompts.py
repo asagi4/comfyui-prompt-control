@@ -10,12 +10,12 @@ from .cutoff import process_cuts
 from .parser import parse_cuts
 
 try:
-    from .nodes_attnmask import create_attention_hook
+    from .nodes_attnmask import attention_couple_simple
     from comfy.hooks import set_hooks_for_conditioning
 
-    def set_cond_attnmask(cond, mask):
-        hook = create_attention_hook(mask)
-        return set_hooks_for_conditioning(cond, hooks=hook)
+    def set_cond_attnmask(base_cond, base_mask, conds, masks):
+        hook = attention_couple_simple(base_mask, conds, masks)
+        return set_hooks_for_conditioning(base_cond, hooks=hook)
 
 except ImportError:
 
@@ -482,12 +482,8 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
     conds = []
     # TODO: is this still needed?
     # scale = sum(abs(weight(p)[0]) for p in prompts if not ("AREA(" in p or "MASK(" in p))
+    attnmasked_prompts = []
     for prompt in prompts:
-        attn = False
-        if "ATTN()" in prompt:
-            prompt = prompt.replace("ATTN()", "")
-            attn = True
-            log.info("Using attention masking for prompt segment")
         prompt, mask, mask_weight = get_mask(prompt, mask_size, masks)
         w, opts, prompt = weight(prompt)
         text, noise_w, generator = get_noise(text)
@@ -509,12 +505,29 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
 
         settings["start_percent"] = start_pct
         settings["end_percent"] = end_pct
+        if "ATTN()" in prompt:
+            prompt = prompt.replace("ATTN()", "")
+            if "mask" not in settings:
+                log.warning("ATTN() must be used together with MASK(), ignoring...")
+            else:
+                settings.pop("mask")
+                settings.pop("mask_strength")
+                log.info("Using attention masking for prompt segment")
+                cond = encode_prompt_segment(clip, prompt, {}, style, normalization)
+                attnmasked_prompts.append((cond, mask * mask_weight))
+                continue
         x = encode_prompt_segment(clip, prompt, settings, style, normalization)
-        if attn and mask is not None:
-            mask = settings.pop("mask")
-            strength = settings.pop("mask_strength")
-            x = set_cond_attnmask(x, mask * strength)
 
         conds.extend(x)
+
+    if attnmasked_prompts:
+        attn_cond, base_mask = attnmasked_prompts[0]
+        if len(attnmasked_prompts) > 1:
+            attn_cond = set_cond_attnmask(
+                attn_cond, base_mask, [c[0] for c in attnmasked_prompts[1:]], [c[1] for c in attnmasked_prompts[1:]]
+            )
+        else:
+            log.warning("You must specify at least two prompt segments with ATTN() for attention couple to work")
+        conds.extend(attn_cond)
 
     return conds
