@@ -239,6 +239,17 @@ gives
 ```
 in this form, the variables $N (where N is any number corresponding to a positional parameter) will be replaced with the given parameter. The parameters must be separated with a semicolon.
 
+You can also optionally specify default values:
+
+```
+DEF(MACRO(example; 0; 1)=[$1:$2,$3])
+MACRO MACRO(test; 0.2)
+```
+gives
+```
+[example:0,1] [test:0.2,1]
+```
+
 Note that unspecified parameters will not be substituted:
 ```
 DEF(mything=a $1 b $2)

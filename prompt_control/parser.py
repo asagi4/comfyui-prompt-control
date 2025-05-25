@@ -8,7 +8,7 @@ log = logging.getLogger("comfyui-prompt-control")
 import re
 
 from functools import lru_cache
-from .utils import get_function
+from .utils import get_function, find_closing_paren
 
 if lark.__version__ == "0.12.0":
     from sys import executable
@@ -359,6 +359,25 @@ class PromptSchedule(object):
         return len(self.parsed_prompt) - 1, self.parsed_prompt[-1]
 
 
+def parse_search(search):
+    arg_start = search.find("(")
+    args = ""
+    name = search.strip()
+    if arg_start > 0:
+        arg_end = find_closing_paren(search, arg_start)
+        name = search[:arg_start].strip()
+        args = search[arg_start + 1 : arg_end - 1]
+
+    if not name:
+        return None
+    args = args.strip()
+    if args:
+        args = [a.strip() for a in args.split(";")]
+    else:
+        args = []
+    return name, args
+
+
 def replace_def(text):
     text, defs = get_function(text, "DEF", defaults=None)
     res = text
@@ -366,10 +385,11 @@ def replace_def(text):
     replacements = []
     for d in defs:
         r = d.split("=", 1)
-        if len(r) != 2 or not r[0].strip():
+        search = parse_search(r[0].strip())
+        if not search or len(r) != 2:
             log.warning("Ignoring invalid DEF(%s)", d)
             continue
-        replacements.append((r[0].strip(), r[1].strip()))
+        replacements.append((search, r[1].strip()))
     iterations = 0
     while True:
         iterations += 1
@@ -389,17 +409,25 @@ def replace_def(text):
 
 
 def substitute_def(text, search, replace):
+    search, default_args = search
+    for i, v in enumerate(default_args):
+        replace = re.sub(rf"\${i+1}\b", v, replace)
     return re.sub(rf"\b{re.escape(search)}\b", replace, text)
 
 
 def substitute_defcall(text, search, replace):
-    text, defns = get_function(text, search, defaults=None, placeholder=f"DEFNCALL{search}")
+    name, default_args = search
+    text, defns = get_function(text, name, defaults=None, placeholder=f"DEFNCALL{search}")
     for i, defn in enumerate(defns):
         ph = f"\0DEFNCALL{search}{i}\0"
         paramvals = [x.strip() for x in defn.split(";")]
         r = replace
         for i, v in enumerate(paramvals):
             r = re.sub(rf"\${i+1}\b", v, r)
+
+        for i, v in enumerate(default_args):
+            r = re.sub(rf"\${i+1}\b", v, r)
+
         text = text.replace(ph, r)
     return text
 
