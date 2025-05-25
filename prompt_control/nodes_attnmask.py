@@ -11,7 +11,6 @@ from math import sqrt, gcd
 
 def get_mask(mask, batch_size, num_tokens, original_shape):
     num_conds = mask.shape[0]
-    print(f"get_mask {num_conds=}")
 
     if original_shape[2] * original_shape[3] == num_tokens:
         down_sample_rate = 1
@@ -49,10 +48,8 @@ def attention_couple_simple(base_mask, conds, masks):
     self_conds = [cond[0][0] for cond in conds]
     num_tokens = [cond.shape[1] for cond in self_conds]
     self_batch_size = None
-    print(f"{num_tokens=}")
 
     def attn2_patch(q, k, v, extra_options):
-        log.info("attn2_patch")
         nonlocal self_conds
         nonlocal self_mask
         nonlocal self_batch_size
@@ -93,7 +90,6 @@ def attention_couple_simple(base_mask, conds, masks):
         nonlocal self_conds
         nonlocal self_mask
         nonlocal self_batch_size
-        log.info(f"attn2_output_patch {self_batch_size}")
         cond_or_unconds = extra_options["cond_or_uncond"]
         mask_downsample = get_mask(self_mask, self_batch_size, out.shape[1], extra_options["original_shape"])
         outputs = []
@@ -103,9 +99,6 @@ def attention_couple_simple(base_mask, conds, masks):
                 outputs.append(out[pos : pos + self_batch_size])
                 pos += self_batch_size
             else:
-                log.info(
-                    f"masking {pos=} {num_conds=} {self_batch_size=} {out.shape[1]=} {out.shape[2]=} {mask_downsample.shape=}"
-                )
                 masked_output = (out[pos : pos + num_conds * self_batch_size] * mask_downsample).view(
                     num_conds, self_batch_size, out.shape[1], out.shape[2]
                 )
