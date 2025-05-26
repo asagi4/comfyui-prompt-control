@@ -9,20 +9,7 @@ from .adv_encode import advanced_encode_from_tokens
 from .cutoff import process_cuts
 from .parser import parse_cuts
 
-try:
-    from .nodes_attnmask import attention_couple_simple
-    from comfy.hooks import set_hooks_for_conditioning
-
-    def set_cond_attnmask(base_cond, base_mask, conds, masks):
-        hook = attention_couple_simple(base_mask, conds, masks)
-        return set_hooks_for_conditioning(base_cond, hooks=hook)
-
-except ImportError:
-
-    def set_cond_attnmask(cond, mask):
-        log.info("Attention masking is not available")
-        return cond
-
+from .attention_couple_ppm import set_cond_attnmask
 
 log = logging.getLogger("comfyui-prompt-control")
 
@@ -524,7 +511,10 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
         attn_cond, base_mask = attnmasked_prompts[0]
         if len(attnmasked_prompts) > 1:
             attn_cond = set_cond_attnmask(
-                attn_cond, base_mask, [c[0] for c in attnmasked_prompts[1:]], [c[1] for c in attnmasked_prompts[1:]]
+                attn_cond,
+                base_mask,
+                [c[0] for c in attnmasked_prompts[1:]],
+                [c[1] for c in attnmasked_prompts[1:]],
             )
         else:
             log.warning("You must specify at least two prompt segments with ATTN() for attention couple to work")
