@@ -470,6 +470,7 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
     # TODO: is this still needed?
     # scale = sum(abs(weight(p)[0]) for p in prompts if not ("AREA(" in p or "MASK(" in p))
     attnmasked_prompts = []
+    fill = False
     for prompt in prompts:
         prompt, mask, mask_weight = get_mask(prompt, mask_size, masks)
         w, opts, prompt = weight(prompt)
@@ -494,27 +495,45 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
         settings["end_percent"] = end_pct
         if "ATTN()" in prompt:
             prompt = prompt.replace("ATTN()", "")
-            if "mask" not in settings:
-                log.warning("ATTN() must be used together with MASK(), ignoring...")
-            else:
+            if "FILL()" in prompt:
+                prompt = prompt.replace("FILL()", "")
+                if attnmasked_prompts:
+                    log.warning("FILL() can only be used for the first prompt, ignoring")
+                elif mask is not None:
+                    log.warning("MASK() and FILL() can't be used together, ignoring FILL()")
+                else:
+                    fill = True
+            if "mask" in settings:
                 settings.pop("mask")
                 settings.pop("mask_strength")
-                log.info("Using attention masking for prompt segment")
-                cond = encode_prompt_segment(clip, prompt, {}, style, normalization)
-                attnmasked_prompts.append((cond, mask * mask_weight))
-                continue
+            log.info("Using attention masking for prompt segment")
+            cond = encode_prompt_segment(clip, prompt, {}, style, normalization)
+            attnmasked_prompts.append((cond, mask, mask_weight))
+            continue
         x = encode_prompt_segment(clip, prompt, settings, style, normalization)
 
         conds.extend(x)
 
+    def ensure_mask(c):
+        _, mask, weight = c
+        if mask is None:
+            _, mask, weight = get_mask("MASK()", mask_size, masks)
+        return mask * weight
+
     if attnmasked_prompts:
-        attn_cond, base_mask = attnmasked_prompts[0]
+        attn_cond, base_mask, base_mask_weight = attnmasked_prompts[0]
+        if base_mask is not None:
+            base_mask *= base_mask_weight
+        elif not fill:
+            _, base_mask, _ = get_mask("MASK()", mask_size, masks)
+        # else, set_cond_attnmask will have the base mask fill any unspecified areas
         if len(attnmasked_prompts) > 1:
             attn_cond = set_cond_attnmask(
                 attn_cond,
                 base_mask,
                 [c[0] for c in attnmasked_prompts[1:]],
-                [c[1] for c in attnmasked_prompts[1:]],
+                [ensure_mask(c) for c in attnmasked_prompts[1:]],
+                fill=fill,
             )
         else:
             log.warning("You must specify at least two prompt segments with ATTN() for attention couple to work")

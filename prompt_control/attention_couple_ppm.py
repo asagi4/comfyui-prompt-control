@@ -20,8 +20,8 @@ UNCOND = 1
 COND_UNCOND_COUPLE = "cond_or_uncond_couple"
 
 
-def set_cond_attnmask(base_cond, base_mask, conds, masks):
-    hook = AttentionCoupleHook(base_mask, conds, masks)
+def set_cond_attnmask(base_cond, base_mask, conds, masks, fill=False):
+    hook = AttentionCoupleHook(base_mask, conds, masks, fill=fill)
     group = HookGroup()
     group.add(hook)
     return set_hooks_for_conditioning(base_cond, hooks=group)
@@ -58,7 +58,7 @@ class Proxy:
 
 
 class AttentionCoupleHook(TransformerOptionsHook):
-    def __init__(self, base_mask, conds, masks):
+    def __init__(self, base_mask, conds, masks, fill):
         super().__init__(hook_scope=EnumHookScope.HookedOnly)
         self.transformers_dict = {
             "patches": {
@@ -72,9 +72,15 @@ class AttentionCoupleHook(TransformerOptionsHook):
         self.batch_size = 0
         self.num_conds = len(conds) + 1
 
+        if base_mask is None and not fill:
+            raise ValueError("You must specify a base mask when fill=False")
+        elif base_mask is None:
+            sum = torch.stack(masks, dim=0).sum(dim=0)
+            base_mask = torch.zeros_like(sum)
+            base_mask[sum <= 0] = 1.0
         mask = [base_mask] + masks
         mask = torch.stack(mask, dim=0)
-        if mask.sum(dim=0).min() <= 0:
+        if mask.sum(dim=0).min() <= 0 and not fill:
             raise ValueError("Masks contain non-filled areas")
         self.mask = mask / mask.sum(dim=0, keepdim=True)
 

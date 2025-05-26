@@ -264,9 +264,18 @@ a A b $2
 
 Macros are expanded before any other parsing takes place. The expansion continues until no further changes occur. Recursion will raise an error.
 
-## Attention masking
+## Attention Couple
 
-Use `ATTN()` in combination with `MASK()` or `IMASK()` to enable attention masking. Currently, it's pretty slow and only works with SDXL. You need to have a recent enough version of ComfyUI for this to work.
+Use `ATTN()` in combination with `AND` and `MASK()` or `IMASK()` to enable attention masking based on the Attention Couple implementation by [pamparamm](https://github.com/pamparamm/ComfyUI-ppm.git).
+
+If no mask is specified, an implicit `MASK()` is assumed. For the first prompt (and the first prompt only) you can also use `FILL()` to automatically mask all parts not masked by other prompt segments.
+
+For attention masking to take effect, you need at least two prompt segments with the `ATTN()` marker.
+
+For example:
+```
+dog FILL() ATTN() AND cat MASK(0.5 1) ATTN()
+```
 
 ## TE_WEIGHT
 
