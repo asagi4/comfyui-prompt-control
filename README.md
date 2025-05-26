@@ -4,6 +4,25 @@ Control LoRA and prompt scheduling, advanced text encoding, regional prompting, 
 
 A `Basic Text to Image` template is included with the extension, and can be loaded from ComfyUI's template library.
 
+## What can it do?
+
+See [features](#features) below. Things you can control via the prompt:
+- Prompt editing and filtering without noodle soup
+- LoRA loading and scheduling via ComfyUI's hook system
+- Masking, composition and area control (regional prompting), with experimental attention couple support.
+- Per-encoder prompts for models with multiple text encoders, such as SDXL and Flux
+- Prompt operations like `BREAK` and `AND`
+- Weight interpretation types (comfy, A1111, etc.)
+- Prompt masking with [cutoff](#cutoff)
+- Simple prompt macros with `DEF`
+- And a bunch more
+
+See the [syntax documentation](doc/syntax.md)
+
+If you find prompt scheduling inconvenient for some reason, `PCTextEncode` can be used as a drop-in replacement for `CLIPTextEncode` to get everything else.
+
+[This workflow](example_workflows/Workflow%20Comparison.json?raw=1) shows LoRA scheduling and prompt editing and compares it with the same prompt implemented with built-in ComfyUI nodes. You can also find it in the template library.
+
 ## Prompt Control v2
 
 Prompt control has been almost completely rewritten. It now uses ComfyUI's lazy execution to build graphs from the text prompt at runtime. The generated graph is often exactly equivalent to a manually built workflow using native ComfyUI nodes. There are no more weird sampling hooks that could cause problems with other nodes
@@ -21,27 +40,6 @@ Prompt Control comes with `PCTextEncode`, which provides advanced text encoding 
 If you really need them, you can install the [legacy nodes](https://github.com/asagi4/comfyui-prompt-control-legacy). However, I will not fix bugs in those nodes, and I strongly recommend just migrating your workflows to the new nodes.
 
 You can have both installed at the same time; none of the nodes conflict.
-
-## What can it do?
-
-See [features](#features) below. Things you can control via the prompt:
-- Prompt editing and filtering without noodle soup
-- LoRA loading and scheduling via ComfyUI's hook system
-- Masking, composition and area control (regional prompting), with experimental attention couple support.
-- Per-encoder prompts for models with multiple text encoders, such as SDXL and Flux
-- Prompt operations like `BREAK` and `AND`
-- Weight interpretation types (comfy, A1111, etc.)
-- Prompt masking with [cutoff](#cutoff)
-- And a bunch more
-
-See the [syntax documentation](doc/syntax.md)
-
-If you find prompt scheduling inconvenient for some reason, `PCTextEncode` can be used as a drop-in replacement for `CLIPTextEncode` to get everything else.
-
-[This workflow](example_workflows/Workflow%20Comparison.json?raw=1) shows LoRA scheduling and prompt editing and compares it with the same prompt implemented with built-in ComfyUI nodes. You can also find it in the template library.
-
-The tools in this repository combine well with the macro and wildcard functionality in [comfyui-utility-nodes](https://github.com/asagi4/comfyui-utility-nodes)
-
 
 ## Requirements
 
