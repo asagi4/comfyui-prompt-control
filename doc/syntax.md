@@ -105,6 +105,12 @@ cat :1 AND dog :2
 ```
 The weight defaults to 1 and are normalized so that `a:2 AND b:2` is equal to `a AND b`. `AND` is processed after schedule parsing, so you can change the weight mid-prompt: `cat:[1:2:0.5] AND dog`
 
+If a prompt's weight is set to 0, it's skipped entirely. This can be useful when scheduling to completely disable a prompt:
+```
+cat [\:0::0.5] AND dog
+```
+Note that the `:` needs to be escaped in this case.
+
 ## Functions
 
 There are some "functions" that can be included in a prompt to do various things. 
@@ -276,6 +282,12 @@ For example:
 ```
 dog FILL() ATTN() AND cat MASK(0.5 1) ATTN()
 ```
+
+If typing `ATTN() MASK()` feels bothersome, try the following macro:
+```
+DEF(AM=ATTN() MASK($1))
+```
+and then use it like `MASK`: `AM(0 1, 0.5 1)`
 
 ## TE_WEIGHT
 

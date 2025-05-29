@@ -17,7 +17,7 @@ See [features](#features) below. Things you can control via the prompt:
 - Simple prompt macros with `DEF`
 - And a bunch more
 
-See the [syntax documentation](doc/syntax.md)
+See the [syntax documentation](doc/syntax.md) for details.
 
 If you find prompt scheduling inconvenient for some reason, `PCTextEncode` can be used as a drop-in replacement for `CLIPTextEncode` to get everything else.
 
