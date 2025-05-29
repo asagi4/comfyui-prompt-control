@@ -18,6 +18,23 @@ class TestParser(unittest.TestCase):
         self.assertEqual(p.at_step(0.5), expected)
         self.assertEqual(p.at_step(1), expected)
 
+    def test_equivalences(self):
+        eqs = [parse(p) for p in ["[a:0.1]", "[:a:0.1]", "[:a:0,0.1]", "[:a::0.1,1.0]", "[:a::0.1]"]]
+        for p in eqs[1:]:
+            self.assertEqual(eqs[0].parsed_prompt, p.parsed_prompt)
+
+        eqs = [parse(p) for p in ["[a:0.1,0.5]", "[[a:0.1]::0.5]", "[:a::0.1,0.5]", "[a::0.1,0.5]"]]
+        for p in eqs[1:]:
+            self.assertEqual(eqs[0].parsed_prompt, p.parsed_prompt)
+
+        eqs = [parse(p) for p in ["[a:b:0.5]", "[a::b:0.5,0.5]"]]
+        for p in eqs[1:]:
+            self.assertEqual(eqs[0].parsed_prompt, p.parsed_prompt)
+
+        eqs = [parse(p) for p in ["[a::0.5]", "[a:::0.5,0.5]"]]
+        for p in eqs[1:]:
+            self.assertEqual(eqs[0].parsed_prompt, p.parsed_prompt)
+
     def test_basic(self):
         p = parse(
             "This is a (basic:0.6) (prompt) with (very [[simple]:(basic:0.6):0.5]:1.1) [features::0.8][ and this is ignored:1]"

@@ -31,8 +31,9 @@ prompt: (emphasized | embedding | scheduled | alternate | sequence | loraspec | 
 !emphasized: "(" prompt? ")"
         | "(" prompt ":" prompt ")"
         | "[" prompt "]"
-scheduled: "[" [[prompt] ":"] [prompt] ":" _WS? NUMBER ["," NUMBER] "]"
-        | "[" [[prompt] ":"] [prompt] ":" _WS? TAG "]"
+promptlist: ([prompt] ":")~1..3
+scheduled: "[" promptlist _WS? NUMBER ["," NUMBER] "]"
+        | "[" promptlist _WS? TAG "]"
 sequence.5:  "[SEQ" ":" [prompt] ":" NUMBER (":" [prompt] ":" NUMBER)* "]"
 alternate: "[" [prompt] ("|" [prompt])+ [":" NUMBER] "]"
 loraspec.99: "<lora:" FILENAME lora_weights [lora_block_weights] ">"
@@ -91,7 +92,7 @@ def parse_cuts(text):
 
 
 def flatten(x):
-    if type(x) in [str, tuple] or isinstance(x, dict) and "type" in x:
+    if type(x) in [str, tuple, int, type(None)] or isinstance(x, dict) and "type" in x:
         yield x
     else:
         for g in x:
@@ -160,31 +161,38 @@ def get_steps(tree, num_steps):
 def at_step(step, filters, tree):
     class AtStep(lark.Transformer):
         def scheduled(self, args):
+            before = None
+            during = None
+            after = None
             when_end = None
-            before, after, when, *rest = args
-            if isinstance(when, str):
-                return before or "" if when not in filters else after or ""
-
+            pl, when, *rest = args
             if rest:
                 when_end = rest[0]
 
-            if when_end is not None and step <= when and before is not None:
-                return ""
+            pl = list(pl)
+            if len(pl) == 1:
+                (during,) = pl  # [after:0.5] == [::after:0.5,0.5]
+                if when_end is None:
+                    when_end = when
+                    after = during
+            elif len(pl) == 2:
+                during, after = pl  # [during:after:0.5] = [before::after:0.5,0.5]
+                if when_end is None:
+                    when_end = when
+                    before = during
+            else:
+                before, during, after = pl  # [before:during:after:0.5,0.8]
 
-            if when_end is not None and (step > when and step <= when_end):
-                # handle [a:0,1]
-                if before is None:
-                    return after or ""
-                return before or ""
+            if isinstance(when, str):
+                return before or "" if when not in filters else after or ""
 
-            if when_end is not None and step >= when_end:
-                # handle [a:0,1]
-                if before is None:
-                    return ""
-                return after or ""
+            if when_end is None:
+                when_end = 1000_000
 
             if step <= when:
                 return before or ""
+            if when < step <= when_end:
+                return during or ""
             else:
                 return after or ""
 
@@ -303,6 +311,7 @@ class PromptSchedule(object):
         except lark.exceptions.LarkError as e:
             log.error("Prompt editing parse error: %s", e)
             parsed = [[1.0, {"prompt": self.prompt, "loras": {}}]]
+            raise
 
         # Tag filtering may return redundant prompts, so filter them out here
         res = []
