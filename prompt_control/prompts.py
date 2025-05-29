@@ -472,13 +472,22 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
     attnmasked_prompts = []
     fill = False
     for prompt in prompts:
+        attn_couple = False
+        fill = False
+        if "ATTN()" in prompt:
+            prompt = prompt.replace("ATTN()", "")
+            attn_couple = True
+        if "FILL()" in prompt:
+            prompt = prompt.replace("FILL()", "")
+            fill = True
         prompt, mask, mask_weight = get_mask(prompt, mask_size, masks)
-        w, opts, prompt = weight(prompt)
         text, noise_w, generator = get_noise(text)
-        if not w:
-            continue
         prompt, area = get_area(prompt)
         prompt, local_sdxl_opts = get_sdxl(prompt, defaults)
+        # Get weight last so other syntax doesn't interfere with it
+        w, opts, prompt = weight(prompt)
+        if not w:
+            continue
         settings = {"prompt": prompt}
         settings["strength"] = w
         settings.update(sdxl_opts)
@@ -493,50 +502,43 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
 
         settings["start_percent"] = start_pct
         settings["end_percent"] = end_pct
-        if "ATTN()" in prompt:
-            prompt = prompt.replace("ATTN()", "")
-            if "FILL()" in prompt:
-                prompt = prompt.replace("FILL()", "")
+
+        x = encode_prompt_segment(clip, prompt, settings, style, normalization)
+        if attn_couple:
+            if fill:
+                fill = False
                 if attnmasked_prompts:
                     log.warning("FILL() can only be used for the first prompt, ignoring")
                 elif mask is not None:
                     log.warning("MASK() and FILL() can't be used together, ignoring FILL()")
                 else:
                     fill = True
-            if "mask" in settings:
-                settings.pop("mask")
-                settings.pop("mask_strength")
             log.info("Using attention masking for prompt segment")
-            cond = encode_prompt_segment(clip, prompt, {}, style, normalization)
-            attnmasked_prompts.append((cond, mask, mask_weight))
-            continue
-        x = encode_prompt_segment(clip, prompt, settings, style, normalization)
-
-        conds.extend(x)
+            attnmasked_prompts.extend(x)
+        else:
+            conds.extend(x)
 
     def ensure_mask(c):
-        _, mask, weight = c
-        if mask is None:
-            _, mask, weight = get_mask("MASK()", mask_size, masks)
-        return mask * weight
+        if "mask" not in c[1]:
+            _, mask, _ = get_mask("MASK()", mask_size, masks)
+            c[1]["mask"] = mask
+            c[1]["mask_strength"] = 1.0
+        return c
 
     if attnmasked_prompts:
-        attn_cond, base_mask, base_mask_weight = attnmasked_prompts[0]
-        if base_mask is not None:
-            base_mask *= base_mask_weight
-        elif not fill:
-            _, base_mask, _ = get_mask("MASK()", mask_size, masks)
+        base_cond = attnmasked_prompts[0]
+        if not fill:
+            ensure_mask(base_cond)
         # else, set_cond_attnmask will have the base mask fill any unspecified areas
+        base_cond = [base_cond]
         if len(attnmasked_prompts) > 1:
-            attn_cond = set_cond_attnmask(
-                attn_cond,
-                base_mask,
-                [c[0] for c in attnmasked_prompts[1:]],
+            base_cond = set_cond_attnmask(
+                base_cond,
                 [ensure_mask(c) for c in attnmasked_prompts[1:]],
                 fill=fill,
             )
         else:
             log.warning("You must specify at least two prompt segments with ATTN() for attention couple to work")
-        conds.extend(attn_cond)
+        conds.extend(base_cond)
 
     return conds

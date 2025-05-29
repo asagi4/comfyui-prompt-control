@@ -20,8 +20,8 @@ UNCOND = 1
 COND_UNCOND_COUPLE = "cond_or_uncond_couple"
 
 
-def set_cond_attnmask(base_cond, base_mask, conds, masks, fill=False):
-    hook = AttentionCoupleHook(base_mask, conds, masks, fill=fill)
+def set_cond_attnmask(base_cond, extra_conds, fill=False):
+    hook = AttentionCoupleHook(base_cond[0], extra_conds, fill=fill)
     group = HookGroup()
     group.add(hook)
     return set_hooks_for_conditioning(base_cond, hooks=group)
@@ -58,7 +58,7 @@ class Proxy:
 
 
 class AttentionCoupleHook(TransformerOptionsHook):
-    def __init__(self, base_mask, conds, masks, fill):
+    def __init__(self, base_cond, conds, fill):
         super().__init__(hook_scope=EnumHookScope.HookedOnly)
         self.transformers_dict = {
             "patches": {
@@ -71,6 +71,11 @@ class AttentionCoupleHook(TransformerOptionsHook):
 
         self.batch_size = 0
         self.num_conds = len(conds) + 1
+        self.base_strength = base_cond[1].pop("strength", 1.0)
+        self.strengths = [cond[1].get("strength", 1.0) for cond in conds]
+        self.conds: list[torch.Tensor] = [cond[0] for cond in conds]
+        base_mask = base_cond[1].pop("mask", None)
+        masks = [cond[1].pop("mask") * cond[1].pop("mask_strength") for cond in conds]
 
         if base_mask is None and not fill:
             raise ValueError("You must specify a base mask when fill=False")
@@ -82,9 +87,8 @@ class AttentionCoupleHook(TransformerOptionsHook):
         mask = torch.stack(mask, dim=0)
         if mask.sum(dim=0).min() <= 0 and not fill:
             raise ValueError("Masks contain non-filled areas")
-        self.mask = mask / mask.sum(dim=0, keepdim=True)
 
-        self.conds: list[torch.Tensor] = [cond[0][0] for cond in conds]
+        self.mask = mask / mask.sum(dim=0, keepdim=True)
 
     def on_apply_hooks(self, model: ModelPatcher, transformer_options: dict[str]):
         if not self.conds_kv:
@@ -122,14 +126,14 @@ class AttentionCoupleHook(TransformerOptionsHook):
             lcm_tokens_v = lcm_for_list(self.num_tokens_v + [v.shape[1]])
             conds_k_tensor = torch.cat(
                 [
-                    cond[0].repeat(self.batch_size, lcm_tokens_k // self.num_tokens_k[i], 1)
+                    cond[0].repeat(self.batch_size, lcm_tokens_k // self.num_tokens_k[i], 1) * self.strengths[i]
                     for i, cond in enumerate(self.conds_kv)
                 ],
                 dim=0,
             )
             conds_v_tensor = torch.cat(
                 [
-                    cond[1].repeat(self.batch_size, lcm_tokens_v // self.num_tokens_v[i], 1)
+                    cond[1].repeat(self.batch_size, lcm_tokens_v // self.num_tokens_v[i], 1) * self.strengths[i]
                     for i, cond in enumerate(self.conds_kv)
                 ],
                 dim=0,
@@ -148,8 +152,8 @@ class AttentionCoupleHook(TransformerOptionsHook):
                     cond_or_uncond_couple.append(UNCOND)
                 else:
                     qs.append(q_target.repeat(self.num_conds, 1, 1))
-                    ks.append(torch.cat([k_target, conds_k_tensor], dim=0))
-                    vs.append(torch.cat([v_target, conds_v_tensor], dim=0))
+                    ks.append(torch.cat([k_target * self.base_strength, conds_k_tensor], dim=0))
+                    vs.append(torch.cat([v_target * self.base_strength, conds_v_tensor], dim=0))
                     cond_or_uncond_couple.extend(itertools.repeat(COND, self.num_conds))
 
             qs = torch.cat(qs, dim=0)
