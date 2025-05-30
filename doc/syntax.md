@@ -1,5 +1,7 @@
 # Prompt Control Syntax
 
+If you're viewing this on GitHub, I recommend opening the outline by clicking the button in the top right corner of the text view (it is annoyingly easy to miss).
+
 Scheduling syntax is similar to A1111, but only fractions are supported for steps. LoRAs are scheduled by including them in a scheduling expression.
 
 ```
@@ -344,7 +346,7 @@ a A b $2
 
 Macros are expanded before any other parsing takes place. The expansion continues until no further changes occur. Recursion will raise an error.
 
-## Attention Couple {#attention-couple}
+## Attention Couple
 
 Attention Couple is an attention-based implementation of regional prompting. it can often be faster and more flexible than latent-based masking.
 
