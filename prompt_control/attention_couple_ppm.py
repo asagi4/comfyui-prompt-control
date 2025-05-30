@@ -65,7 +65,6 @@ class AttentionCoupleHook(TransformerOptionsHook):
 
         self.conds_kv = []
 
-        self.batch_size = 0
         self.num_conds = len(conds) + 1
         self.base_strength = base_cond[1].pop("strength", 1.0)
         self.strengths = [cond[1].get("strength", 1.0) for cond in conds]
@@ -112,8 +111,9 @@ class AttentionCoupleHook(TransformerOptionsHook):
     def attn2_patch(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, extra_options):
         cond_or_uncond = extra_options["cond_or_uncond"]
 
-        num_chunks = len(cond_or_uncond)
-        self.batch_size = q.shape[0] // num_chunks
+        num_chunks = len(cond_or_uncond) # should always be 1
+        bs = q.shape[0] // num_chunks
+        debug("attn2", f"{q.shape=} {k.shape=} {v.shape=} {bs=} {num_chunks=}")
         q_chunks = q.chunk(num_chunks, dim=0)
         k_chunks = k.chunk(num_chunks, dim=0)
         v_chunks = v.chunk(num_chunks, dim=0)
@@ -121,14 +121,14 @@ class AttentionCoupleHook(TransformerOptionsHook):
         lcm_tokens_v = lcm_for_list(self.num_tokens_v + [v.shape[1]])
         conds_k_tensor = torch.cat(
             [
-                cond[0].repeat(self.batch_size, lcm_tokens_k // self.num_tokens_k[i], 1) * self.strengths[i]
+                cond[0].repeat(bs, lcm_tokens_k // self.num_tokens_k[i], 1) * self.strengths[i]
                 for i, cond in enumerate(self.conds_kv)
             ],
             dim=0,
         )
         conds_v_tensor = torch.cat(
             [
-                cond[1].repeat(self.batch_size, lcm_tokens_v // self.num_tokens_v[i], 1) * self.strengths[i]
+                cond[1].repeat(bs, lcm_tokens_v // self.num_tokens_v[i], 1) * self.strengths[i]
                 for i, cond in enumerate(self.conds_kv)
             ],
             dim=0,
