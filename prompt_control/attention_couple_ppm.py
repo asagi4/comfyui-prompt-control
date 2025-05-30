@@ -19,6 +19,12 @@ COND = 0
 UNCOND = 1
 COND_UNCOND_COUPLE = "cond_or_uncond_couple"
 
+DEBUG_KEYS = {}
+
+def debug(key, message):
+    if key not in DEBUG_KEYS:
+        DEBUG_KEYS[key] = True
+        print(key, message)
 
 def set_cond_attnmask(base_cond, extra_conds, fill=False):
     hook = AttentionCoupleHook(base_cond[0], extra_conds, fill=fill)
@@ -59,6 +65,7 @@ class Proxy:
 
 class AttentionCoupleHook(TransformerOptionsHook):
     def __init__(self, base_cond, conds, fill):
+        DEBUG_KEYS.clear()
         super().__init__(hook_scope=EnumHookScope.HookedOnly)
         self.transformers_dict = {
             "patches": {
