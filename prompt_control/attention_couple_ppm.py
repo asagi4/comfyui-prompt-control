@@ -99,6 +99,9 @@ class AttentionCoupleHook(TransformerOptionsHook):
 
             self.num_tokens_k = [cond[0].shape[1] for cond in self.conds_kv]
             self.num_tokens_v = [cond[1].shape[1] for cond in self.conds_kv]
+            print(f"{lcm_for_list(self.num_tokens_k)=} {lcm_for_list(self.num_tokens_v)=}")
+            self.lcm_last_k = None
+            self.lcm_last_v = None
 
         return super().on_apply_hooks(model, transformer_options)
 
@@ -117,8 +120,15 @@ class AttentionCoupleHook(TransformerOptionsHook):
         q_chunks = q.chunk(num_chunks, dim=0)
         k_chunks = k.chunk(num_chunks, dim=0)
         v_chunks = v.chunk(num_chunks, dim=0)
+        # These don't seem to ever change?
         lcm_tokens_k = lcm_for_list(self.num_tokens_k + [k.shape[1]])
         lcm_tokens_v = lcm_for_list(self.num_tokens_v + [v.shape[1]])
+        if lcm_tokens_k != self.lcm_last_k:
+            print(f"attn2 {self.lcm_last_k=} -> {lcm_tokens_k=}")
+            self.lcm_last_k = lcm_tokens_k
+        if lcm_tokens_v != self.lcm_last_v:
+            print(f"attn2 {self.lcm_last_v=} -> {lcm_tokens_v=}")
+            self.lcm_last_v = lcm_tokens_v
         conds_k_tensor = torch.cat(
             [
                 cond[0].repeat(bs, lcm_tokens_k // self.num_tokens_k[i], 1) * self.strengths[i]
