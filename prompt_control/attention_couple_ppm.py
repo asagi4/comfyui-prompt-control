@@ -122,8 +122,8 @@ class AttentionCoupleHook(TransformerOptionsHook):
         num_chunks = len(cond_or_uncond)  # should always be 1
         bs = q.shape[0] // num_chunks
 
-        conds_k_tensor = self.conds_k_tensor.expand(bs, *self.conds_k_tensor.shape[1:])
-        conds_v_tensor = self.conds_v_tensor.expand(bs, *self.conds_v_tensor.shape[1:])
+        conds_k_tensor = self.conds_k_tensor.repeat(bs, 1, 1)
+        conds_v_tensor = self.conds_v_tensor.repeat(bs, 1, 1)
 
         q = q.repeat(self.num_conds, 1, 1)
         k = k.repeat(1, self.conds_k_tensor.shape[1] // k.shape[1], 1)
