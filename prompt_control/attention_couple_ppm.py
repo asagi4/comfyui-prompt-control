@@ -145,19 +145,18 @@ class AttentionCoupleHook(TransformerOptionsHook):
         )
 
         qs, ks, vs = [], [], []
-        for i, cond_type in enumerate(cond_or_uncond):
-            q_target = q_chunks[i]
-            k_target = k_chunks[i].repeat(1, lcm_tokens_k // k.shape[1], 1)
-            v_target = v_chunks[i].repeat(1, lcm_tokens_v // v.shape[1], 1)
-            qs.append(q_target.repeat(self.num_conds, 1, 1))
-            ks.append(torch.cat([k_target * self.base_strength, conds_k_tensor], dim=0))
-            vs.append(torch.cat([v_target * self.base_strength, conds_v_tensor], dim=0))
+        debug("attn2 condskv", f"{conds_k_tensor.shape=} {conds_v_tensor.shape=}")
 
-        qs = torch.cat(qs, dim=0)
-        ks = torch.cat(ks, dim=0)
-        vs = torch.cat(vs, dim=0)
+        q = q.repeat(self.num_conds, 1, 1)
+        k = k.repeat(1, lcm_tokens_k // k.shape[1], 1)
+        v = v.repeat(1, lcm_tokens_v // v.shape[1], 1)
 
-        return qs, ks, vs
+        k = torch.cat([k * self.base_strength, conds_k_tensor], dim=0)
+        v = torch.cat([v * self.base_strength, conds_v_tensor], dim=0)
+
+        debug("attn2 shapes", f"{q.shape=} {k.shape=} {v.shape=}")
+
+        return q, k, v
 
     def attn2_output_patch(self, out, extra_options):
         # out has been extended to shape [num_conds*batch_size, TOKENS, N]
