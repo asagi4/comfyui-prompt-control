@@ -54,7 +54,7 @@ class AttentionCoupleHook(TransformerOptionsHook):
         self.num_conds = len(conds) + 1
         self.base_strength = base_cond[1].pop("strength", 1.0)
         self.strengths = [cond[1].get("strength", 1.0) for cond in conds]
-        self.conds: list[torch.Tensor] = [cond[0] for cond in conds]
+        self.conds: list[torch.Tensor] = [base_cond[0]] + [cond[0] for cond in conds]
         base_mask = base_cond[1].pop("mask", None)
         masks = [cond[1].pop("mask") * cond[1].pop("mask_strength") for cond in conds]
 
@@ -91,18 +91,19 @@ class AttentionCoupleHook(TransformerOptionsHook):
 
             lcm_tokens_k = lcm_for_list(num_tokens_k)
             lcm_tokens_v = lcm_for_list(num_tokens_v)
+            # Skip the base cond here, which is always first
             self.conds_k_tensor = torch.cat(
                 [
-                    cond[0].repeat(1, lcm_tokens_k // num_tokens_k[i], 1) * self.strengths[i]
-                    for i, cond in enumerate(conds_kv)
+                    cond[0].repeat(1, lcm_tokens_k // num_tokens_k[i + 1], 1) * self.strengths[i]
+                    for i, cond in enumerate(conds_kv[1:])
                 ],
                 dim=0,
             )
             if has_negpip:
                 self.conds_v_tensor = torch.cat(
                     [
-                        cond[1].repeat(1, lcm_tokens_v // num_tokens_v[i], 1) * self.strengths[i]
-                        for i, cond in enumerate(conds_kv)
+                        cond[1].repeat(1, lcm_tokens_v // num_tokens_v[i + 1], 1) * self.strengths[i]
+                        for i, cond in enumerate(conds_kv[1:])
                     ],
                     dim=0,
                 )
