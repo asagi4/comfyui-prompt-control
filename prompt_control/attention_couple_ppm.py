@@ -20,27 +20,18 @@ UNCOND = 1
 
 DEBUG_KEYS = {}
 
+
 def debug(key, message):
     if key not in DEBUG_KEYS:
         DEBUG_KEYS[key] = True
         print(key, message)
+
 
 def set_cond_attnmask(base_cond, extra_conds, fill=False):
     hook = AttentionCoupleHook(base_cond[0], extra_conds, fill=fill)
     group = HookGroup()
     group.add(hook)
     return set_hooks_for_conditioning(base_cond, hooks=group)
-
-
-def get_mask(mask, batch_size, num_tokens, extra_options):
-    activations_shape = extra_options["activations_shape"]
-    size = activations_shape[-2:]
-
-    num_conds = mask.shape[0]
-    mask_downsample = F.interpolate(mask, size=size, mode="nearest")
-    mask_downsample_reshaped = mask_downsample.view(num_conds, num_tokens, 1).repeat_interleave(batch_size, dim=0)
-
-    return mask_downsample_reshaped
 
 
 def lcm_for_list(numbers):
@@ -164,10 +155,16 @@ class AttentionCoupleHook(TransformerOptionsHook):
         return q, k, v
 
     def attn2_output_patch(self, out, extra_options):
-        cond_or_uncond = extra_options["cond_or_uncond"]
-        bs = self.batch_size
-        mask_downsample = get_mask(self.mask, self.batch_size, out.shape[1], extra_options)
-        debug("attn2_output_patch", f"{self.mask.shape=}")
+        # out has been extended to shape [num_conds*batch_size, TOKENS, N]
+        # out is [b1c1 b1c2 ... b1cN, b2c1 b2c2 ... b2cn, ...]
+        num_conds = self.mask.shape[0]
+        bs = out.shape[0] // num_conds
+        num_tokens = out.shape[1]
+        mask_size = extra_options["activations_shape"][-2:]
+        mask_downsample = F.interpolate(self.mask, size=mask_size, mode="nearest")
+        mask_downsample = mask_downsample.view(num_conds, num_tokens, 1).repeat_interleave(bs, dim=0)
+
+        # cond_outputs is [num_conds*bs, tokens, N], output needs to be [bs, tokens, N]
         cond_outputs = out * mask_downsample
-        cond_output = cond_outputs.view(self.mask.shape[0], self.batch_size, out.shape[1], out.shape[2]).sum(0)
+        cond_output = cond_outputs.view(num_conds, bs, out.shape[1], out.shape[2]).sum(0)
         return cond_output
