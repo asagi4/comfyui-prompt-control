@@ -1,6 +1,6 @@
-# Scheduling syntax
+# Prompt Control Syntax
 
-Syntax is like A1111 for now, but only fractions are supported for steps. LoRAs are scheduled by including them in a scheduling expression.
+Scheduling syntax is similar to A1111, but only fractions are supported for steps. LoRAs are scheduled by including them in a scheduling expression.
 
 ```
 a [large::0.1] [cat|dog:0.05] [<lora:somelora:0.5:0.6>::0.5]
@@ -101,36 +101,77 @@ The A111-style syntax `<lora:loraname:weight>` can be used to load LoRAs via the
 
 ## Combining prompts, A1111-style
 
-- The keyword `BREAK` causes the prompt to be tokenized in separate chunks, which results in each chunk being individually padded to the text encoder's maximum token length. This is mostly equivalent to the `ConditioningConcat` node.
+### BREAK
+The keyword `BREAK` causes the prompt to be tokenized in separate chunks, which results in each chunk being individually padded to the text encoder's maximum token length. This is mostly equivalent to the `ConditioningConcat` node.
 
-`AND` can be used to combine prompts. You can also use a weight at the end. It does a weighted sum of each prompt,
+### AND
+
+`AND` can be used to create "prompt segments". By default, it works as if you had combined the different prompts with `ConditioningCombine`. 
+
+It is also used with regional prompting to separate different prompts; see `MASK` and `ATTN` below.
+
+Prompts can have a weight at the end:
 ```
 cat :1 AND dog :2
 ```
-The weight defaults to 1 and are normalized so that `a:2 AND b:2` is equal to `a AND b`. `AND` is processed after schedule parsing, so you can change the weight mid-prompt: `cat:[1:2:0.5] AND dog`
+`AND` is processed after schedule parsing, so you can change the weight mid-prompt: `cat:[1:2:0.5] AND dog`
 
-If a prompt's weight is set to 0, it's skipped entirely. This can be useful when scheduling to completely disable a prompt:
+The weight defaults to 1. If a prompt's weight is set to 0, it's **skipped entirely.** This can be useful when scheduling to completely disable a prompt:
+
 ```
 cat [\:0::0.5] AND dog
 ```
-Note that the `:` needs to be escaped in this case.
+Note that the `:` needs to be escaped with a `\` or it will be interpreted as scheduling syntax.
 
-## Functions
+# Functions
 
-There are some "functions" that can be included in a prompt to do various things. 
+There are some "functions" that can be included in a prompt to affect how it is interpreted.
 
-Functions have the form `FUNCNAME(param1, param2, ...)`. How parameters are interpreted is up to the function.
-Note: Whitespace is *not* stripped from string parameters by default. Commas can be escaped with `\,`
+Functions have the form `FUNCNAME(param1, param2, ...)`. How parameters are interpreted is up to the function. 
 
-Like `AND`, these functions are parsed after regular scheduling syntax has been expanded, allowing things like `[AREA:MASK:0.3](...)`, in case that's somehow useful.
+In general, function parameters will have default values that are used if the parameter is left empty.
 
-### SDXL
+Note: Whitespace is usually *not* stripped from string parameters by default. Commas can be escaped with `\,`
+
+Like `AND`, functions are parsed after regular scheduling syntax has been expanded, allowing things like `[AREA:MASK:0.3](...)`, in case that's somehow useful.
+
+### STYLE: Configure prompt weighting (also known as "Advanced CLIP Encode")
+
+Use the syntax `STYLE(weight_interpretation, normalization)` in a prompt to affect how prompts are interpreted.
+
+The weight interpretations available are:
+  - comfy (default)
+  - comfy++
+  - compel
+  - down_weight
+  - A1111
+  - perp
+
+Normalizations are:
+  - none (default)
+  - length
+  - mean
+
+The normalization calculations are independent operations and you can combine them with `+`, eg `STYLE(A1111, length+mean)` or `STYLE(comfy, mean+length)`, or even something silly like `STYLE(perp, mean+length+mean+length)`
+
+The style can be specified separately for each AND:ed prompt, but the first prompt is special; later prompts will "inherit" it as default. For example:
+
+```
+STYLE(A1111) a (red:1.1) cat with (brown:0.9) spots and a long tail AND an (old:0.5) dog AND a (green:1.4) (balloon:1.1)
+```
+will interpret everything as A1111, but
+```
+a (red:1.1) cat with (brown:0.9) spots and a long tail AND STYLE(A1111) an (old:0.5) dog AND a (green:1.4) (balloon:1.1)
+```
+Will interpret the first one using the default ComfyUI behaviour, the second prompt with A1111 and the last prompt with the default again
+
+### SDXL: Configure SDXL prompting parameters
 
 The nodes do not treat SDXL models specially, but there are some utilities that enable SDXL specific functionality.
 
 You can use the function `SDXL(width height, target_width target_height, crop_w crop_h)` to set SDXL prompt parameters. `SDXL()` is equivalent to `SDXL(1024 1024, 1024 1024, 0 0)` unless the default values have been overridden by `PCScheduleSettings`.
 
-### Multiple text encoders: TE
+### TE: Per-encoder prompts for multi-encoder models
 
 You can specify per-encoder prompts using the `TE` function. The syntax is as follows:
 `TE(encoder_name=prompt)`. Whitespace surrounding the prompt and encoder name are ignored.
@@ -148,7 +189,7 @@ Things to note:
 - Multiple instances of `TE` are joined with a space. That is, `TE(l=foo)TE(l=bar)` is the same as `TE(l=foo bar)`
 - `AND` inside `TE` does not do anything sensible; `TE(l=foo AND bar)` will parse as two prompts `TE(foo` and `bar)`. `BREAK`, `SHIFT` and `SHUFFLE` do work, however
 
-### SHUFFLE and SHIFT
+### SHUFFLE and SHIFT: Create prompt permutations
 
 Default parameters: `SHUFFLE(seed=0, separator=,, joiner=,)`, `SHIFT(steps=0, separator=,, joiner=,)`
 
@@ -173,9 +214,14 @@ For example:
 Whitespace is *not* stripped and may also be used as a joiner or separator
 - `SHIFT(1,, ) cat,dog` results in `dog cat`
 
-### NOISE
+### NOISE: Add noise to a prompt
 
 The function `NOISE(weight, seed)` adds some random noise into the prompt. The seed is optional, and if not specified, the global RNG is used. `weight` should be between 0 and 1.
+
+
+## Regional prompting
+
+See also [Attention Couple](#attention-couple) below
 
 ### MASK, IMASK and AREA
 
@@ -185,13 +231,13 @@ Multiple `MASK` or `IMASK` calls will be composited together using ComfyUI's `Ma
 
 Similarly, you can use `AREA(x1 x2, y1 y2, weight)` to specify an area for the prompt (see ComfyUI's area composition examples). The area is calculated by ComfyUI relative to your latent size.
 
-#### Custom masks: IMASK and `PCAddMaskToCLIP`
+### Custom masks: IMASK and `PCAddMaskToCLIP`
 
 You can attach custom masks to a `CLIP` with the `PC: Attach Mask` nodes and then refer to those masks in the prompt using `IMASK(index, weight, op)`. Indexing starts from zero, so 0 is the first attached mask etc. `PCSCheduleAddMasks` ignores empty inputs, so if you only add a mask to the `mask4` input, it will still have index 0.
 
 Applying the nodes multiple times *appends* masks rather than overriding existing ones, so if you need more than 4, you can just use it more than once.
 
-#### Behaviour of masks
+### Behaviour of masks
 If multiple `MASK`s are specified, they are combined together with ComfyUI's `MaskComposite` node, with `op` specifying the operation to use (default `multiply`). In this case, the combined mask weight can be set with `MASKW(weight)` (defaults to 1.0).
 
 Masks assume a size of `(512, 512)`, unless overridden with `PC: Configure PCTextEncode` and pixel values will be relative to that. ComfyUI will scale the mask to match the image resolution. You can change it manually by using `MASK_SIZE(width, height)` anywhere in the prompt,
@@ -204,7 +250,7 @@ Note that because the default values are percentages, `MASK(0 256, 64 512)` is v
 
 Masking does not affect LoRA scheduling unless you set unet weights to 0 for a LoRA.
 
-### FEATHER
+### FEATHER: Mask operations
 
 When you use `MASK` or `IMASK`, you can also call `FEATHER(left top right bottom)` to apply feathering using ComfyUI's `FeatherMask` node. The values are in pixels and default to `0`.
 
@@ -219,6 +265,30 @@ gives you a mask that is a combination of 1, 2 and 3, where 1 and 3 are feathere
 
 The order of the `FEATHER` and `MASK` calls doesn't matter; you can have `FEATHER` before `MASK` or even interleave them.
 
+## Cutoff
+
+NOTE: Cutoff syntax might change at some point; it's pretty clunky.
+
+`PCTextEncode` reimplements cutoff from [ComfyUI Cutoff](https://github.com/BlenderNeko/ComfyUI_Cutoff).
+
+The syntax is
+```
+a group of animals, [CUT:white cat:white], [CUT:brown dog:brown:0.5:1.0:1.0:_]
+```
+You should read the prompt as `a group of animals, white cat, brown dog`, but CUT causes the tokens in `target_tokens` to be masked off from the base prompt in `region_text`, so that their effect can be isolated, and you're less likely to get brown cats or white dogs.
+
+Target tokens are treated individually, separated by space, for example, `[CUT:green apple, red apple, green leaf:green apple]` will mask *both* greens and the apple, giving you `+ +, red +, + leaf`. To mask out just `green apple`, use `[CUT:green apple, red apple:green_apple]` which will result in a masked prompt of `+ +, red apple`. Escape `_` with a `\`.
+
+the parameters in the `CUT` section are `region_text:target_tokens:weight;strict_mask:start_from_masked:padding_token` of which only the first two are required. The default values are `weight=1.0`, `strict_mask=1.0` `start_from_masked=1.0`, `padding_token=+`
+
+If `strict_mask`, `start_from_masked` or `padding_token` are specified in more than one CUT, the *last* one becomes the default for any CUTs afterwards that do not explicitly set the parameters. For example, in:
+
+`[CUT:white cat:white:0.5] and [CUT:black parrot, flying:black:1.0:0.5] and [CUT:green apple:green]`
+
+`white cat` will a weight of 0.5, and 1.0 for all parameters, and `black parrot` and `green apple` will *both* have a `strict_mask` parameter of 0.5.
+
+The parameters affect how the masked and unmasked prompts are combined to produce the final embedding. Just play around with them.
+
 ## Miscellaneous
 - `<emb:xyz>` is alternative syntax for `embedding:xyz` to work around a syntax conflict with `[embedding:xyz:0.5]` which is parsed as a schedule that switches from `embedding` to `xyz`.
 
@@ -226,7 +296,7 @@ The order of the `FEATHER` and `MASK` calls doesn't matter; you can have `FEATHE
 
 Experimental features are unstable and may disappear or change without warning.
 
-## DEF
+## DEF: Lightweight prompt macros
 
 You can define "prompt macros" by using `DEF`:
 ```
@@ -274,13 +344,21 @@ a A b $2
 
 Macros are expanded before any other parsing takes place. The expansion continues until no further changes occur. Recursion will raise an error.
 
-## Attention Couple
+## Attention Couple {#attention-couple}
 
-Use `ATTN()` in combination with `AND` and `MASK()` or `IMASK()` to enable attention masking based on the Attention Couple implementation by [pamparamm](https://github.com/pamparamm/ComfyUI-ppm.git).
+Attention Couple is an attention-based implementation of regional prompting. it can often be faster and more flexible than latent-based masking.
 
-If no mask is specified, an implicit `MASK()` is assumed. For the first prompt (and the first prompt only) you can also use `FILL()` to automatically mask all parts not masked by other prompt segments.
+The implementation is based on the one by [pamparamm](https://github.com/pamparamm/ComfyUI-ppm.git), but modified to use ComfyUI's hook system. This enables it to work with prompt scheduling.
 
-For attention masking to take effect, you need at least two prompt segments with the `ATTN()` marker.
+### ATTN: Trigger Attention Couple
+
+Use `ATTN()` to mark a prompt to be used with Attention Couple. `ATTN()` needs to be combined with either `MASK()` or `IMASK()` to work correctly.
+
+If no mask is specified, an implicit `MASK()` is assumed.
+
+For attention masking to take effect, you need at least two prompt segments with the `ATTN()` marker (separated with `AND`). A single prompt with `ATTN()` will simply ignore the marker.
+
+For the first prompt (and the first prompt only) you can also use `FILL()` to automatically mask all parts not masked by other prompt segments.
 
 For example:
 ```
