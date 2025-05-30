@@ -114,43 +114,40 @@ class AttentionCoupleHook(TransformerOptionsHook):
 
         num_chunks = len(cond_or_uncond)
         self.batch_size = q.shape[0] // num_chunks
-        if len(self.conds_kv) > 0:
-            q_chunks = q.chunk(num_chunks, dim=0)
-            k_chunks = k.chunk(num_chunks, dim=0)
-            v_chunks = v.chunk(num_chunks, dim=0)
-            lcm_tokens_k = lcm_for_list(self.num_tokens_k + [k.shape[1]])
-            lcm_tokens_v = lcm_for_list(self.num_tokens_v + [v.shape[1]])
-            conds_k_tensor = torch.cat(
-                [
-                    cond[0].repeat(self.batch_size, lcm_tokens_k // self.num_tokens_k[i], 1) * self.strengths[i]
-                    for i, cond in enumerate(self.conds_kv)
-                ],
-                dim=0,
-            )
-            conds_v_tensor = torch.cat(
-                [
-                    cond[1].repeat(self.batch_size, lcm_tokens_v // self.num_tokens_v[i], 1) * self.strengths[i]
-                    for i, cond in enumerate(self.conds_kv)
-                ],
-                dim=0,
-            )
+        q_chunks = q.chunk(num_chunks, dim=0)
+        k_chunks = k.chunk(num_chunks, dim=0)
+        v_chunks = v.chunk(num_chunks, dim=0)
+        lcm_tokens_k = lcm_for_list(self.num_tokens_k + [k.shape[1]])
+        lcm_tokens_v = lcm_for_list(self.num_tokens_v + [v.shape[1]])
+        conds_k_tensor = torch.cat(
+            [
+                cond[0].repeat(self.batch_size, lcm_tokens_k // self.num_tokens_k[i], 1) * self.strengths[i]
+                for i, cond in enumerate(self.conds_kv)
+            ],
+            dim=0,
+        )
+        conds_v_tensor = torch.cat(
+            [
+                cond[1].repeat(self.batch_size, lcm_tokens_v // self.num_tokens_v[i], 1) * self.strengths[i]
+                for i, cond in enumerate(self.conds_kv)
+            ],
+            dim=0,
+        )
 
-            qs, ks, vs = [], [], []
-            for i, cond_type in enumerate(cond_or_uncond):
-                q_target = q_chunks[i]
-                k_target = k_chunks[i].repeat(1, lcm_tokens_k // k.shape[1], 1)
-                v_target = v_chunks[i].repeat(1, lcm_tokens_v // v.shape[1], 1)
-                qs.append(q_target.repeat(self.num_conds, 1, 1))
-                ks.append(torch.cat([k_target * self.base_strength, conds_k_tensor], dim=0))
-                vs.append(torch.cat([v_target * self.base_strength, conds_v_tensor], dim=0))
+        qs, ks, vs = [], [], []
+        for i, cond_type in enumerate(cond_or_uncond):
+            q_target = q_chunks[i]
+            k_target = k_chunks[i].repeat(1, lcm_tokens_k // k.shape[1], 1)
+            v_target = v_chunks[i].repeat(1, lcm_tokens_v // v.shape[1], 1)
+            qs.append(q_target.repeat(self.num_conds, 1, 1))
+            ks.append(torch.cat([k_target * self.base_strength, conds_k_tensor], dim=0))
+            vs.append(torch.cat([v_target * self.base_strength, conds_v_tensor], dim=0))
 
-            qs = torch.cat(qs, dim=0)
-            ks = torch.cat(ks, dim=0)
-            vs = torch.cat(vs, dim=0)
+        qs = torch.cat(qs, dim=0)
+        ks = torch.cat(ks, dim=0)
+        vs = torch.cat(vs, dim=0)
 
-            return qs, ks, vs
-
-        return q, k, v
+        return qs, ks, vs
 
     def attn2_output_patch(self, out, extra_options):
         # out has been extended to shape [num_conds*batch_size, TOKENS, N]
