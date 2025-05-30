@@ -145,16 +145,10 @@ class AttentionCoupleHook(TransformerOptionsHook):
                 q_target = q_chunks[i]
                 k_target = k_chunks[i].repeat(1, lcm_tokens_k // k.shape[1], 1)
                 v_target = v_chunks[i].repeat(1, lcm_tokens_v // v.shape[1], 1)
-                if cond_type == UNCOND:
-                    qs.append(q_target)
-                    ks.append(k_target)
-                    vs.append(v_target)
-                    cond_or_uncond_couple.append(UNCOND)
-                else:
-                    qs.append(q_target.repeat(self.num_conds, 1, 1))
-                    ks.append(torch.cat([k_target * self.base_strength, conds_k_tensor], dim=0))
-                    vs.append(torch.cat([v_target * self.base_strength, conds_v_tensor], dim=0))
-                    cond_or_uncond_couple.extend(itertools.repeat(COND, self.num_conds))
+                qs.append(q_target.repeat(self.num_conds, 1, 1))
+                ks.append(torch.cat([k_target * self.base_strength, conds_k_tensor], dim=0))
+                vs.append(torch.cat([v_target * self.base_strength, conds_v_tensor], dim=0))
+                cond_or_uncond_couple.extend(itertools.repeat(COND, self.num_conds))
 
             qs = torch.cat(qs, dim=0)
             ks = torch.cat(ks, dim=0)
@@ -176,13 +170,10 @@ class AttentionCoupleHook(TransformerOptionsHook):
         for i, cond_type in enumerate(cond_or_uncond):
             pos, next_pos = i * bs, (i + 1) * bs
 
-            if cond_type == UNCOND:
-                outputs.append(out[pos:next_pos])
-            else:
-                pos_cond, next_pos_cond = i_cond * bs, (i_cond + 1) * bs
-                masked_output = out[pos:next_pos] * mask_downsample[pos_cond:next_pos_cond]
-                cond_outputs.append(masked_output)
-                i_cond += 1
+            pos_cond, next_pos_cond = i_cond * bs, (i_cond + 1) * bs
+            masked_output = out[pos:next_pos] * mask_downsample[pos_cond:next_pos_cond]
+            cond_outputs.append(masked_output)
+            i_cond += 1
 
         cond_output = torch.stack(cond_outputs).sum(0)
         outputs.append(cond_output)
