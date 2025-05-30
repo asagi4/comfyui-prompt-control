@@ -2,6 +2,8 @@
 
 Control LoRA and prompt scheduling, advanced text encoding, regional prompting, and much more, through your text prompt. Generates dynamic graphs that are literally identical to handcrafted noodle soup.
 
+Prompt Control comes with `PCTextEncode`, which provides advanced text encoding with many additional features compared to ComfyUI's base `CLIPTextEncode`.
+
 A `Basic Text to Image` template is included with the extension, and can be loaded from ComfyUI's template library.
 
 ## What can it do?
@@ -24,11 +26,15 @@ If you find prompt scheduling inconvenient for some reason, `PCTextEncode` can b
 
 [This workflow](example_workflows/Workflow%20Comparison.json?raw=1) shows LoRA scheduling and prompt editing and compares it with the same prompt implemented with built-in ComfyUI nodes. You can also find it in the template library.
 
+## Compatibility
+
+Prompt Control uses graph generation,  and tries to delegate functionality to core ComfyUI wherever possible, implementing any hooks and patches in a way that is maximally compatible. This means that it should just work in most cases, even with models and nodes not explicitly supported.
+
+If you encounter issues as a user or if you're a node developer and Prompt Control somehow breaks something, feel free to file a bug report.
+
 ## Prompt Control v2
 
 Prompt control has been almost completely rewritten. It now uses ComfyUI's lazy execution to build graphs from the text prompt at runtime. The generated graph is often exactly equivalent to a manually built workflow using native ComfyUI nodes. There are no more weird sampling hooks that could cause problems with other nodes
-
-Prompt Control comes with `PCTextEncode`, which provides advanced text encoding with many additional features compared to ComfyUI's base `CLIPTextEncode`.
 
 ### Removed features
 
@@ -97,3 +103,5 @@ This node configures `PCTextEncode` default values for some functions by attachi
 If you want to enable a hack to fix this, set `PROMPTCONTROL_ENABLE_CACHE_HACK=1` in your environment. Unset it to disable.
 
 It's a purely optional performance optimization that allows Prompt Control nodes to override their cache keys in a way that should not interfere with other nodes. Note that the optimization only works if the text input to the lazy nodes is a constant (so either directly on the node or from a primitive); outputs from other nodes can't be optimized.
+
+- Cutoff does not work with models that use non-CLIP text encoders, like Flux. This might be fixable, but it's uncertain if cutoff even makes sense for those models.

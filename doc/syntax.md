@@ -352,6 +352,10 @@ Attention Couple is an attention-based implementation of regional prompting. it 
 
 The implementation is based on the one by [pamparamm](https://github.com/pamparamm/ComfyUI-ppm.git), but modified to use ComfyUI's hook system. This enables it to work with prompt scheduling.
 
+The implementation produces slightly different results from Pamparamm's implementation because ComfyUI will only run the hook for conds that have it attached, unlike the ModelPatcher based implementation which has special logic to avoid messing up negative prompts with attention masks. It's also slightly slower because ComfyUI can't batch cond and uncond calculations while the hook is in use.
+
+As a consequence of this, however, you can also use `ATTN()` in your negative prompt, and it will work correctly.
+
 ### ATTN: Trigger Attention Couple
 
 Use `ATTN()` to mark a prompt to be used with Attention Couple. `ATTN()` needs to be combined with either `MASK()` or `IMASK()` to work correctly.
