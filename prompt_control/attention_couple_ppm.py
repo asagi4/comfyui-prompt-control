@@ -17,7 +17,6 @@ log = logging.getLogger("comfyui-prompt-control")
 
 COND = 0
 UNCOND = 1
-COND_UNCOND_COUPLE = "cond_or_uncond_couple"
 
 DEBUG_KEYS = {}
 
@@ -155,26 +154,24 @@ class AttentionCoupleHook(TransformerOptionsHook):
                 qs.append(q_target.repeat(self.num_conds, 1, 1))
                 ks.append(torch.cat([k_target * self.base_strength, conds_k_tensor], dim=0))
                 vs.append(torch.cat([v_target * self.base_strength, conds_v_tensor], dim=0))
-                cond_or_uncond_couple.extend(itertools.repeat(COND, self.num_conds))
 
             qs = torch.cat(qs, dim=0)
             ks = torch.cat(ks, dim=0)
             vs = torch.cat(vs, dim=0)
-
-            extra_options[COND_UNCOND_COUPLE] = cond_or_uncond_couple
 
             return qs, ks, vs
 
         return q, k, v
 
     def attn2_output_patch(self, out, extra_options):
-        cond_or_uncond = extra_options[COND_UNCOND_COUPLE]
+        cond_or_uncond = extra_options["cond_or_uncond"]
         bs = self.batch_size
         mask_downsample = get_mask(self.mask, self.batch_size, out.shape[1], extra_options)
         outputs = []
         cond_outputs = []
         i_cond = 0
-        for i, cond_type in enumerate(cond_or_uncond):
+        # out has been extended to shape [num_conds*batch_size, TOKENS, N]
+        for i in range(len(cond_or_uncond) * self.num_conds):
             pos, next_pos = i * bs, (i + 1) * bs
 
             pos_cond, next_pos_cond = i_cond * bs, (i_cond + 1) * bs
@@ -182,6 +179,7 @@ class AttentionCoupleHook(TransformerOptionsHook):
             cond_outputs.append(masked_output)
             i_cond += 1
 
+        # cond_outputs is [num_conds, bs, tokens, N]
+        # output needs to be [bs, tokens, N]
         cond_output = torch.stack(cond_outputs).sum(0)
-        outputs.append(cond_output)
-        return torch.cat(outputs, dim=0)
+        return cond_output
