@@ -12,7 +12,7 @@ a [large::0.1] [cat|dog:0.05] [<lora:somelora:0.5:0.6>::0.5]
 There are two forms of scheduled prompts.
 
 ### Basic scheduling expressions
-Basic expressions take the form `[before:after:X]` where `X` is the switch point, a decimal number between 0.0 and 1.0 inclusive, representing 0 to 100% of timesteps.
+Basic expressions take the form `[before:after:X]` where `X` is the switch point, a decimal number between 0.0 and 1.0 inclusive, representing 0 to 100% of timesteps. Either prompt can also be empty.
 For example:
 ```
 a [red:blue:0.5] cat
@@ -24,7 +24,16 @@ a [red:[blue::0.7]:0.5] cat
 
 switches from `a red cat` to `a blue cat` at 0.5 and to `a cat` at 0.7
 
-**Note:** As a special case, `[cat:0.5]` is equivalent to `[:cat:0.5]` meaning it switches from empty to `cat` at 0.5.
+For convenience `[cat:0.5]` is equivalent to `[:cat:0.5]` meaning it switches from empty to `cat` at 0.5.
+
+### Range expressions
+
+The most general form of a schedule is a range expression: For example, in `[before:during:after:0.3,0.7]`, The prompt be `a before` until 0.3, `a during` until 0.7, and then `a after`. This form is equivalent to `[before:[during:after:0.7]:0.3]`
+
+For convenience, `[during:0.1,0.4]` is equivalent to `[:during::0.1,0.4]` and `[during:after:0.1,0.4]` is equivalent to `[:during:after:0.1,0.4]`.
+
+`[before:during:after:0.1]` is the same as `[before:during:after:0.1,1.0]` which is same as `[before:during:0.1]`
+
 
 ### Using step numbers with the Advanced nodes
 
@@ -33,12 +42,6 @@ If you provide a non-zero value to `num_steps` to the `Advanced` versions of the
 For now, a value between 0 and 1.0 will be interpreted as a percentage if it contains a ., and as an absolute step otherwise.
 
 This is just syntactic sugar. Behind the scenes, the values are converted to percentages and have normal ComfyUI scheduling behaviour.
-
-### Range expressions
-
-You can also use `a [during:after:0.3,0.7]` as a shortcut. The prompt be `a` until 0.3, `a during` until 0.7, and then `a after`. This form is equivalent to `[[during:after:0.7]:0.3]`
-
-For convenience, `[during:0.1,0.4]` is equivalent to `[during::0.1,0.4]`
 
 ## Tag selection
 Using the `FilterSchedule` node, in addition to step percentages, you can use a *tag* to select part of an input:
@@ -55,6 +58,7 @@ a [black:blue:X] [cat:dog:Y] [walking:running:Z] in space
 ```
 with `tags` `x,z` would result in the prompt `a blue cat running in space`
 
+The three prompt form `[a:b:c:TAG]` is parsed, but ignores `b` and is equivalent to `[a:c:TAG]`.
 
 ## LoRA Scheduling
 When using the lazy graph building nodes, LoRAs can be scheduled by referring to them in a scheduling expression, like so:

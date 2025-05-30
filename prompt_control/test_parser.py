@@ -23,6 +23,10 @@ class TestParser(unittest.TestCase):
         for p in eqs[1:]:
             self.assertEqual(eqs[0].parsed_prompt, p.parsed_prompt)
 
+        eqs = [parse(p) for p in ["[before:during:after:0.1]", "[before:during:after:0.1,1.0]", "[before:during:0.1]"]]
+        for p in eqs[1:]:
+            self.assertEqual(eqs[0].parsed_prompt, p.parsed_prompt)
+
         eqs = [parse(p) for p in ["[a:0.1,0.5]", "[[a:0.1]::0.5]", "[:a::0.1,0.5]", "[a::0.1,0.5]"]]
         for p in eqs[1:]:
             self.assertEqual(eqs[0].parsed_prompt, p.parsed_prompt)
@@ -87,6 +91,19 @@ class TestParser(unittest.TestCase):
         p4 = parse("A schedule [[a:0.5]:b:0.8]")
         self.assertEqual(p.parsed_prompt, p2.parsed_prompt)
         self.assertEqual(p3.parsed_prompt, p4.parsed_prompt)
+
+    def test_range(self):
+        p = parse("test [excluded::excluded2:0.1,0.4] test")
+        self.assertPrompt(p, 0, 0.1, "test excluded test")
+        self.assertPrompt(p, 0.2, 0.4, "test  test")
+        self.assertPrompt(p, 0.45, 1.0, "test excluded2 test")
+        p = parse("test [[:included::0.2,0.8]|[excluded::excluded2:0.4,0.9]:0.1] test")
+        self.assertPrompt(p, 0, 0.1, "test  test")
+        self.assertPrompt(p, 0.25, 0.3, "test included test")
+        self.assertPrompt(p, 0.15, 0.2, "test excluded test")
+        self.assertPrompt(p, 0.25, 0.3, "test included test")
+        self.assertPrompt(p, 0.55, 0.6, "test  test")
+        self.assertPrompt(p, 0.95, 1.0, "test excluded2 test")
 
     def test_nested(self):
         p = parse(
