@@ -167,16 +167,7 @@ class AttentionCoupleHook(TransformerOptionsHook):
         cond_or_uncond = extra_options["cond_or_uncond"]
         bs = self.batch_size
         mask_downsample = get_mask(self.mask, self.batch_size, out.shape[1], extra_options)
-        cond_outputs = []
-        # out has been extended to shape [num_conds*batch_size, TOKENS, N]
-        # assuming 2 conds, out is essentially either [b1c1 b1c2, b2c1, b2c2] or [b1c1 b2c1, b1c2, b2c1]
-        # probably the first
-        for i in range(len(cond_or_uncond) * self.num_conds):
-            pos, next_pos = i * bs, (i + 1) * bs
-            masked_output = out[pos:next_pos] * mask_downsample[pos:next_pos]
-            cond_outputs.append(masked_output)
-
-        # cond_outputs is [num_conds, bs, tokens, N]
-        # output needs to be [bs, tokens, N]
-        cond_output = torch.stack(cond_outputs).sum(0)
+        debug("attn2_output_patch", f"{self.mask.shape=}")
+        cond_outputs = out * mask_downsample
+        cond_output = cond_outputs.view(self.mask.shape[0], self.batch_size, out.shape[1], out.shape[2]).sum(0)
         return cond_output
