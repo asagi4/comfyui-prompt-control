@@ -2,7 +2,6 @@
 # Original implementation by laksjdjf, hako-mikan, Haoming02 licensed under GPL-3.0
 # https://github.com/laksjdjf/cgem156-ComfyUI/blob/1f5533f7f31345bafe4b833cbee15a3c4ad74167/scripts/attention_couple/node.py
 # https://github.com/Haoming02/sd-forge-couple/blob/e8e258e982a8d149ba59a4bc43b945467604311c/scripts/attention_couple.py
-import itertools
 import math
 
 import torch
@@ -137,7 +136,6 @@ class AttentionCoupleHook(TransformerOptionsHook):
             )
 
             qs, ks, vs = [], [], []
-            cond_or_uncond_couple = []
             for i, cond_type in enumerate(cond_or_uncond):
                 q_target = q_chunks[i]
                 k_target = k_chunks[i].repeat(1, lcm_tokens_k // k.shape[1], 1)
