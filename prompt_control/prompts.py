@@ -353,7 +353,7 @@ def make_mask(args, size, weight):
     mask = torch.full((h, w), 0, dtype=torch.float32, device="cpu")
     mask[ys[0] : ys[1], xs[0] : xs[1]] = weight
     mask = mask.unsqueeze(0)
-    log.info("Mask xs=%s, ys=%s, shape=%s, weight=%s", xs, ys, mask.shape, weight)
+    log.debug("Mask xs=%s, ys=%s, shape=%s, weight=%s", xs, ys, mask.shape, weight)
     return mask
 
 
@@ -512,7 +512,6 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
                     log.warning("MASK() and FILL() can't be used together, ignoring FILL()")
                 else:
                     fill = True
-            log.info("Using attention masking for prompt segment")
             attnmasked_prompts.extend(x)
         else:
             conds.extend(x)
