@@ -473,13 +473,13 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
     fill = False
     for prompt in prompts:
         attn_couple = False
-        fill = False
+        prompt_has_fill = False
         if "ATTN()" in prompt:
             prompt = prompt.replace("ATTN()", "")
             attn_couple = True
         if "FILL()" in prompt:
             prompt = prompt.replace("FILL()", "")
-            fill = True
+            prompt_has_fill = True
         prompt, mask, mask_weight = get_mask(prompt, mask_size, masks)
         text, noise_w, generator = get_noise(text)
         prompt, area = get_area(prompt)
@@ -505,8 +505,7 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
 
         x = encode_prompt_segment(clip, prompt, settings, style, normalization)
         if attn_couple:
-            if fill:
-                fill = False
+            if prompt_has_fill:
                 if attnmasked_prompts:
                     log.warning("FILL() can only be used for the first prompt, ignoring")
                 elif mask is not None:
