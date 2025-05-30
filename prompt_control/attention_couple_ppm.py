@@ -63,8 +63,6 @@ class AttentionCoupleHook(TransformerOptionsHook):
             }
         }
 
-        self.conds_kv = []
-
         self.num_conds = len(conds) + 1
         self.base_strength = base_cond[1].pop("strength", 1.0)
         self.strengths = [cond[1].get("strength", 1.0) for cond in conds]
@@ -84,77 +82,66 @@ class AttentionCoupleHook(TransformerOptionsHook):
             raise ValueError("Masks contain non-filled areas")
 
         self.mask = mask / mask.sum(dim=0, keepdim=True)
+        # calculate later
+        self.conds_k_tensor = None
+        self.conds_v_tensor = None
 
     def on_apply_hooks(self, model: ModelPatcher, transformer_options: dict[str]):
-        if not self.conds_kv:
+        if self.conds_k_tensor is None:
             attn_patches = model.model_options["transformer_options"].get("patches", {}).get("attn2_patch", [])
             has_negpip = any("negpip_attn" in i.__name__ for i in attn_patches)
             log.debug("AttentionCouple has_negpip=%s", has_negpip)
 
-            self.conds_kv = (
+            conds_kv = (
                 [(cond[:, 0::2], cond[:, 1::2]) for cond in self.conds]
                 if has_negpip
                 else [(cond, cond) for cond in self.conds]
             )
 
-            self.num_tokens_k = [cond[0].shape[1] for cond in self.conds_kv]
-            self.num_tokens_v = [cond[1].shape[1] for cond in self.conds_kv]
-            print(f"{lcm_for_list(self.num_tokens_k)=} {lcm_for_list(self.num_tokens_v)=}")
-            self.lcm_last_k = None
-            self.lcm_last_v = None
+            num_tokens_k = [cond[0].shape[1] for cond in conds_kv]
+            num_tokens_v = [cond[1].shape[1] for cond in conds_kv]
+
+            lcm_tokens_k = lcm_for_list(num_tokens_k)
+            lcm_tokens_v = lcm_for_list(num_tokens_v)
+            self.conds_k_tensor = torch.cat(
+                [
+                    cond[0].repeat(1, lcm_tokens_k // num_tokens_k[i], 1) * self.strengths[i]
+                    for i, cond in enumerate(conds_kv)
+                ],
+                dim=0,
+            )
+            if has_negpip:
+                self.conds_v_tensor = torch.cat(
+                    [
+                        cond[1].repeat(1, lcm_tokens_v // num_tokens_v[i], 1) * self.strengths[i]
+                        for i, cond in enumerate(conds_kv)
+                    ],
+                    dim=0,
+                )
+            else:
+                self.conds_v_tensor = self.conds_k_tensor
 
         return super().on_apply_hooks(model, transformer_options)
 
     def to(self, *args, **kwargs):
         self.conds = [c.to(*args, **kwargs) for c in self.conds]
         self.mask = self.mask.to(*args, **kwargs)
-        self.conds_kv = [(c1.to(*args, **kwargs), c2.to(*args, **kwargs)) for c1, c2 in self.conds_kv]
         return self
 
     def attn2_patch(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, extra_options):
         cond_or_uncond = extra_options["cond_or_uncond"]
-
-        num_chunks = len(cond_or_uncond) # should always be 1
+        num_chunks = len(cond_or_uncond)  # should always be 1
         bs = q.shape[0] // num_chunks
-        debug("attn2", f"{q.shape=} {k.shape=} {v.shape=} {bs=} {num_chunks=}")
-        q_chunks = q.chunk(num_chunks, dim=0)
-        k_chunks = k.chunk(num_chunks, dim=0)
-        v_chunks = v.chunk(num_chunks, dim=0)
-        # These don't seem to ever change?
-        lcm_tokens_k = lcm_for_list(self.num_tokens_k + [k.shape[1]])
-        lcm_tokens_v = lcm_for_list(self.num_tokens_v + [v.shape[1]])
-        if lcm_tokens_k != self.lcm_last_k:
-            print(f"attn2 {self.lcm_last_k=} -> {lcm_tokens_k=}")
-            self.lcm_last_k = lcm_tokens_k
-        if lcm_tokens_v != self.lcm_last_v:
-            print(f"attn2 {self.lcm_last_v=} -> {lcm_tokens_v=}")
-            self.lcm_last_v = lcm_tokens_v
-        conds_k_tensor = torch.cat(
-            [
-                cond[0].repeat(bs, lcm_tokens_k // self.num_tokens_k[i], 1) * self.strengths[i]
-                for i, cond in enumerate(self.conds_kv)
-            ],
-            dim=0,
-        )
-        conds_v_tensor = torch.cat(
-            [
-                cond[1].repeat(bs, lcm_tokens_v // self.num_tokens_v[i], 1) * self.strengths[i]
-                for i, cond in enumerate(self.conds_kv)
-            ],
-            dim=0,
-        )
 
-        qs, ks, vs = [], [], []
-        debug("attn2 condskv", f"{conds_k_tensor.shape=} {conds_v_tensor.shape=}")
+        conds_k_tensor = self.conds_k_tensor.expand(bs, *self.conds_k_tensor.shape[1:])
+        conds_v_tensor = self.conds_v_tensor.expand(bs, *self.conds_v_tensor.shape[1:])
 
         q = q.repeat(self.num_conds, 1, 1)
-        k = k.repeat(1, lcm_tokens_k // k.shape[1], 1)
-        v = v.repeat(1, lcm_tokens_v // v.shape[1], 1)
+        k = k.repeat(1, self.conds_k_tensor.shape[1] // k.shape[1], 1)
+        v = v.repeat(1, self.conds_v_tensor.shape[1] // v.shape[1], 1)
 
         k = torch.cat([k * self.base_strength, conds_k_tensor], dim=0)
         v = torch.cat([v * self.base_strength, conds_v_tensor], dim=0)
-
-        debug("attn2 shapes", f"{q.shape=} {k.shape=} {v.shape=}")
 
         return q, k, v
 
