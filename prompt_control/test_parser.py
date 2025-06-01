@@ -1,5 +1,5 @@
 import unittest
-from .parser import parse_prompt_schedules as parse
+from .parser import parse_prompt_schedules as parse, expand_macros
 
 
 def prompt(until, text, *loras):
@@ -19,11 +19,13 @@ class TestParser(unittest.TestCase):
         self.assertEqual(p.at_step(1), expected)
 
     def test_equivalences(self):
-        eqs = [[parse(p) for p in ["[a:0.1]", "[:a:0.1]", "[:a:0,0.1]", "[:a::0.1,1.0]", "[:a::0.1]"]],
-          [parse(p) for p in ["[before:during:after:0.1]", "[before:during:after:0.1,1.0]", "[before:during:0.1]"]],
-          [parse(p) for p in ["[a:0.1,0.5]", "[[a:0.1]::0.5]", "[:a::0.1,0.5]", "[a::0.1,0.5]"]],
-          [parse(p) for p in ["[a:b:0.5]", "[a::b:0.5,0.5]"]],
-          [parse(p) for p in ["[a::0.5]", "[a:::0.5,0.5]"]]]
+        eqs = [
+            [parse(p) for p in ["[a:0.1]", "[:a:0.1]", "[:a:0,0.1]", "[:a::0.1,1.0]", "[:a::0.1]"]],
+            [parse(p) for p in ["[before:during:after:0.1]", "[before:during:after:0.1,1.0]", "[before:during:0.1]"]],
+            [parse(p) for p in ["[a:0.1,0.5]", "[[a:0.1]::0.5]", "[:a::0.1,0.5]", "[a::0.1,0.5]"]],
+            [parse(p) for p in ["[a:b:0.5]", "[a::b:0.5,0.5]"]],
+            [parse(p) for p in ["[a::0.5]", "[a:::0.5,0.5]"]],
+        ]
         for group in eqs:
             for p in group[1:]:
                 with self.subTest(p):
@@ -125,22 +127,33 @@ class TestParser(unittest.TestCase):
 
         p = parse("DEF(X=[($1):($1:$2):$2])X(test;0.7)")
         p2 = parse("[(test):(test:0.7):0.7]")
-        self.assertEqual(p.parsed_prompt, p2.parsed_prompt)
+        with self.subTest("parameters"):
+            self.assertEqual(p.parsed_prompt, p2.parsed_prompt)
 
         p = parse("DEF(X=[($1):($1:$2):$2])DEF(Y=X(test;$1))Y(0.7) Y(0.5)")
         p2 = parse("[(test):(test:0.7):0.7] [(test):(test:0.5):0.5]")
-        self.assertEqual(p.parsed_prompt, p2.parsed_prompt)
+        with self.subTest("two functions"):
+            self.assertEqual(p.parsed_prompt, p2.parsed_prompt)
 
-        p = parse("DEF(X(a;b)=$1 $2 $3 d)X(A) X(A;B;C)")
-        p2 = parse("A b $3 d A B C d")
-        self.assertEqual(p.parsed_prompt, p2.parsed_prompt)
+        p = expand_macros("DEF(X(a;b)=$1 $2 $3 d)X(A) X(A;B;C)")
+        with self.subTest("defaults"):
+            self.assertEqual(p, "A b $3 d A B C d")
+
+        p = expand_macros("DEF(MACRO()=[empty:$1:$2])MACRO MACRO(;) MACRO(;0.5) MACRO(a;0.5)")
+        with self.subTest("Empty default for $1"):
+            self.assertEqual(p, "[empty::$2] [empty::] [empty::0.5] [empty:a:0.5]")
+
+        p = expand_macros("DEF(X=$1)DEF(Y()=$1)[X Y][X() Y()][X(1) Y(1)]")
+        with self.subTest("defaults, DEF=X vs DEF=X()"):
+            self.assertEqual(p, "[$1 ][ ][1 1]")
 
         p = parse("DEF(test(1)=prompt $1)DEF(test2((a); (test))=[$1:$2:0.5])test test2")
         p2 = parse("prompt 1 [(a):(prompt 1):0.5]")
-        self.assertEqual(p.parsed_prompt, p2.parsed_prompt)
+        with self.subTest("defaults, nested parens"):
+            self.assertEqual(p.parsed_prompt, p2.parsed_prompt)
 
         with self.assertRaises(ValueError) as c:
-            parse("DEF(X=recurse Y) DEF(Y=recurse X) X")
+            expand_macros("DEF(X=recurse Y) DEF(Y=recurse X) X")
         self.assertTrue("Unable to resolve DEFs" in str(c.exception))
 
     def test_misc(self):
@@ -180,11 +193,13 @@ class TestParser(unittest.TestCase):
         self.assertEqual(p.parsed_prompt, p2.parsed_prompt)
         for i, x in enumerate(["cat", "wolf", "tiger", "cat", "dog", "tiger", "cat", "wolf", "tiger", "cat"]):
             step = round((i * 0.1) + 0.1, 2)
-            self.assertPrompt(p3, step, step, x)
+            with self.subTest(step):
+                self.assertPrompt(p3, step, step, x)
 
         for i, x in enumerate([["cat"], ["dog"], ["cat"], ["wolf", ("canine", 1.0, 1.0)], ["cat"]]):
             step = round((i * 0.2) + 0.2, 2)
-            self.assertPrompt(p4, step, step, *x)
+            with self.subTest(step):
+                self.assertPrompt(p4, step, step, *x)
         self.assertPrompt(p4, 0.7, 0.8, "wolf", ("canine", 1.0, 1.0))
 
 
