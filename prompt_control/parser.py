@@ -380,7 +380,8 @@ def parse_search(search):
     if not name:
         return None
     args = args.strip()
-    if args:
+    # If using the form DEF(F()=$1) then the default value of $1 is the empty string
+    if arg_start > 0:
         args = [a.strip() for a in args.split(";")]
     else:
         args = []
