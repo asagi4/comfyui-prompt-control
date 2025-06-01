@@ -19,25 +19,15 @@ class TestParser(unittest.TestCase):
         self.assertEqual(p.at_step(1), expected)
 
     def test_equivalences(self):
-        eqs = [parse(p) for p in ["[a:0.1]", "[:a:0.1]", "[:a:0,0.1]", "[:a::0.1,1.0]", "[:a::0.1]"]]
-        for p in eqs[1:]:
-            self.assertEqual(eqs[0].parsed_prompt, p.parsed_prompt)
-
-        eqs = [parse(p) for p in ["[before:during:after:0.1]", "[before:during:after:0.1,1.0]", "[before:during:0.1]"]]
-        for p in eqs[1:]:
-            self.assertEqual(eqs[0].parsed_prompt, p.parsed_prompt)
-
-        eqs = [parse(p) for p in ["[a:0.1,0.5]", "[[a:0.1]::0.5]", "[:a::0.1,0.5]", "[a::0.1,0.5]"]]
-        for p in eqs[1:]:
-            self.assertEqual(eqs[0].parsed_prompt, p.parsed_prompt)
-
-        eqs = [parse(p) for p in ["[a:b:0.5]", "[a::b:0.5,0.5]"]]
-        for p in eqs[1:]:
-            self.assertEqual(eqs[0].parsed_prompt, p.parsed_prompt)
-
-        eqs = [parse(p) for p in ["[a::0.5]", "[a:::0.5,0.5]"]]
-        for p in eqs[1:]:
-            self.assertEqual(eqs[0].parsed_prompt, p.parsed_prompt)
+        eqs = [[parse(p) for p in ["[a:0.1]", "[:a:0.1]", "[:a:0,0.1]", "[:a::0.1,1.0]", "[:a::0.1]"]],
+          [parse(p) for p in ["[before:during:after:0.1]", "[before:during:after:0.1,1.0]", "[before:during:0.1]"]],
+          [parse(p) for p in ["[a:0.1,0.5]", "[[a:0.1]::0.5]", "[:a::0.1,0.5]", "[a::0.1,0.5]"]],
+          [parse(p) for p in ["[a:b:0.5]", "[a::b:0.5,0.5]"]],
+          [parse(p) for p in ["[a::0.5]", "[a:::0.5,0.5]"]]]
+        for group in eqs:
+            for p in group[1:]:
+                with self.subTest(p):
+                    self.assertEqual(group[0].parsed_prompt, p.parsed_prompt)
 
     def test_basic(self):
         p = parse(
