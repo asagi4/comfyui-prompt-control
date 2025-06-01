@@ -387,7 +387,7 @@ def parse_search(search):
     return name, args
 
 
-def replace_def(text):
+def expand_macros(text):
     text, defs = get_function(text, "DEF", defaults=None)
     res = text
     prevres = text
@@ -443,5 +443,5 @@ def substitute_defcall(text, search, replace):
 
 @lru_cache
 def parse_prompt_schedules(prompt, **kwargs):
-    prompt = replace_def(prompt)
+    prompt = expand_macros(prompt)
     return PromptSchedule(prompt, **kwargs)

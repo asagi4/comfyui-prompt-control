@@ -1,5 +1,5 @@
 import logging
-from .parser import parse_prompt_schedules
+from .parser import parse_prompt_schedules, expand_macros
 from .nodes_lazy import NODE_CLASS_MAPPINGS as LAZY_NODES
 import json
 import folder_paths
@@ -209,6 +209,24 @@ class PCExtractScheduledPrompt:
         return (prompt_text,)
 
 
+class PCMacroExpand:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "text": ("STRING", {"multiline": True}),
+            },
+        }
+
+    RETURN_TYPES = ("STRING",)
+    CATEGORY = "promptcontrol/tools"
+    FUNCTION = "apply"
+    DESCRIPTION = "Expands DEF macros in a string and returns the result"
+
+    def apply(self, text):
+        return (expand_macros(text),)
+
+
 NODE_CLASS_MAPPINGS = {
     "PCSetPCTextEncodeSettings": PCSetPCTextEncodeSettings,
     "PCAddMaskToCLIP": PCAddMaskToCLIP,
@@ -216,6 +234,7 @@ NODE_CLASS_MAPPINGS = {
     "PCSetLogLevel": PCSetLogLevel,
     "PCExtractScheduledPrompt": PCExtractScheduledPrompt,
     "PCSaveExpandedWorkflow": PCSaveExpandedWorkflow,
+    "PCMacroExpand": PCMacroExpand,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -225,4 +244,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "PCSetLogLevel": "PC: Configure Logging (for debug)",
     "PCExtractScheduledPrompt": "PC: Extract Scheduled Prompt",
     "PCSaveExpandedWorkflow": "PC: Save Expanded Workflow (for debug)",
+    "PCMacroExpand": "PC: Expand Macros",
 }
