@@ -218,7 +218,9 @@ Whitespace is *not* stripped and may also be used as a joiner or separator
 
 ### NOISE: Add noise to a prompt
 
-The function `NOISE(weight, seed)` adds some random noise into the prompt. The seed is optional, and if not specified, the global RNG is used. `weight` should be between 0 and 1.
+The function `NOISE(weight, seed)` adds some random noise into the cond tensor. The seed is optional, and if not specified, the global RNG is used. `weight` should be between 0 and 1.
+
+The usefulness of this is questionable, but it wasn't difficult to implement, so here it is.
 
 
 ## Regional prompting
@@ -300,7 +302,10 @@ Experimental features are unstable and may disappear or change without warning.
 
 ## DEF: Lightweight prompt macros
 
-You can define "prompt macros" by using `DEF`:
+You can define "prompt macros" by using `DEF`.  Macros are expanded before any other parsing takes place. The expansion continues until no further changes occur. Recursion will raise an error.
+
+`PCLazyTextEncode` and `PCLazyLoraLoader` expand macros, but `PCTextEncode` **does not**. If you need to expand macros for a single prompt, use `PCMacroExpand`
+
 ```
 DEF(MYMACRO=this is a prompt)
 [(MYMACRO:0.6):(MYMACRO:1.1):0.5]
@@ -309,7 +314,7 @@ is equivalent to
 ```
 [(this is a prompt:0.5):(this is a prompt:1.1):0.5]
 ```
-
+### Macro parameters
 It's also possible to give parameters to a macro:
 ```
 DEF(MYMACRO=[(prompt $1:$2):(prompt $1:$3):$4])
@@ -319,7 +324,7 @@ gives
 ```
 [(prompt test:1.1):(prompt test:0.7):0.2]
 ```
-in this form, the variables $N (where N is any number corresponding to a positional parameter) will be replaced with the given parameter. The parameters must be separated with a semicolon.
+in this form, the variables $N (where N is any number corresponding to a positional parameter) will be replaced with the given parameter. The parameters must be separated with a semicolon, and can be empty.
 
 You can also optionally specify default values:
 
@@ -332,19 +337,29 @@ gives
 [example:0,1] [test:0.2,1]
 ```
 
-Note that unspecified parameters will not be substituted:
 ```
-DEF(mything=a $1 b $2)
+DEF(MACRO() = [a:$1:0.5])
+```
+sets the default value of `$1` to an empty string.
+
+### Unspecified parameters in macros
+
+Unspecified parameters (either via defaults or explicitly given) will not be substituted. Compare:
+
+```
+DEF(mything=a "$1" b "$2")
 mything
+mything()
 mything(A)
 ```
-gives
-```
-a $1 b $2
-a A b $2
-```
 
-Macros are expanded before any other parsing takes place. The expansion continues until no further changes occur. Recursion will raise an error.
+gives
+
+```
+a "$1" b "$2"
+a "" b "$2"
+a "A" b "$2"
+```
 
 ## Attention Couple
 
