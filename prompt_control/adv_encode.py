@@ -1,15 +1,5 @@
 import torch
 import numpy as np
-import itertools
-
-
-def _grouper(n, iterable):
-    it = iter(iterable)
-    while True:
-        chunk = list(itertools.islice(it, n))
-        if not chunk:
-            return
-        yield chunk
 
 
 def _norm_mag(w, n):
@@ -48,17 +38,6 @@ def mask_word_id(tokens, word_ids, target_id, mask_token):
     return (new_tokens, mask)
 
 
-def batched_clip_encode(tokens, length, encode_func, num_chunks):
-    embs = []
-    for e in _grouper(32, tokens):
-        enc, pooled = encode_func(e)
-        enc = enc.reshape((len(e), length, -1))
-        embs.append(enc)
-    embs = torch.cat(embs)
-    embs = embs.reshape((len(tokens) // num_chunks, length * num_chunks, -1))
-    return embs
-
-
 def from_masked(tokens, weights, word_ids, base_emb, length, encode_func, m_token=266):
     pooled_base = base_emb[0, length - 1 : length, :]
     wids, inds = np.unique(np.array(word_ids).reshape(-1), return_index=True)
@@ -85,8 +64,7 @@ def from_masked(tokens, weights, word_ids, base_emb, length, encode_func, m_toke
 
         ws.append(w)
 
-    # batch process prompts
-    embs = batched_clip_encode(masked_tokens, length, encode_func, len(tokens))
+    embs, _ = encode_func(tokens)
     masks = torch.cat(masks)
 
     embs = base_emb.expand(embs.shape) - embs
@@ -130,7 +108,7 @@ def down_weight(tokens, weights, word_ids, base_emb, length, encode_func, m_toke
         masked_current = mask_inds(masked_current, np.where(w_inv == i)[0], m_token)
         masked_tokens.extend(masked_current)
 
-    embs = batched_clip_encode(masked_tokens, length, encode_func, len(tokens))
+    embs, _ = encode_func(tokens)
     embs = torch.cat([base_emb, embs])
     w = w[w <= 1.0]
     w_mix = np.diff([0] + w.tolist())
