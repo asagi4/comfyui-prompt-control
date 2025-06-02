@@ -3,6 +3,7 @@ import re
 import torch
 from functools import partial
 from comfy_extras.nodes_mask import FeatherMask, MaskComposite
+from nodes import ConditioningAverage
 
 from .utils import safe_float, get_function, parse_floats, smarter_split
 from .adv_encode import advanced_encode_from_tokens
@@ -220,21 +221,47 @@ def encode_prompt_segment(
             tes.append(k)
 
     clip = hook_te(clip, tes, style, normalization, extra)
-    chunks = re.split(r"\bNBREAK\b", text)
-    conds = []
-    for c in chunks:
-        tokens = tokenize(clip, c)
-        conds.append(clip.encode_from_tokens_scheduled(tokens, add_dict=settings))
 
-    count = len(conds[0])
-    base = conds[0]
-    for cond in conds[1:]:
-        assert len(cond) == count, "Conditioning length mismatch"
-        # Pooled gets ignored
-        for i in range(count):
-            c1 = base[i][0]
-            c2 = cond[i][0]
-            base[i][0] = torch.cat((c1, c2), 1)
+    # Chunks to ConditioningAverage:
+
+    text, averages = get_function(text, "AVG", ["0.5"], return_dict=True)
+    prev = 0
+    prompts_to_avg = []
+    for avg in averages:
+        w = safe_float(avg["args"][0], 0.5)
+        p = text[prev : avg["position"]], w
+        prompts_to_avg.append(p)
+        prev = avg["position"]
+    prompts_to_avg.append((text[prev:], 1.0))
+
+    conds_to_avg = []
+    for prompt, weight in prompts_to_avg:
+        conds_to_cat = []
+        chunks = re.split(r"\bNBREAK\b", prompt)
+        for c in chunks:
+            tokens = tokenize(clip, c)
+            conds_to_cat.append(clip.encode_from_tokens_scheduled(tokens, add_dict=settings))
+
+        base = conds_to_cat[0]
+        for cond in conds_to_cat[1:]:
+            assert len(cond) == len(base), "Conditioning length mismatch"
+            # Pooled gets ignored
+            for i in range(len(base)):
+                c1 = base[i][0]
+                c2 = cond[i][0]
+                base[i][0] = torch.cat((c1, c2), 1)
+        conds_to_avg.append((base, weight))
+
+    base, w = conds_to_avg[0]
+    for cond, next_w in conds_to_avg[1:]:
+        assert len(base) == len(cond), "Conditioning length mismatch"
+        if w == 1.0:
+            w = next_w
+            continue
+        for i in range(len(base)):
+            (cond,) = ConditioningAverage.addWeighted(None, [base[i]], [cond[i]], w)
+            base[i] = cond[0]
+        w = next_w
 
     return base
 
