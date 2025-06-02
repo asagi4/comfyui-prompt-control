@@ -127,7 +127,7 @@ def fix_word_ids(tokens):
 
 
 def tokenize_chunks(clip, text, need_word_ids):
-    chunks = re.split(r"\bBREAK\b", text)
+    chunks = re.split(r"\bOLDBREAK\b", text)
     token_chunks = []
     for c in chunks:
         c, shuffles = get_function(c.strip(), "(SHIFT|SHUFFLE)", ["0", "default", "default"], return_func_name=True)
@@ -237,7 +237,7 @@ def encode_prompt_segment(
     conds_to_avg = []
     for prompt, weight in prompts_to_avg:
         conds_to_cat = []
-        chunks = re.split(r"\bNBREAK\b", prompt)
+        chunks = re.split(r"\bBREAK\b", prompt)
         for c in chunks:
             tokens = tokenize(clip, c)
             conds_to_cat.append(clip.encode_from_tokens_scheduled(tokens, add_dict=settings))

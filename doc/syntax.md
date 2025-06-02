@@ -104,7 +104,17 @@ The A111-style syntax `<lora:loraname:weight>` can be used to load LoRAs via the
 ## Combining prompts, A1111-style
 
 ### BREAK
-The keyword `BREAK` causes the prompt to be tokenized in separate chunks, which results in each chunk being individually padded to the text encoder's maximum token length. This is mostly equivalent to the `ConditioningConcat` node.
+The keyword `BREAK` causes the prompt to be encoded in separate chunks, and the resulting tensors are then concatenated. This is equivalent to the `ConditioningConcat` node.
+
+An older implementation of this tokenized prompts in chunks instead, but it had bugs with non-CLIP text encoders. Use `OLDBREAK` to get the old behaviour.
+
+### AVG()
+
+`prompt1 AVG(weight) prompt2` encodes prompt1 and prompt2 separately, and then combines them using `ConditioningAverage`. The default for `weight` is `0.5`.
+
+`AVG` is processed before `BREAK` but after `AND`
+
+`p1 AVG() p2 AVG() p3` combines `p1` and `p2` first, then combines the result with `p3`.
 
 ### AND
 
@@ -189,7 +199,7 @@ Use `TE(help)` to print a help text listing available keys.
 Things to note:
 - If you set a prompt with `TE`, it will override the prompt outside the function for the specified text encoder.
 - Multiple instances of `TE` are joined with a space. That is, `TE(l=foo)TE(l=bar)` is the same as `TE(l=foo bar)`
-- `AND` inside `TE` does not do anything sensible; `TE(l=foo AND bar)` will parse as two prompts `TE(foo` and `bar)`. `BREAK`, `SHIFT` and `SHUFFLE` do work, however
+- `AND` and `BREAK` are processed before `TE`, so they do not do anything sensible; `TE(l=foo AND bar)` will parse as two prompts `TE(foo` and `bar)`. `SHIFT`, `SHUFFLE` and `OLDBREAK` do work, however.
 
 ### SHUFFLE and SHIFT: Create prompt permutations
 
