@@ -1,9 +1,14 @@
 import logging
-import comfy.utils
+
 import comfy.hooks
+import comfy.utils
 import folder_paths
-from .utils import consolidate_schedule
+from comfy.comfy_types.node_typing import IO, ComfyNodeABC, InputTypeDict
+from node_helpers import conditioning_set_values
+
+from .attention_couple_ppm import AttentionCoupleHook
 from .parser import parse_prompt_schedules
+from .utils import consolidate_schedule
 
 log = logging.getLogger("comfyui-prompt-control")
 
@@ -79,10 +84,45 @@ def lora_hooks_from_schedule(schedules, non_scheduled):
         return hooks
 
 
+class PCAttentionCoupleBatchNegative(ComfyNodeABC):
+    @classmethod
+    def INPUT_TYPES(cls) -> InputTypeDict:
+        return {
+            "required": {
+                "positive": (IO.CONDITIONING, {}),
+                "negative": (IO.CONDITIONING, {}),
+            },
+        }
+
+    RETURN_TYPES = (IO.CONDITIONING, IO.CONDITIONING)
+    RETURN_NAMES = ("positive", "negative")
+    CATEGORY = "promptcontrol/v2"
+    FUNCTION = "batch"
+    EXPERIMENTAL = True
+
+    # May cause side-effects?
+    def batch(self, positive, negative):
+        positive_hook_group: comfy.hooks.HookGroup = positive[0][1].get("hooks", comfy.hooks.HookGroup())
+        attn_couple = [hook for hook in positive_hook_group.hooks if isinstance(hook, AttentionCoupleHook)]
+
+        negative_hook_group: comfy.hooks.HookGroup = negative[0][1].get("hooks", comfy.hooks.HookGroup())
+        negative_hook_group_couple = negative_hook_group.clone()
+        for hook in attn_couple:
+            negative_hook_group_couple.add(hook)
+
+        if negative_hook_group_couple.hooks != positive_hook_group.hooks:
+            negative_batch = conditioning_set_values(negative, {"hooks": negative_hook_group_couple})
+        else:
+            negative_batch = conditioning_set_values(negative, {"hooks": positive_hook_group})
+        return (positive, negative_batch)
+
+
 NODE_CLASS_MAPPINGS = {
     "PCLoraHooksFromText": PCLoraHooksFromText,
+    "PCAttentionCoupleBatchNegative": PCAttentionCoupleBatchNegative,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "PCLoraHooksFromText": "PC: LoRA Hooks From Text (non-lazy)",
+    "PCAttentionCoupleBatchNegative": "PC: AttentionCouple (batch negative)",
 }
