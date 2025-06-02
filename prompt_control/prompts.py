@@ -221,16 +221,11 @@ def encode_prompt_segment(
         extra["cuts"] = cuts
 
     empty = clip.tokenize("", return_word_ids=True)
-    tes = []
     can_break = {}
     for k in empty:
         can_break[k] = getattr(clip.tokenizer, "clip_" + k).pad_to_max_length
-        if k in ["g", "l"]:
-            tes.append(f"clip_{k}")
-        else:
-            tes.append(k)
 
-    clip = hook_te(clip, tes, style, normalization, extra)
+    clip = hook_te(clip, empty.keys(), style, normalization, extra)
 
     # Chunks to ConditioningAverage:
 
@@ -326,10 +321,16 @@ def hook_te(clip, te_names, style, normalization, extra):
         return clip
     newclip = clip.clone()
     for te_name in te_names:
-        if hasattr(clip.patcher.model, te_name):
+        if hasattr(clip.tokenizer, 'clip_' + te_name):
             x = extra.copy()
-            x["tokenizer"] = getattr(clip.tokenizer, te_name)
-            log.debug("Hooked into %s with style=%s, normalization=%s", te_name, style, normalization)
+            x["tokenizer"] = getattr(clip.tokenizer, 'clip_' + te_name)
+            if not hasattr(clip.patcher.model, te_name):
+                te_name = 'clip_' + te_name
+            if not hasattr(clip.patcher.model, te_name):
+                log.warning("TE model %s not found on model patcher. Skipping...", te_name)
+                continue
+
+            log.debug("Hooked into te=%s with style=%s, normalization=%s", te_name, style, normalization)
             newclip.patcher.add_object_patch(
                 f"{te_name}.encode_token_weights",
                 make_patch(
@@ -342,7 +343,7 @@ def hook_te(clip, te_names, style, normalization, extra):
             )
         # 'g' and 'l' exist in these are clip_g and clip_l
         else:
-            log.debug("Tokens contain items with key %s but no TE found on object with that name.", te_name)
+            log.warning("Tokens contain items with key %s but no tokenizer found on object with that name.", te_name)
     return newclip
 
 
