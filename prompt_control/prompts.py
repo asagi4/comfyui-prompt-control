@@ -126,9 +126,10 @@ def fix_word_ids(tokens):
     return tokens
 
 
-def tokenize_chunks(clip, text, need_word_ids):
-    chunks = re.split(r"\bOLDBREAK\b", text)
+def tokenize_chunks(clip, text, need_word_ids, can_break):
+    chunks = re.split(r"\bBREAK\b", text)
     token_chunks = []
+    shuffled_chunks = []
     for c in chunks:
         c, shuffles = get_function(c.strip(), "(SHIFT|SHUFFLE)", ["0", "default", "default"], return_func_name=True)
         r = c
@@ -136,24 +137,32 @@ def tokenize_chunks(clip, text, need_word_ids):
             r = shuffle_chunk(s, r)
         if r != c:
             log.info("Shuffled prompt chunk to %s", r)
-            c = r
+        shuffled_chunks.append(r)
         t = clip.tokenize(c, return_word_ids=need_word_ids)
         token_chunks.append(t)
-    tokens = token_chunks[0]
 
-    for key in tokens:
-        for c in token_chunks[1:]:
-            tokens[key].extend(c[key])
+    tokens = token_chunks[0]
+    full_prompt = "".join(shuffled_chunks)
+    full_tokenized = tokens
+    if len(chunks) > 1:
+        full_tokenized = clip.tokenize(full_prompt, return_word_ids=need_word_ids)
+        for key in tokens:
+            if not can_break.get(key):
+                log.warning("BREAK does not make sense for %s, tokenizing as one chunk. Use CAT instead.", key)
+                tokens[key] = full_tokenized[key]
+                continue
+            for c in token_chunks[1:]:
+                tokens[key].extend(c[key])
 
     return tokens
 
 
-def tokenize(clip, text):
+def tokenize(clip, text, can_break, empty_tokens):
     # defaults=None means there is no argument parsing at all
     text, l_prompts = get_function(text, "CLIP_L", defaults=None)
     text, te_prompts = get_function(text, "TE", defaults=None)
     need_word_ids = True
-    tokens = tokenize_chunks(clip, text, need_word_ids)
+    tokens = tokenize_chunks(clip, text, need_word_ids, can_break)
 
     per_te_prompts = {}
     if l_prompts:
@@ -181,16 +190,15 @@ def tokenize(clip, text):
     if per_te_prompts:
         for key in per_te_prompts:
             prompt = " ".join(per_te_prompts[key])
-            tokens[key] = tokenize_chunks(clip, prompt, need_word_ids)[key]
+            tokens[key] = tokenize_chunks(clip, prompt, need_word_ids, can_break)[key]
             log.info("Encoded prompt with TE '%s': %s", key, prompt)
 
-    maxlen = max(len(tokens[k]) for k in tokens)
-    empty = None
+    maxlen = max([0] + [len(tokens[k]) for k in tokens if can_break[k]])
     for k in tokens:
+        if not can_break[k]:
+            continue
         while len(tokens[k]) < maxlen:
-            if empty is None:
-                empty = clip.tokenize("", return_word_ids=need_word_ids)
-            tokens[k] += empty[k]
+            tokens[k] += empty_tokens[k]
 
     return fix_word_ids(tokens)
 
@@ -212,9 +220,11 @@ def encode_prompt_segment(
     if cuts:
         extra["cuts"] = cuts
 
-    empty = clip.tokenize("")
+    empty = clip.tokenize("", return_word_ids=True)
     tes = []
+    can_break = {}
     for k in empty:
+        can_break[k] = getattr(clip.tokenizer, "clip_" + k).pad_to_max_length
         if k in ["g", "l"]:
             tes.append(f"clip_{k}")
         else:
@@ -237,9 +247,9 @@ def encode_prompt_segment(
     conds_to_avg = []
     for prompt, weight in prompts_to_avg:
         conds_to_cat = []
-        chunks = re.split(r"\bBREAK\b", prompt)
+        chunks = re.split(r"\bCAT\b", prompt)
         for c in chunks:
-            tokens = tokenize(clip, c)
+            tokens = tokenize(clip, c, can_break, empty)
             conds_to_cat.append(clip.encode_from_tokens_scheduled(tokens, add_dict=settings))
 
         base = conds_to_cat[0]
