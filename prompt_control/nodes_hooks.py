@@ -124,5 +124,5 @@ NODE_CLASS_MAPPINGS = {
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "PCLoraHooksFromText": "PC: LoRA Hooks From Text (non-lazy)",
-    "PCAttentionCoupleBatchNegative": "PC: AttentionCouple (batch negative)",
+    "PCAttentionCoupleBatchNegative": "PC: Attention Couple (batch negative)",
 }
