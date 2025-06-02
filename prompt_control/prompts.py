@@ -321,11 +321,11 @@ def hook_te(clip, te_names, style, normalization, extra):
         return clip
     newclip = clip.clone()
     for te_name in te_names:
-        if hasattr(clip.tokenizer, 'clip_' + te_name):
+        if hasattr(clip.tokenizer, "clip_" + te_name):
             x = extra.copy()
-            x["tokenizer"] = getattr(clip.tokenizer, 'clip_' + te_name)
+            x["tokenizer"] = getattr(clip.tokenizer, "clip_" + te_name)
             if not hasattr(clip.patcher.model, te_name):
-                te_name = 'clip_' + te_name
+                te_name = "clip_" + te_name
             if not hasattr(clip.patcher.model, te_name):
                 log.warning("TE model %s not found on model patcher. Skipping...", te_name)
                 continue

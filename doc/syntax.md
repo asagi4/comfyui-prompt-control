@@ -95,26 +95,9 @@ generates a LoRA schedule based on a sinewave
 
 # Basic prompt syntax
 
-This syntax is also available in outside scheduled prompts, where applicable.
+This syntax is also available in outside scheduled with the `PCTextEncode` node, where applicable.
 
-## LoRA loading
-
-The A111-style syntax `<lora:loraname:weight>` can be used to load LoRAs via the prompt. See LoRA scheduling above.
-
-## Combining prompts, A1111-style
-
-### BREAK
-The keyword `BREAK` causes the prompt to be encoded in separate chunks, and the resulting tensors are then concatenated. This is equivalent to the `ConditioningConcat` node.
-
-An older implementation of this tokenized prompts in chunks instead, but it had bugs with non-CLIP text encoders. Use `OLDBREAK` to get the old behaviour.
-
-### AVG()
-
-`prompt1 AVG(weight) prompt2` encodes prompt1 and prompt2 separately, and then combines them using `ConditioningAverage`. The default for `weight` is `0.5`.
-
-`AVG` is processed before `BREAK` but after `AND`
-
-`p1 AVG() p2 AVG() p3` combines `p1` and `p2` first, then combines the result with `p3`.
+## Combining prompts
 
 ### AND
 
@@ -135,7 +118,21 @@ cat [\:0::0.5] AND dog
 ```
 Note that the `:` needs to be escaped with a `\` or it will be interpreted as scheduling syntax.
 
-# Functions
+## Note about processing order
+
+Prompt operators are processed in the following order, meaning that all features "below" another can be affected by the feature above it. That is, `BREAK` can go inside a `TE()` call, but not `AND` or `CAT`.
+
+- DEF macros are expanded
+- Scheduling is expanded
+- Prompts are split by AND
+- Most functions (like STYLE, MASK) and cutoffs are evaluated
+- prompts are split by AVG()
+- prompts are split by CAT
+- the TE() function is evaluated to set per-encoder prompts
+- BREAK is evaluated
+- Everything else
+
+## Functions
 
 There are some "functions" that can be included in a prompt to affect how it is interpreted.
 
@@ -147,7 +144,26 @@ Note: Whitespace is usually *not* stripped from string parameters by default. Co
 
 Like `AND`, functions are parsed after regular scheduling syntax has been expanded, allowing things like `[AREA:MASK:0.3](...)`, in case that's somehow useful.
 
-### STYLE: Configure prompt weighting (also known as "Advanced CLIP Encode")
+### BREAK
+The keyword `BREAK` causes the prompt to be tokenized in separate chunks, padding each chunk to the text encoder's maximum size before encoding.
+
+For some text encoders (like t5), this operation doesn't really make sense and BREAKs are simply ignored.
+
+### CAT
+
+`CAT` encodes each prompt separately before concatenating the resulting tensors into a single conditioning. It behaves identically to ComfyUI's `ConditioningConcat`.
+
+### AVG()
+
+`prompt1 AVG(weight) prompt2` encodes prompt1 and prompt2 separately, and then combines them using `ConditioningAverage`. The default for `weight` is `0.5`.
+
+`AVG` is processed before `BREAK` but after `AND`
+
+`p1 AVG() p2 AVG() p3` combines `p1` and `p2` first, then combines the result with `p3`.
+
+## Prompt weighting (also known as "Advanced CLIP Encode")
+
+### STYLE
 
 Use the syntax `STYLE(weight_interpretation, normalization)` in a prompt to affect how prompts are interpreted.
 
