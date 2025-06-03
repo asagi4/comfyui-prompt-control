@@ -108,10 +108,11 @@ class AttentionCoupleHook(TransformerOptionsHook):
             self.has_negpip = any("negpip_attn" in i.__name__ for i in attn_patches)
             log.debug("AttentionCouple has_negpip=%s", self.has_negpip)
 
+            # Skip the base cond here, which is always first
             self.conds_kv = (
-                [(cond[:, 0::2], cond[:, 1::2]) for cond in self.conds]
+                [(cond[:, 0::2], cond[:, 1::2]) for cond in self.conds[1:]]
                 if self.has_negpip
-                else [(cond, cond) for cond in self.conds]
+                else [(cond, cond) for cond in self.conds[1:]]
             )
 
             self.num_tokens_k = [cond[0].shape[1] for cond in self.conds_kv]
@@ -142,32 +143,32 @@ class AttentionCoupleHook(TransformerOptionsHook):
         v_chunks = v.chunk(num_chunks, dim=0)
 
         bs = q.shape[0] // num_chunks
-        # Skip the base cond here, which is always first
         conds_k_tensor = torch.cat(
             [
-                cond[0].repeat(bs, self.lcm_tokens_k // self.num_tokens_k[i + 1], 1) * self.strengths[i]
-                for i, cond in enumerate(self.conds_kv[1:])
+                cond[0].repeat(bs, max(self.lcm_tokens_k // self.num_tokens_k[i], 1), 1) * self.strengths[i]
+                for i, cond in enumerate(self.conds_kv)
             ],
             dim=0,
         )
-        if self.has_negpip:
-            conds_v_tensor = torch.cat(
+        conds_v_tensor = (
+            conds_k_tensor
+            if not self.has_negpip
+            else torch.cat(
                 [
-                    cond[1].repeat(bs, self.lcm_tokens_v // self.num_tokens_v[i + 1], 1) * self.strengths[i]
-                    for i, cond in enumerate(self.conds_kv[1:])
+                    cond[1].repeat(bs, max(self.lcm_tokens_v // self.num_tokens_v[i], 1), 1) * self.strengths[i]
+                    for i, cond in enumerate(self.conds_kv)
                 ],
                 dim=0,
             )
-        else:
-            conds_v_tensor = conds_k_tensor
+        )
 
         qs, ks, vs = [], [], []
         cond_or_uncond_couple.clear()
 
         for i, cond_type in enumerate(cond_or_uncond):
             q_target = q_chunks[i]
-            k_target = k_chunks[i].repeat(1, self.lcm_tokens_k // k.shape[1], 1)
-            v_target = v_chunks[i].repeat(1, self.lcm_tokens_v // v.shape[1], 1)
+            k_target = k_chunks[i].repeat(1, max(self.lcm_tokens_k // k.shape[1], 1), 1)
+            v_target = v_chunks[i].repeat(1, max(self.lcm_tokens_v // v.shape[1], 1), 1)
             if cond_type == self.UNCOND:
                 qs.append(q_target)
                 ks.append(k_target)
@@ -175,15 +176,31 @@ class AttentionCoupleHook(TransformerOptionsHook):
                 cond_or_uncond_couple.append(self.UNCOND)
             else:
                 qs.append(q_target.repeat(self.num_conds, 1, 1))
-                ks.append(torch.cat([k_target * self.base_strength, conds_k_tensor], dim=0))
-                vs.append(torch.cat([v_target * self.base_strength, conds_v_tensor], dim=0))
+                ks.append(
+                    torch.cat(
+                        [
+                            k_target * self.base_strength,
+                            conds_k_tensor.repeat(1, max(k_target.shape[1] // conds_k_tensor.shape[1], 1), 1),
+                        ],
+                        dim=0,
+                    )
+                )
+                vs.append(
+                    torch.cat(
+                        [
+                            v_target * self.base_strength,
+                            conds_v_tensor.repeat(1, max(v_target.shape[1] // conds_v_tensor.shape[1], 1), 1),
+                        ],
+                        dim=0,
+                    )
+                )
                 cond_or_uncond_couple.extend(itertools.repeat(self.COND, self.num_conds))
 
-        qs = torch.cat(qs, dim=0)
-        ks = torch.cat(ks, dim=0)
-        vs = torch.cat(vs, dim=0)
+        q = torch.cat(qs, dim=0)
+        k = torch.cat(ks, dim=0)
+        v = torch.cat(vs, dim=0)
 
-        return qs, ks, vs
+        return q, k, v
 
     def attn2_output_patch(self, out, extra_options):
         cond_or_uncond = extra_options[self.COND_UNCOND_COUPLE_OPTION]
