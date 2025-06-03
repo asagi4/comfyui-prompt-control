@@ -17,10 +17,19 @@ log = logging.getLogger("comfyui-prompt-control")
 
 def set_cond_attnmask(base_cond, extra_conds, fill=False):
     hook = AttentionCoupleHook()
+    c = [base_cond[0][0], base_cond[0][1].copy()]
+    # hook uses these, remove them to avoid doing latent masking
+    c[1].pop("mask", None)
+    c[1].pop("strength", None)
+    c[1].pop("mask_strength", None)
+    c = [c]
+    c.extend(base_cond[1:])
+
     hook.initialize_regions(base_cond[0], extra_conds, fill=fill)
     group = HookGroup()
     group.add(hook)
-    return set_hooks_for_conditioning(base_cond, hooks=group)
+
+    return set_hooks_for_conditioning(c, hooks=group)
 
 
 def lcm_for_list(numbers: list[int]):
