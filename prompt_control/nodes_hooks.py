@@ -101,19 +101,25 @@ class PCAttentionCoupleBatchNegative(ComfyNodeABC):
     EXPERIMENTAL = True
 
     # May cause side-effects?
+    # TODO: Support scheduling in negative prompt
     def batch(self, positive, negative):
-        positive_hook_group: comfy.hooks.HookGroup = positive[0][1].get("hooks", comfy.hooks.HookGroup())
-        attn_couple = [hook for hook in positive_hook_group.hooks if isinstance(hook, AttentionCoupleHook)]
+        if len(negative) != 1:
+            log.warning("Batching scheduled negatives is not supported yet")
+            return (positive, negative)
 
-        negative_hook_group: comfy.hooks.HookGroup = negative[0][1].get("hooks", comfy.hooks.HookGroup())
-        negative_hook_group_couple = negative_hook_group.clone()
-        for hook in attn_couple:
-            negative_hook_group_couple.add(hook)
+        negative_batch = []
+        for p in positive:
+            n = [negative[0][0], negative[0][1].copy()]
+            n_hook_group: comfy.hooks.HookGroup = n[1].get("hooks", comfy.hooks.HookGroup()).clone()
+            p_hook_group: comfy.hooks.HookGroup = p[1].get("hooks", comfy.hooks.HookGroup())
+            attn_couple = [hook for hook in p_hook_group.hooks if isinstance(hook, AttentionCoupleHook)]
+            for hook in attn_couple:
+                n_hook_group.add(hook)
+            n[1]["hooks"] = p_hook_group if n_hook_group.hooks == p_hook_group.hooks else n_hook_group
+            n[1]["start_percent"] = p[1].get("start_percent", 0.0)
+            n[1]["end_percent"] = p[1].get("end_percent", 1.0)
+            negative_batch.append(n)
 
-        if negative_hook_group_couple.hooks != positive_hook_group.hooks:
-            negative_batch = conditioning_set_values(negative, {"hooks": negative_hook_group_couple})
-        else:
-            negative_batch = conditioning_set_values(negative, {"hooks": positive_hook_group})
         return (positive, negative_batch)
 
 
