@@ -86,6 +86,27 @@ class AttentionCoupleHook(TransformerOptionsHook):
         self.conds: list[torch.Tensor] = [base_cond[0]] + [cond[0] for cond in conds]
         base_mask = base_cond[1].get("mask", None)
         masks = [cond[1].get("mask") * cond[1].get("mask_strength") for cond in conds]
+        if len(masks) < 1:
+            raise ValueError("Attention Couple hook makes no sense without masked conds")
+
+        if any(m is None for m in masks):
+            raise ValueError("All conds given to Attention Couple must have masks")
+
+        if any(m.shape != masks[0].shape for m in masks) or (
+            base_mask is not None and base_mask.shape != masks[0].shape
+        ):
+            largest_shape = max(m.shape for m in masks)
+            if base_mask is not None:
+                largest_shape = max(largest_shape, base_mask.shape)
+            print("largest shape x", largest_shape, [m.shape for m in masks], base_mask.shape)
+            log.warning("Attention Couple: Masks are irregularly shaped, resizing them all to match the largest")
+            for i in range(len(masks)):
+                masks[i] = F.interpolate(masks[i].unsqueeze(1), size=largest_shape[1:], mode="nearest-exact").squeeze(1)
+
+            if base_mask is not None:
+                base_mask = F.interpolate(base_mask.unsqueeze(1), size=largest_shape[1:], mode="nearest-exact").squeeze(
+                    1
+                )
 
         if base_mask is None:
             if not fill:
