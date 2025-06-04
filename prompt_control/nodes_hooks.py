@@ -4,7 +4,6 @@ import comfy.hooks
 import comfy.utils
 import folder_paths
 from comfy.comfy_types.node_typing import IO, ComfyNodeABC, InputTypeDict
-from node_helpers import conditioning_set_values
 
 from .attention_couple_ppm import AttentionCoupleHook
 from .parser import parse_prompt_schedules
