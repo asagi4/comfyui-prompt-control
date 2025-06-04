@@ -223,7 +223,8 @@ def encode_prompt_segment(
     empty = clip.tokenize("", return_word_ids=True)
     can_break = {}
     for k in empty:
-        can_break[k] = getattr(clip.tokenizer, "clip_" + k).pad_to_max_length
+        tokenizer = getattr(clip.tokenizer, f"clip_{k}", getattr(clip.tokenizer, k, None))
+        can_break[k] = tokenizer and tokenizer.pad_to_max_length
 
     clip = hook_te(clip, empty.keys(), style, normalization, extra)
 
