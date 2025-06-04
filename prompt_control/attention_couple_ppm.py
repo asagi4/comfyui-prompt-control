@@ -168,7 +168,7 @@ class AttentionCoupleHook(TransformerOptionsHook):
                 vs.append(v_target)
                 cond_or_uncond_couple.append(self.UNCOND)
             else:
-                qs.append(q_target.expand(self.num_conds, -1, -1))
+                qs.append(q_target.repeat(self.num_conds, 1, 1))
                 ks.append(
                     torch.cat(
                         [
