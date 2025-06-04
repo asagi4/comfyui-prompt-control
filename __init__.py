@@ -29,7 +29,7 @@ cache_hack.init()
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 
-nodes = ["base", "lazy", "tools"]
+nodes = ["base", "lazy", "tools", "hooks"]
 
 for node in nodes:
     mod = importlib.import_module(f".prompt_control.nodes_{node}", package=__name__)
