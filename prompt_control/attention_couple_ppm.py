@@ -32,13 +32,6 @@ def set_cond_attnmask(base_cond, extra_conds, fill=False):
     return set_hooks_for_conditioning(c, hooks=group)
 
 
-def lcm_for_list(numbers: list[int]):
-    current_lcm = numbers[0]
-    for number in numbers[1:]:
-        current_lcm = math.lcm(current_lcm, number)
-    return current_lcm
-
-
 def get_mask(mask, batch_size, num_tokens, extra_options):
     activations_shape = extra_options["activations_shape"]
     size = activations_shape[-2:]
@@ -79,11 +72,8 @@ class AttentionCoupleHook(TransformerOptionsHook):
         self.has_negpip = False
 
         # calculate later
-        self.conds_kv: list[tuple[torch.Tensor, torch.Tensor]] = None
-        self.num_tokens_k: list[int] = None
-        self.num_tokens_v: list[int] = None
-        self.lcm_tokens_k: int = None
-        self.lcm_tokens_v: int = None
+        self.conds_k: list[torch.Tensor] = None
+        self.conds_v: list[torch.Tensor] = None
 
     def initialize_regions(self, base_cond, conds, fill):
         self._base_cond = base_cond
@@ -112,23 +102,17 @@ class AttentionCoupleHook(TransformerOptionsHook):
         self.mask = mask / mask.sum(dim=0, keepdim=True)
 
     def on_apply_hooks(self, model: ModelPatcher, transformer_options: dict[str]):
-        if self.conds_kv is None:
+        if self.conds_k is None:
             attn_patches = model.model_options["transformer_options"].get("patches", {}).get("attn2_patch", [])
             self.has_negpip = any("negpip_attn" in i.__name__ for i in attn_patches)
             log.debug("AttentionCouple has_negpip=%s", self.has_negpip)
 
             # Skip the base cond here, which is always first
-            self.conds_kv = (
-                [(cond[:, 0::2], cond[:, 1::2]) for cond in self.conds[1:]]
-                if self.has_negpip
-                else [(cond, cond) for cond in self.conds[1:]]
-            )
-
-            self.num_tokens_k = [cond[0].shape[1] for cond in self.conds_kv]
-            self.num_tokens_v = [cond[1].shape[1] for cond in self.conds_kv]
-
-            self.lcm_tokens_k = lcm_for_list(self.num_tokens_k)
-            self.lcm_tokens_v = lcm_for_list(self.num_tokens_v)
+            if self.has_negpip:
+                self.conds_k = [cond[:, 0::2] for cond in self.conds[1:]]
+                self.conds_v = [cond[:, 1::2] for cond in self.conds[1:]]
+            else:
+                self.conds_k = self.conds_v = self.conds[1:]
 
         return super().on_apply_hooks(model, transformer_options)
 
@@ -147,49 +131,49 @@ class AttentionCoupleHook(TransformerOptionsHook):
         cond_or_uncond_couple = extra_options[self.COND_UNCOND_COUPLE_OPTION] = list(cond_or_uncond)
         num_chunks = len(cond_or_uncond)
 
+        lcm_tokens_k = math.lcm(k.shape[1], *(cond.shape[1] for cond in self.conds_k))
+        lcm_tokens_v = math.lcm(v.shape[1], *(cond.shape[1] for cond in self.conds_v))
         q_chunks = q.chunk(num_chunks, dim=0)
         k_chunks = k.chunk(num_chunks, dim=0)
         v_chunks = v.chunk(num_chunks, dim=0)
 
         bs = q.shape[0] // num_chunks
-        conds_k_tensor = torch.cat(
+
+        conds_k_tensor = conds_v_tensor = torch.cat(
             [
-                cond[0].repeat(bs, max(self.lcm_tokens_k // self.num_tokens_k[i], 1), 1) * self.strengths[i]
-                for i, cond in enumerate(self.conds_kv)
+                cond.repeat(bs, lcm_tokens_k // cond.shape[1], 1) * self.strengths[i]
+                for i, cond in enumerate(self.conds_k)
             ],
             dim=0,
         )
-        conds_v_tensor = (
-            conds_k_tensor
-            if not self.has_negpip
-            else torch.cat(
+        if self.has_negpip:
+            conds_v_tensor = torch.cat(
                 [
-                    cond[1].repeat(bs, max(self.lcm_tokens_v // self.num_tokens_v[i], 1), 1) * self.strengths[i]
-                    for i, cond in enumerate(self.conds_kv)
+                    cond.repeat(bs, lcm_tokens_v // cond.shape[1], 1) * self.strengths[i]
+                    for i, cond in enumerate(self.conds_v)
                 ],
                 dim=0,
             )
-        )
 
         qs, ks, vs = [], [], []
         cond_or_uncond_couple.clear()
 
         for i, cond_type in enumerate(cond_or_uncond):
             q_target = q_chunks[i]
-            k_target = k_chunks[i].repeat(1, max(self.lcm_tokens_k // k.shape[1], 1), 1)
-            v_target = v_chunks[i].repeat(1, max(self.lcm_tokens_v // v.shape[1], 1), 1)
+            k_target = k_chunks[i].repeat(1, lcm_tokens_k // k.shape[1], 1)
+            v_target = v_chunks[i].repeat(1, lcm_tokens_v // v.shape[1], 1)
             if cond_type == self.UNCOND:
                 qs.append(q_target)
                 ks.append(k_target)
                 vs.append(v_target)
                 cond_or_uncond_couple.append(self.UNCOND)
             else:
-                qs.append(q_target.repeat(self.num_conds, 1, 1))
+                qs.append(q_target.expand(self.num_conds, -1, -1))
                 ks.append(
                     torch.cat(
                         [
                             k_target * self.base_strength,
-                            conds_k_tensor.repeat(1, max(k_target.shape[1] // conds_k_tensor.shape[1], 1), 1),
+                            conds_k_tensor,
                         ],
                         dim=0,
                     )
@@ -198,7 +182,7 @@ class AttentionCoupleHook(TransformerOptionsHook):
                     torch.cat(
                         [
                             v_target * self.base_strength,
-                            conds_v_tensor.repeat(1, max(v_target.shape[1] // conds_v_tensor.shape[1], 1), 1),
+                            conds_v_tensor,
                         ],
                         dim=0,
                     )

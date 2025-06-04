@@ -113,6 +113,7 @@ class PCAttentionCoupleBatchNegative(ComfyNodeABC):
             n_hook_group: comfy.hooks.HookGroup = n[1].get("hooks", comfy.hooks.HookGroup()).clone()
             p_hook_group: comfy.hooks.HookGroup = p[1].get("hooks", comfy.hooks.HookGroup())
             attn_couple = [hook for hook in p_hook_group.hooks if isinstance(hook, AttentionCoupleHook)]
+            n_hook_group = n_hook_group.clone()
             for hook in attn_couple:
                 n_hook_group.add(hook)
             n[1]["hooks"] = p_hook_group if n_hook_group.hooks == p_hook_group.hooks else n_hook_group
