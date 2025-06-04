@@ -11,4 +11,7 @@ test:
 test_graph:
 	PYTHONPATH=../../ python -m prompt_control.test_graph
 
+test_encode:
+	PYTHONPATH=../../ python -m prompt_control.test_encode
+
 .PHONY: check format all
