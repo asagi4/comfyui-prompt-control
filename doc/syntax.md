@@ -387,36 +387,9 @@ a "" b "$2"
 a "A" b "$2"
 ```
 
-## Attention Couple
+## ATTN: Attention couple
 
-Attention Couple is an attention-based implementation of regional prompting. it can often be faster and more flexible than latent-based masking.
-
-The implementation is based on the one by [pamparamm](https://github.com/pamparamm/ComfyUI-ppm.git), but modified to use ComfyUI's hook system. This enables it to work with prompt scheduling.
-
-The implementation produces slightly different results from Pamparamm's implementation because ComfyUI will only run the hook for conds that have it attached, unlike the ModelPatcher based implementation which has special logic to avoid messing up negative prompts with attention masks. It's also slightly slower because ComfyUI can't batch cond and uncond calculations while the hook is in use.
-
-As a consequence of this, however, you can also use `ATTN()` in your negative prompt, and it will work correctly.
-
-### ATTN: Trigger Attention Couple
-
-Use `ATTN()` to mark a prompt to be used with Attention Couple. `ATTN()` needs to be combined with either `MASK()` or `IMASK()` to work correctly.
-
-If no mask is specified, an implicit `MASK()` is assumed.
-
-For attention masking to take effect, you need at least two prompt segments with the `ATTN()` marker (separated with `AND`). A single prompt with `ATTN()` will simply ignore the marker.
-
-For the first prompt (and the first prompt only) you can also use `FILL()` to automatically mask all parts not masked by other prompt segments.
-
-For example:
-```
-dog FILL() ATTN() AND cat MASK(0.5 1) ATTN()
-```
-
-If typing `ATTN() MASK()` feels bothersome, try the following macro:
-```
-DEF(AM=ATTN() MASK($1))
-```
-and then use it like `MASK`: `AM(0 1, 0.5 1)`
+See [here](doc/attention_couple.md)
 
 ## TE_WEIGHT
 
