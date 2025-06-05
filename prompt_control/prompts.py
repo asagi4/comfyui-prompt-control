@@ -294,7 +294,8 @@ def apply_weights(output, te_name, spec):
                 pooled_w = 1.0
             log.info("Weighting %s output by %s, pooled by %s", te_name, w, pooled_w)
             out = out * w
-            pooled = pooled * pooled_w
+            if pooled is not None:
+                pooled = pooled * pooled_w
 
         return out, pooled
     else:
@@ -322,9 +323,10 @@ def hook_te(clip, te_names, style, normalization, extra):
         return clip
     newclip = clip.clone()
     for te_name in te_names:
-        if hasattr(clip.tokenizer, "clip_" + te_name):
+        tokenizer = getattr(clip.tokenizer, f"clip_{te_name}", getattr(clip.tokenizer, te_name, None))
+        if tokenizer:
             x = extra.copy()
-            x["tokenizer"] = getattr(clip.tokenizer, "clip_" + te_name)
+            x["tokenizer"] = tokenizer
             if not hasattr(clip.patcher.model, te_name):
                 te_name = "clip_" + te_name
             if not hasattr(clip.patcher.model, te_name):
