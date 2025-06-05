@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+from math import copysign
 
 
 def _norm_mag(w, n):
@@ -167,6 +168,18 @@ def advanced_encode_from_tokens(
     tokenizer=None,
     **extra_args
 ):
+    negpip = extra_args.get("has_negpip")
+    if negpip:
+        weights_sign = [[copysign(1, w) for _, w, _ in x] for x in tokenized]
+        tokenized = [[(t, abs(w), p) for t, w, p in x] for x in tokenized]
+        orig_encode = encode_func
+
+        def _encode(t):
+            emb, pooled = orig_encode(t)
+            return emb[:, 0::2, :], pooled
+
+        encode_func = _encode
+
     assert tokenizer, "Must pass tokenizer"
     max_length = None
     if tokenizer.pad_to_max_length:
@@ -227,6 +240,12 @@ def advanced_encode_from_tokens(
         weighted_emb, pooled = perp_weight(
             weights, (base_emb, pooled_base), encode_func(extra_args["tokenizer"].tokenize_with_weights(""))
         )
+
+    if negpip:
+        emb_negpip = torch.empty_like(weighted_emb).repeat(1, 2, 1)
+        emb_negpip[:, 0::2, :] = weighted_emb
+        emb_negpip[:, 1::2, :] = weighted_emb * weights_like(weights_sign, weighted_emb)
+        weighted_emb = emb_negpip
 
     if return_pooled:
         if apply_to_pooled:

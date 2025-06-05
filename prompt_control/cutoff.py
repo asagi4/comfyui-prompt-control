@@ -209,6 +209,9 @@ def encode_regions(clip_regions, encode, tokenizer):
         debug_tokens("region", region_prompt, tokenizer)
         region_emb, _ = encode(region_prompt)
         region_emb -= base_embedding_start
+        # NegPiP support:
+        if region_emb.shape[1] == 2 * region_masking.shape[1]:
+            region_masking = torch.repeat_interleave(region_masking, 2, dim=1)
         region_emb *= region_masking
 
         region_embeddings.append(region_emb)
@@ -217,6 +220,10 @@ def encode_regions(clip_regions, encode, tokenizer):
     embeddings_final_mask = torch.tensor(
         global_region_mask, dtype=base_embedding_full.dtype, device=base_embedding_full.device
     ).unsqueeze(-1)
+    # NegPiP support:
+    if region_embeddings.shape[1] == 2 * embeddings_final_mask.shape[1]:
+        embeddings_final_mask = torch.repeat_interleave(embeddings_final_mask, 2, dim=1)
+
     embeddings_final = base_embedding_start * embeddings_final_mask + base_embedding_outer * (1 - embeddings_final_mask)
     embeddings_final += region_embeddings
     return embeddings_final, pool
