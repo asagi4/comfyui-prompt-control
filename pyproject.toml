@@ -1,7 +1,7 @@
 [project]
 name = "comfyui-prompt-control"
 description = "Nodes for convenient prompt editing, making many common operations prompt-controllable"
-version = "2.0.0-rc.4"
+version = "2.0.0-rc.5"
 license = { file = "LICENSE" }
 # some lark versions older than 1.1.9 apparently have a bug that breaks things, see https://github.com/asagi4/comfyui-prompt-control/issues/35
 dependencies = ["lark >= 1.1.9"]
