@@ -335,12 +335,7 @@ def hook_te(clip, te_names, style, normalization, extra):
 
             log.debug("Hooked into te=%s with style=%s, normalization=%s", te_name, style, normalization)
             encode = clip.patcher.get_model_object(f"{te_name}.encode_token_weights")
-            # A better way to do this would be nice. negpip uses a partial function
-            if "negpip" in getattr(getattr(encode, "func", None), "__name__", "no_func"):
-                if "negpip" in make_patch.__name__:
-                    log.info("Detected active NegPiP monkeypatch, disabling native support")
-                else:
-                    x["has_negpip"] = True
+            x["has_negpip"] = clip.patcher.model_options.get("ppm_negpip", False)
             newclip.patcher.add_object_patch(
                 f"{te_name}.encode_token_weights",
                 make_patch(

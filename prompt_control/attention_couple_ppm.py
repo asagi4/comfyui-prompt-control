@@ -5,6 +5,7 @@
 import itertools
 import logging
 import math
+from typing import Any
 
 import torch
 import torch.nn.functional as F
@@ -122,10 +123,9 @@ class AttentionCoupleHook(TransformerOptionsHook):
 
         self.mask = mask / mask.sum(dim=0, keepdim=True)
 
-    def on_apply_hooks(self, model: ModelPatcher, transformer_options: dict[str]):
+    def on_apply_hooks(self, model: ModelPatcher, transformer_options: dict[str, Any]):
         if self.conds_k is None:
-            attn_patches = model.model_options["transformer_options"].get("patches", {}).get("attn2_patch", [])
-            self.has_negpip = any("negpip_attn" in i.__name__ for i in attn_patches)
+            self.has_negpip = model.model_options.get("ppm_negpip", False)
             log.debug("AttentionCouple has_negpip=%s", self.has_negpip)
 
             # Skip the base cond here, which is always first
