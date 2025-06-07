@@ -336,6 +336,10 @@ class AdvancedEncoder:
         self.max_length = tokenizer.max_length if tokenizer.pad_to_max_length else None
         self.w_max = w_max
 
+        if style == "comfy++" and not self.max_length:
+            log.warning("comfy++ does not work with tokenizer %s, using default weighting", tokenizer)
+            style = "comfy"
+
         norms = normalization.split("+")
         assert style in self.STYLES, f"Invalid weight interpretation: {style}"
         self.weight_fn = self.STYLES[style]
@@ -373,8 +377,6 @@ class AdvancedEncoder:
                 ),
             )
 
-        masked_tokens = []
-
         masked_current = tokens
         emblist = [base_emb]
         for i in range(len(w)):
@@ -411,12 +413,13 @@ class AdvancedEncoder:
         # create prompts
         for id, w in weight_dict.items():
             masked, m = mask_word_id(tokens, word_ids, id, self.m_token)
-            masked_tokens.extend(masked)
             masks.append(weights_like(m, base_emb))
+            masked_tokens.extend(masked)
 
             ws.append(w)
 
-        embs, pooled = self.encode_fn(tokens)
+        # TODO: figure out how to get rid of this
+        embs = batched_clip_encode(masked_tokens, self.max_length, self.encode_fn, len(tokens))
         masks = torch.cat(masks)
 
         embs = base_emb.expand(embs.shape) - embs
