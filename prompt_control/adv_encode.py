@@ -238,7 +238,7 @@ def advanced_encode_from_tokens(
 
     if weight_interpretation == "perp":
         weighted_emb, pooled = perp_weight(
-            weights, (base_emb, pooled_base), encode_func(extra_args["tokenizer"].tokenize_with_weights(""))
+            weights, (base_emb, pooled_base), encode_func(tokenizer.tokenize_with_weights(""))
         )
 
     if negpip:
