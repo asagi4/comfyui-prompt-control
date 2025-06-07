@@ -69,9 +69,11 @@ def get_style(text, default_style="comfy", default_normalization="none"):
         log.warning("Unrecognized prompt style: %s. Using %s", style, default_style)
         style = default_style
 
-    if normalization not in AVAILABLE_NORMALIZATIONS:
-        log.warning("Unrecognized prompt normalization: %s. Using %s", normalization, default_normalization)
-        normalization = default_normalization
+    for part in normalization.split("+"):
+        if part not in AVAILABLE_NORMALIZATIONS:
+            log.warning("Unrecognized prompt normalization: %s. Using %s", normalization, default_normalization)
+            normalization = default_normalization
+            break
 
     return style, normalization, text
 
