@@ -155,6 +155,12 @@ def perp_weight(weights, unweighted_embs, empty_embs):
     result[~over1] = (unweighted - (1 - weights) * perp)[~over1]
     result[weights == 0.0] = zero[weights == 0.0]
 
+    # Not sure if this is an implementation bug or if this just doesn't make sense with T5
+    nans = result.isnan()
+    if nans.any():
+        log.warning("perp weight returned NaNs (known to happen with T5), replacing with 0")
+        result[nans] = 0.0
+
     return result, unweighted_pooled
 
 
