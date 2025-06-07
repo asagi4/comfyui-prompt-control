@@ -2,6 +2,7 @@ import torch
 import numpy as np
 from math import copysign
 import logging
+import itertools
 
 log = logging.getLogger("comfyui-prompt-control")
 
@@ -10,6 +11,27 @@ def _norm_mag(w, n):
     d = w - 1
     return 1 + np.sign(d) * np.sqrt(np.abs(d) ** 2 / n)
     # return  np.sign(w) * np.sqrt(np.abs(w)**2 / n)
+
+
+def _grouper(n, iterable):
+    it = iter(iterable)
+    while True:
+        chunk = list(itertools.islice(it, n))
+        if not chunk:
+            return
+        yield chunk
+
+
+def batched_clip_encode(tokens, length, encode_func, num_chunks):
+    embs = []
+    for e in _grouper(32, tokens):
+        enc, pooled = encode_func(e)
+        enc = enc.reshape((len(e), length, -1))
+        embs.append(enc)
+
+    embs = torch.cat(embs)
+    embs = embs.reshape((len(tokens) // num_chunks, length * num_chunks, -1))
+    return embs
 
 
 def weights_like(weights, emb):
@@ -42,15 +64,19 @@ def mask_word_id(tokens, word_ids, target_id, mask_token):
     return (new_tokens, mask)
 
 
-def from_masked(tokens, weights, word_ids, base_emb, pooled_base, max_length, encode_func, m_token):
+def from_masked(tokens, weights, word_ids, base_emb, length, encode_func, m_token=266):
+    pooled_base = base_emb[0, length - 1 : length, :]
     wids, inds = np.unique(np.array(word_ids).reshape(-1), return_index=True)
     weight_dict = dict((id, w) for id, w in zip(wids, np.array(weights).reshape(-1)[inds]) if w != 1.0)
 
     if len(weight_dict) == 0:
-        return torch.zeros_like(base_emb), torch.zeros_like(pooled_base) if pooled_base is not None else None
+        return torch.zeros_like(base_emb), base_emb[0, length - 1 : length, :]
 
-    weight_tensor = weights_like(weights, base_emb)
+    weight_tensor = torch.tensor(weights, dtype=base_emb.dtype, device=base_emb.device)
+    weight_tensor = weight_tensor.reshape(1, -1, 1).expand(base_emb.shape)
 
+    # m_token = (clip.tokenizer.end_token, 1.0) if  clip.tokenizer.pad_with_end else (0,1.0)
+    # TODO: find most suitable masking token here
     m_token = (m_token, 1.0)
 
     ws = []
@@ -61,28 +87,29 @@ def from_masked(tokens, weights, word_ids, base_emb, pooled_base, max_length, en
     for id, w in weight_dict.items():
         masked, m = mask_word_id(tokens, word_ids, id, m_token)
         masked_tokens.extend(masked)
-        masks.append(weights_like(m, base_emb))
+
+        m = torch.tensor(m, dtype=base_emb.dtype, device=base_emb.device)
+        m = m.reshape(1, -1, 1).expand(base_emb.shape)
+        masks.append(m)
 
         ws.append(w)
 
-    embs, pooled = encode_func(tokens)
+    # batch process prompts
+    embs = batched_clip_encode(masked_tokens, length, encode_func, len(tokens))
     masks = torch.cat(masks)
 
     embs = base_emb.expand(embs.shape) - embs
-    if pooled is not None and max_length:
-        pooled = embs[0, max_length - 1 : max_length, :]
-        pooled_start = pooled_base.expand(len(ws), -1)
-        ws = torch.tensor(ws).reshape(-1, 1).expand(pooled_start.shape)
-        pooled = (pooled - pooled_start) * (ws - 1)
-        pooled = pooled.mean(axis=0, keepdim=True)
-        pooled = pooled_base + pooled
+    pooled = embs[0, length - 1 : length, :]
 
-    if embs.shape[0] != masks.shape[0]:
-        embs = embs.repeat(masks.shape[0], 1, 1)
     embs *= masks
     embs = embs.sum(axis=0, keepdim=True)
 
-    return ((weight_tensor - 1) * embs), pooled
+    pooled_start = pooled_base.expand(len(ws), -1)
+    ws = torch.tensor(ws).reshape(-1, 1).expand(pooled_start.shape)
+    pooled = (pooled - pooled_start) * (ws - 1)
+    pooled = pooled.mean(axis=0, keepdim=True)
+
+    return ((weight_tensor - 1) * embs), pooled_base + pooled
 
 
 def mask_inds(tokens, inds, mask_token):
@@ -94,17 +121,14 @@ def mask_inds(tokens, inds, mask_token):
     return new_tokens
 
 
-def down_weight(tokens, weights, word_ids, base_emb, pooled_base, max_length, encode_func, m_token):
+def down_weight(tokens, weights, word_ids, base_emb, length, encode_func):
     w, w_inv = np.unique(weights, return_inverse=True)
 
     if np.sum(w < 1) == 0:
-        return (
-            base_emb,
-            tokens,
-            base_emb[0, max_length - 1 : max_length, :] if (pooled_base is not None and max_length) else None,
-        )
-
-    m_token = (m_token, 1.0)
+        return base_emb, tokens, base_emb[0, length - 1 : length, :]
+    # m_token = (clip.tokenizer.end_token, 1.0) if  clip.tokenizer.pad_with_end else (0,1.0)
+    # using the comma token as a masking token seems to work better than aos tokens for SD 1.x
+    m_token = (266, 1.0)
 
     masked_tokens = []
 
@@ -115,16 +139,14 @@ def down_weight(tokens, weights, word_ids, base_emb, pooled_base, max_length, en
         masked_current = mask_inds(masked_current, np.where(w_inv == i)[0], m_token)
         masked_tokens.extend(masked_current)
 
-    embs, pooled = encode_func(tokens)
+    embs = batched_clip_encode(masked_tokens, length, encode_func, len(tokens))
     embs = torch.cat([base_emb, embs])
     w = w[w <= 1.0]
     w_mix = np.diff([0] + w.tolist())
     w_mix = torch.tensor(w_mix, dtype=embs.dtype, device=embs.device).reshape((-1, 1, 1))
 
     weighted_emb = (w_mix * embs).sum(axis=0, keepdim=True)
-    if pooled is not None and max_length:
-        pooled = weighted_emb[0, max_length - 1 : max_length, :]
-    return weighted_emb, masked_current, pooled
+    return weighted_emb, masked_current, weighted_emb[0, length - 1 : length, :]
 
 
 def scale_emb_to_mag(base_emb, weighted_emb):
@@ -218,9 +240,9 @@ def style_downweight(encoder, tokens, **kwargs):
 
 
 def style_perp(encoder, tokens, **kwargs):
-    zero_emb, _ = encoder.encode_fn(encoder.tokenizer.tokenize_with_weights(""))
+    zero_emb, zero_pooled = encoder.encode_fn(encoder.tokenizer.tokenize_with_weights(""))
     base_emb, pooled = encoder.base_emb(tokens)
-    return perp_weight(encoder.weights(tokens), (base_emb, pooled), (zero_emb, None))
+    return perp_weight(encoder.weights(tokens), (base_emb, pooled), (zero_emb, zero_pooled))
 
 
 def apply_negpip(encoder, emb, pooled, **kwargs):
@@ -351,24 +373,24 @@ class AdvancedEncoder:
                 ),
             )
 
-        m_token = (self.m_token, 1.0)
-
         masked_tokens = []
 
         masked_current = tokens
+        emblist = [base_emb]
         for i in range(len(w)):
             if w[i] >= 1:
                 continue
-            masked_current = mask_inds(masked_current, np.where(w_inv == i)[0], m_token)
-            masked_tokens.extend(masked_current)
+            masked_current = mask_inds(masked_current, np.where(w_inv == i)[0], self.m_token)
+            masked, _ = self.encode_fn(masked_current)
+            emblist.append(masked)
 
-        embs, pooled = self.encode_fn(tokens)
-        embs = torch.cat([base_emb, embs])
+        embs = torch.cat(emblist)
         w = w[w <= 1.0]
         w_mix = np.diff([0] + w.tolist())
         w_mix = torch.tensor(w_mix, dtype=embs.dtype, device=embs.device).reshape((-1, 1, 1))
 
         weighted_emb = (w_mix * embs).sum(axis=0, keepdim=True)
+        pooled = pooled_base
         if pooled is not None and self.max_length:
             pooled = weighted_emb[0, self.max_length - 1 : self.max_length, :]
         return weighted_emb, masked_current, pooled
@@ -382,15 +404,13 @@ class AdvancedEncoder:
 
         weight_tensor = weights_like(weights, base_emb)
 
-        m_token = (self.m_token, 1.0)
-
         ws = []
         masked_tokens = []
         masks = []
 
         # create prompts
         for id, w in weight_dict.items():
-            masked, m = mask_word_id(tokens, word_ids, id, m_token)
+            masked, m = mask_word_id(tokens, word_ids, id, self.m_token)
             masked_tokens.extend(masked)
             masks.append(weights_like(m, base_emb))
 
@@ -400,7 +420,7 @@ class AdvancedEncoder:
         masks = torch.cat(masks)
 
         embs = base_emb.expand(embs.shape) - embs
-        if pooled is not None and self.max_length:
+        if pooled_base is not None and self.max_length:
             pooled = embs[0, self.max_length - 1 : self.max_length, :]
             pooled_start = pooled_base.expand(len(ws), -1)
             ws = torch.tensor(ws).reshape(-1, 1).expand(pooled_start.shape)
@@ -432,6 +452,86 @@ class AdvancedEncoder:
         return emb, None
 
 
+# For verification
+def A1111_renorm(base_emb, weighted_emb):
+    embeddings_final = (base_emb.mean() / weighted_emb.mean()) * weighted_emb
+    return embeddings_final
+
+
+def from_zero(weights, base_emb):
+    weight_tensor = torch.tensor(weights, dtype=base_emb.dtype, device=base_emb.device)
+    weight_tensor = weight_tensor.reshape(1, -1, 1).expand(base_emb.shape)
+    return base_emb * weight_tensor
+
+
+def old_advanced_encode_from_tokens(
+    tokenized,
+    token_normalization,
+    weight_interpretation,
+    encode_func,
+    m_token=266,
+    w_max=1.0,
+    return_pooled=False,
+    apply_to_pooled=False,
+    **extra_args,
+):
+    length = 77
+    tokens = [[t for t, _, _ in x] for x in tokenized]
+    weights = [[w for _, w, _ in x] for x in tokenized]
+    word_ids = [[wid for _, _, wid in x] for x in tokenized]
+
+    # weight normalization
+    # ====================
+
+    # distribute down/up weights over word lengths
+    if token_normalization.startswith("length"):
+        weights = divide_length(word_ids, weights)
+
+    # make mean of word tokens 1
+    if token_normalization.endswith("mean"):
+        weights = shift_mean_weight(word_ids, weights)
+
+    # weight interpretation
+    # =====================
+    pooled = None
+
+    if weight_interpretation in ["comfy", "perp"]:
+        weighted_tokens = [[(t, w) for t, w in zip(x, y)] for x, y in zip(tokens, weights)]
+        weighted_emb, pooled_base = encode_func(weighted_tokens)
+        pooled = pooled_base
+    else:
+        unweighted_tokens = [[(t, 1.0) for t, _, _ in x] for x in tokenized]
+        base_emb, pooled_base = encode_func(unweighted_tokens)
+
+    if weight_interpretation == "A1111":
+        weighted_emb = from_zero(weights, base_emb)
+        weighted_emb = A1111_renorm(base_emb, weighted_emb)
+        pooled = pooled_base
+
+    if weight_interpretation == "compel":
+        pos_tokens = [[(t, w) if w >= 1.0 else (t, 1.0) for t, w in zip(x, y)] for x, y in zip(tokens, weights)]
+        weighted_emb, _ = encode_func(pos_tokens)
+        weighted_emb, _, pooled = down_weight(pos_tokens, weights, word_ids, weighted_emb, length, encode_func)
+
+    if weight_interpretation == "comfy++":
+        weighted_emb, tokens_down, _ = down_weight(unweighted_tokens, weights, word_ids, base_emb, length, encode_func)
+        weights = [[w if w > 1.0 else 1.0 for w in x] for x in weights]
+        # unweighted_tokens = [[(t,1.0) for t, _,_ in x] for x in tokens_down]
+        embs, pooled = from_masked(unweighted_tokens, weights, word_ids, base_emb, length, encode_func)
+        weighted_emb += embs
+
+    if weight_interpretation == "down_weight":
+        weights = scale_to_norm(weights, word_ids, w_max)
+        weighted_emb, _, pooled = down_weight(unweighted_tokens, weights, word_ids, base_emb, length, encode_func)
+
+    if return_pooled:
+        if apply_to_pooled:
+            return weighted_emb, pooled
+        else:
+            return weighted_emb, pooled_base
+    return weighted_emb, None
+
+
 def advanced_encode_from_tokens(
     tokenized,
     token_normalization,
@@ -451,89 +551,5 @@ def advanced_encode_from_tokens(
         )
         log.info("Using new implementation for %s", weight_interpretation)
         return enc(tokenized, return_pooled=return_pooled, apply_to_pooled=apply_to_pooled)
-
-    negpip = extra_args.get("has_negpip")
-    if negpip:
-        weights_sign = [[copysign(1, w) for _, w, _ in x] for x in tokenized]
-        tokenized = [[(t, abs(w), p) for t, w, p in x] for x in tokenized]
-        orig_encode = encode_func
-
-        def _encode(t):
-            emb, pooled = orig_encode(t)
-            return emb[:, 0::2, :], pooled
-
-        encode_func = _encode
-
-    assert tokenizer, "Must pass tokenizer"
-    m_token = tokenizer.tokenize_with_weights(m_token)[0][tokenizer.tokens_start]
-    max_length = None
-    if tokenizer.pad_to_max_length:
-        max_length = tokenizer.max_length
-
-    tokens = [[t for t, _, _ in x] for x in tokenized]
-    weights = [[w for _, w, _ in x] for x in tokenized]
-    word_ids = [[wid for _, _, wid in x] for x in tokenized]
-
-    for op in token_normalization.split("+"):
-        op = op.strip()
-        if op == "length":
-            # distribute down/up weights over word lengths
-            weights = divide_length(word_ids, weights)
-        if op == "mean":
-            weights = shift_mean_weight(word_ids, weights)
-
-    pooled = None
-
-    if weight_interpretation == "comfy":
-        weighted_tokens = [[(t, w) for t, w in zip(x, y)] for x, y in zip(tokens, weights)]
-        weighted_emb, pooled_base = encode_func(weighted_tokens)
-        pooled = pooled_base
     else:
-        unweighted_tokens = [[(t, 1.0) for t, _, _ in x] for x in tokenized]
-        base_emb, pooled_base = encode_func(unweighted_tokens)
-
-    if weight_interpretation == "A1111":
-        weighted_emb = base_emb * weights_like(weights, base_emb)  # from_zero
-        weighted_emb = (base_emb.mean() / weighted_emb.mean()) * weighted_emb  # renormalize
-        pooled = pooled_base
-
-    if weight_interpretation == "compel":
-        pos_tokens = [[(t, w) if w >= 1.0 else (t, 1.0) for t, w in zip(x, y)] for x, y in zip(tokens, weights)]
-        weighted_emb, pooled = encode_func(pos_tokens)
-        weighted_emb, _, pooled = down_weight(
-            pos_tokens, weights, word_ids, weighted_emb, pooled, max_length, encode_func, m_token
-        )
-
-    if weight_interpretation == "comfy++":
-        weighted_emb, tokens_down, _ = down_weight(
-            unweighted_tokens, weights, word_ids, base_emb, pooled_base, max_length, encode_func, m_token
-        )
-        weights = [[w if w > 1.0 else 1.0 for w in x] for x in weights]
-        embs, pooled = from_masked(
-            unweighted_tokens, weights, word_ids, base_emb, pooled_base, max_length, encode_func, m_token
-        )
-        weighted_emb += embs
-
-    if weight_interpretation == "down_weight":
-        weights = scale_to_norm(weights, word_ids, w_max)
-        weighted_emb, _, pooled = down_weight(
-            unweighted_tokens, weights, word_ids, base_emb, pooled_base, max_length, encode_func, m_token
-        )
-
-    if weight_interpretation == "perp":
-        weighted_emb, pooled = perp_weight(
-            weights, (base_emb, pooled_base), encode_func(tokenizer.tokenize_with_weights(""))
-        )
-
-    if negpip:
-        emb_negpip = torch.empty_like(weighted_emb).repeat(1, 2, 1)
-        emb_negpip[:, 0::2, :] = weighted_emb
-        emb_negpip[:, 1::2, :] = weighted_emb * weights_like(weights_sign, weighted_emb)
-        weighted_emb = emb_negpip
-
-    if return_pooled:
-        if apply_to_pooled:
-            return weighted_emb, pooled
-        else:
-            return weighted_emb, pooled_base
-    return weighted_emb, None
+        return old_advanced_encode_from_tokens(tokenized, token_normalization, weight_interpretation, encode_func, 266, return_pooled=return_pooled, apply_to_pooled=apply_to_pooled)
