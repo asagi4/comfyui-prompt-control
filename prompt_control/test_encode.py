@@ -70,14 +70,12 @@ class TestEncode(unittest.TestCase):
                     (c,) = run(pc, clip, "this prompt has no weights")
                     self.condEqual(no_weights, c)
                 with self.subTest(f"TE {k} style {style} does not fail when encoding weights"):
-                    for normalization in [
-                        "none",
-                    ]:  # "mean", "length", "mean+length", "length+mean"]:
+                    for normalization in ["none", "mean", "length", "mean+length", "length+mean"]:
                         with self.subTest(f"TE {k} style {style} normalization {normalization}"):
                             (c,) = run(
                                 pc,
                                 clip,
-                                f"STYLE({style}, {normalization}) (this prompt) (has weights), (a:1.2) (b:1.2)",
+                                f"STYLE({style}, {normalization}) (this prompt) (has weights:0.9), (a:1.2) (b:1.2)",
                             )
 
     def test_masks(self):
