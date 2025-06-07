@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from math import copysign
+from math import copysign, lcm
 
 
 def _norm_mag(w, n):
@@ -74,6 +74,8 @@ def from_masked(tokens, weights, word_ids, base_emb, pooled_base, max_length, en
         pooled = pooled.mean(axis=0, keepdim=True)
         pooled = pooled_base + pooled
 
+    if embs.shape[0] != masks.shape[0]:
+        embs = embs.repeat(masks.shape[0], 1, 1)
     embs *= masks
     embs = embs.sum(axis=0, keepdim=True)
 
