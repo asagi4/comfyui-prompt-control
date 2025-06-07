@@ -5,7 +5,7 @@ import prompt_control.adv_encode
 (l,) = nodes.CLIPLoader.load_clip(None, "clip_l.safetensors")
 (t5,) = nodes.CLIPLoader.load_clip(None, "t5base.safetensors")
 
-import torch
+id(main)  # get rid of warning
 
 
 def adv(t, text, style="A1111", norm="none", new=True, **kwargs):
