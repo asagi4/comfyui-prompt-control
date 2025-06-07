@@ -262,7 +262,7 @@ class AdvancedEncoder:
                 return emb[:, 0::2, :], pooled
 
             self.encode_fn = _encode
-            self.preprocessors.insert(lambda encoder, tokens, **kwargs: encoder.weighted_with(tokens, abs))
+            self.preprocessors.insert(0, lambda encoder, tokens, **kwargs: encoder.weighted_with(tokens, abs))
             self.postprocessors.insert(0, apply_negpip)
 
     def base_emb(self, tokens):
