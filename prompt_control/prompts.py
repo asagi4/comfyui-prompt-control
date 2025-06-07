@@ -65,7 +65,7 @@ def get_style(text, default_style="comfy", default_normalization="none"):
     style, normalization = styles[0]
     style = style.strip()
     normalization = normalization.strip()
-    if style.replace("new+", "") not in AVAILABLE_STYLES:
+    if style.replace("old+", "") not in AVAILABLE_STYLES:
         log.warning("Unrecognized prompt style: %s. Using %s", style, default_style)
 
     for part in normalization.split("+"):

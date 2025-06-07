@@ -547,12 +547,20 @@ def advanced_encode_from_tokens(
     tokenizer=None,
     **extra_args,
 ):
-    if "new+" in weight_interpretation:
-        weight_interpretation = weight_interpretation.replace("new+", "")
+    if "old+" not in weight_interpretation:
         enc = AdvancedEncoder(
             encode_func, weight_interpretation, token_normalization, tokenizer, m_token, w_max, **extra_args
         )
-        log.info("Using new implementation for %s", weight_interpretation)
         return enc(tokenized, return_pooled=return_pooled, apply_to_pooled=apply_to_pooled)
     else:
-        return old_advanced_encode_from_tokens(tokenized, token_normalization, weight_interpretation, encode_func, 266, return_pooled=return_pooled, apply_to_pooled=apply_to_pooled)
+        weight_interpretation = weight_interpretation.replace("old+", "")
+        log.warning("Using old implementation of %s", weight_interpretation)
+        return old_advanced_encode_from_tokens(
+            tokenized,
+            token_normalization,
+            weight_interpretation,
+            encode_func,
+            266,
+            return_pooled=return_pooled,
+            apply_to_pooled=apply_to_pooled,
+        )
