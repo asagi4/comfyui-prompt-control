@@ -60,6 +60,24 @@ class TestEncode(unittest.TestCase):
                     (c2,) = run(zeroout, c)
                     self.condEqual(c1, c2)
 
+    def test_styles(self):
+        pc = PCTextEncode()
+        comfy = nodes.CLIPTextEncode()
+        for k, clip in [("l", clip_l), ("dual", dual)]:
+            (no_weights,) = run(comfy, clip, "this prompt has no weights")
+            for style in ["comfy", "A1111", "comfy++", "compel", "down_weight", "perp"]:
+                with self.subTest(f"TE {k} style {style} no weights equal comfy"):
+                    (c,) = run(pc, clip, "this prompt has no weights")
+                    self.condEqual(no_weights, c)
+                with self.subTest(f"TE {k} style {style} does not fail when encoding weights"):
+                    for normalization in ["none", "mean", "length", "mean+length", "length+mean"]:
+                        with self.subTest(f"TE {k} style {style} normalization {normalization}"):
+                            (c,) = run(
+                                pc,
+                                clip,
+                                f"STYLE({style}, {normalization}) (this prompt) (has weights), (a:1.2) (b:1.2)",
+                            )
+
     def test_masks(self):
         pc = PCTextEncode()
         comfy = nodes.CLIPTextEncode()
