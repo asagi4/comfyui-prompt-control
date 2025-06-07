@@ -117,7 +117,7 @@ def down_weight(tokens, weights, word_ids, base_emb, pooled_base, max_length, en
     w_mix = torch.tensor(w_mix, dtype=embs.dtype, device=embs.device).reshape((-1, 1, 1))
 
     weighted_emb = (w_mix * embs).sum(axis=0, keepdim=True)
-    if pooled and max_length:
+    if pooled is not None and max_length:
         pooled = weighted_emb[0, max_length - 1 : max_length, :]
     return weighted_emb, masked_current, pooled
 
