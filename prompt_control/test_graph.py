@@ -2,7 +2,15 @@ import unittest
 import unittest.mock as mock
 import logging
 
+from comfy_execution.graph_utils import GraphBuilder
+
+from .nodes_lazy import PCLazyLoraLoader, PCLazyLoraLoaderAdvanced, PCLazyTextEncode, PCLazyTextEncodeAdvanced
+
 log = logging.getLogger("comfyui-prompt-control")
+
+
+def reset_graphbuilder_state():
+    GraphBuilder.set_default_prefix("UID", 0, 0)
 
 
 def find_file(name):
@@ -10,10 +18,25 @@ def find_file(name):
     return names.get(name)
 
 
-def apply(cls, text, **kwargs):
+def loraloader(text, adv=False, **kwargs):
+    reset_graphbuilder_state()
+    if adv:
+        cls = PCLazyLoraLoader
+    else:
+        cls = PCLazyLoraLoaderAdvanced
     model = [0, 1]
     clip = [0, 0]
     return cls().apply(unique_id="UID", model=model, clip=clip, text=text, **kwargs)
+
+
+def te(text, adv=False, **kwargs):
+    if adv:
+        cls = PCLazyTextEncode
+    else:
+        cls = PCLazyTextEncodeAdvanced
+    reset_graphbuilder_state()
+    clip = [0, 0]
+    return cls().apply(clip=clip, text=text, unique_id="UID", **kwargs)
 
 
 @mock.patch("prompt_control.utils.lora_name_to_file", find_file)
@@ -22,83 +45,89 @@ class GraphTests(unittest.TestCase):
     maxDiff = 4096
 
     def test_textencode(self):
-        clip = [0, 0]
-        from .nodes_lazy import PCLazyTextEncode, PCLazyTextEncodeAdvanced
-
         for p in ["test", "[test:0.2] test", "[test[test::0.5]]<lora:test:1>"]:
-            r1 = PCLazyTextEncode().apply(clip, p, "UID")
-            r2 = PCLazyTextEncodeAdvanced().apply(clip, p, "UID")
-            self.assertEqual(r1, r2)
+            r1 = te(p)
+            r2 = te(p, adv=True)
+            with self.subTest(f"Expansion: {p}"):
+                self.assertEqual(r1, r2)
 
-        r = PCLazyTextEncode().apply(clip, "test<lora:test:1>", "UID")
-        self.assertEqual(
-            r,
-            {
-                "result": (["UID-2", 0],),
-                "expand": {
-                    "UID-1": {"class_type": "PCTextEncode", "inputs": {"clip": [0, 0], "text": "test"}},
-                    "UID-2": {
-                        "class_type": "ConditioningSetTimestepRange",
-                        "inputs": {"conditioning": ["UID-1", 0], "start": 0.0, "end": 1.0},
+        reset_graphbuilder_state()
+        with self.subTest("Expansion: LoRA"):
+            r = te("test<lora:test:1>")
+            self.assertEqual(
+                r,
+                {
+                    "result": (["UID.0.0.2", 0],),
+                    "expand": {
+                        "UID.0.0.1": {"class_type": "PCTextEncode", "inputs": {"clip": [0, 0], "text": "test"}},
+                        "UID.0.0.2": {
+                            "class_type": "ConditioningSetTimestepRange",
+                            "inputs": {"conditioning": ["UID.0.0.1", 0], "start": 0.0, "end": 1.0},
+                        },
                     },
                 },
-            },
-        )
-        r = PCLazyTextEncode().apply(clip, "simple [test:0.1,0.5] prompt<lora:test:1>", "UID")
-        self.assertEqual(
-            r,
-            {
-                "result": (["UID-8", 0],),
-                "expand": {
-                    "UID-1": {"class_type": "PCTextEncode", "inputs": {"clip": [0, 0], "text": "simple  prompt"}},
-                    "UID-2": {
-                        "class_type": "ConditioningSetTimestepRange",
-                        "inputs": {"conditioning": ["UID-1", 0], "start": 0.0, "end": 0.1},
-                    },
-                    "UID-3": {"class_type": "PCTextEncode", "inputs": {"clip": [0, 0], "text": "simple test prompt"}},
-                    "UID-4": {
-                        "class_type": "ConditioningSetTimestepRange",
-                        "inputs": {"conditioning": ["UID-3", 0], "start": 0.1, "end": 0.5},
-                    },
-                    "UID-5": {"class_type": "PCTextEncode", "inputs": {"clip": [0, 0], "text": "simple  prompt"}},
-                    "UID-6": {
-                        "class_type": "ConditioningSetTimestepRange",
-                        "inputs": {"conditioning": ["UID-5", 0], "start": 0.5, "end": 1.0},
-                    },
-                    "UID-7": {
-                        "class_type": "ConditioningCombine",
-                        "inputs": {"conditioning_1": ["UID-2", 0], "conditioning_2": ["UID-4", 0]},
-                    },
-                    "UID-8": {
-                        "class_type": "ConditioningCombine",
-                        "inputs": {"conditioning_1": ["UID-7", 0], "conditioning_2": ["UID-6", 0]},
+            )
+        with self.subTest("Expansion: LoRA with schedule"):
+            r = te("simple [test:0.1,0.5] prompt<lora:test:1>")
+            self.assertEqual(
+                r,
+                {
+                    "result": (["UID.0.0.8", 0],),
+                    "expand": {
+                        "UID.0.0.1": {
+                            "class_type": "PCTextEncode",
+                            "inputs": {"clip": [0, 0], "text": "simple  prompt"},
+                        },
+                        "UID.0.0.2": {
+                            "class_type": "ConditioningSetTimestepRange",
+                            "inputs": {"conditioning": ["UID.0.0.1", 0], "start": 0.0, "end": 0.1},
+                        },
+                        "UID.0.0.3": {
+                            "class_type": "PCTextEncode",
+                            "inputs": {"clip": [0, 0], "text": "simple test prompt"},
+                        },
+                        "UID.0.0.4": {
+                            "class_type": "ConditioningSetTimestepRange",
+                            "inputs": {"conditioning": ["UID.0.0.3", 0], "start": 0.1, "end": 0.5},
+                        },
+                        "UID.0.0.5": {
+                            "class_type": "PCTextEncode",
+                            "inputs": {"clip": [0, 0], "text": "simple  prompt"},
+                        },
+                        "UID.0.0.6": {
+                            "class_type": "ConditioningSetTimestepRange",
+                            "inputs": {"conditioning": ["UID.0.0.5", 0], "start": 0.5, "end": 1.0},
+                        },
+                        "UID.0.0.7": {
+                            "class_type": "ConditioningCombine",
+                            "inputs": {"conditioning_1": ["UID.0.0.2", 0], "conditioning_2": ["UID.0.0.4", 0]},
+                        },
+                        "UID.0.0.8": {
+                            "class_type": "ConditioningCombine",
+                            "inputs": {"conditioning_1": ["UID.0.0.7", 0], "conditioning_2": ["UID.0.0.6", 0]},
+                        },
                     },
                 },
-            },
-        )
+            )
 
     @mock.patch("prompt_control.utils.lora_name_to_file", find_file)
     def test_loraloader(self):
-        from .nodes_lazy import PCLazyLoraLoader, PCLazyLoraLoaderAdvanced
-
-        model = [0, 1]
-        clip = [0, 0]
         with self.assertLogs(log, level="WARNING") as cm:
-            result = apply(PCLazyLoraLoader, "prompt here <lora:nonexistent:1.0:0.5>")["expand"]
-            result_adv = apply(PCLazyLoraLoaderAdvanced, "prompt here <lora:nonexistent:1.0:0.5>")["expand"]
+            result = loraloader("prompt here <lora:nonexistent:1.0:0.5>")["expand"]
+            result_adv = loraloader("prompt here <lora:nonexistent:1.0:0.5>", adv=True)["expand"]
         self.assertIn("LoRA 'nonexistent' not found", cm.output[0])
         self.assertEqual(result, {})
         self.assertEqual(result_adv, {})
 
-        result = apply(PCLazyLoraLoader, "<lora:test:1>")["expand"]
-        result2 = apply(PCLazyLoraLoader, "prompt here <lora:test:1.0:0.5><lora:test:0:0.5>")["expand"]
-        result3 = apply(PCLazyLoraLoaderAdvanced, "prompt here <lora:test:1.0:0.5><lora:test:0:0.5>")["expand"]
+        result = loraloader("<lora:test:1>")["expand"]
+        result2 = loraloader("prompt here <lora:test:1.0:0.5><lora:test:0:0.5>")["expand"]
+        result3 = loraloader("prompt here <lora:test:1.0:0.5><lora:test:0:0.5>", adv=True)["expand"]
         self.assertEqual(result, result2)
         self.assertEqual(result2, result3)
         self.assertEqual(
             result,
             {
-                "UID-1": {
+                "UID.0.0.1": {
                     "class_type": "LoraLoader",
                     "inputs": {
                         "model": [0, 1],
@@ -110,11 +139,11 @@ class GraphTests(unittest.TestCase):
                 }
             },
         )
-        result = apply(PCLazyLoraLoader, "<lora:test:1><lora:other:0.5>")["expand"]
+        result = loraloader("<lora:test:1><lora:other:0.5>")["expand"]
         self.assertEqual(
             result,
             {
-                "UID-1": {
+                "UID.0.0.1": {
                     "class_type": "LoraLoader",
                     "inputs": {
                         "model": [0, 1],
@@ -124,11 +153,11 @@ class GraphTests(unittest.TestCase):
                         "lora_name": "test.safetensors",
                     },
                 },
-                "UID-2": {
+                "UID.0.0.2": {
                     "class_type": "LoraLoader",
                     "inputs": {
-                        "model": ["UID-1", 0],
-                        "clip": ["UID-1", 1],
+                        "model": ["UID.0.0.1", 0],
+                        "clip": ["UID.0.0.1", 1],
                         "strength_model": 0.5,
                         "strength_clip": 0.5,
                         "lora_name": "some/other.safetensors",
@@ -137,11 +166,11 @@ class GraphTests(unittest.TestCase):
             },
         )
 
-        result = apply(PCLazyLoraLoader, "prompt here <lora:test:1.0:0.5>")["expand"]
+        result = loraloader("prompt here <lora:test:1.0:0.5>")["expand"]
         self.assertEqual(
             result,
             {
-                "UID-1": {
+                "UID.0.0.1": {
                     "class_type": "LoraLoader",
                     "inputs": {
                         "model": [0, 1],
@@ -154,46 +183,46 @@ class GraphTests(unittest.TestCase):
             },
         )
 
-        result = apply(PCLazyLoraLoader, "prompt [<lora:test:0.5>:0.5]")["expand"]
-        result2 = apply(PCLazyLoraLoaderAdvanced, "prompt [<lora:test:0.5>:0.5]")["expand"]
+        result = loraloader("prompt [<lora:test:0.5>:0.5]")["expand"]
+        result2 = loraloader("prompt [<lora:test:0.5>:0.5]", adv=True)["expand"]
         self.assertEqual(result, result2)
         expected = {
-            "UID-1": {
+            "UID.0.0.1": {
                 "class_type": "CreateHookLora",
                 "inputs": {"lora_name": "test.safetensors", "strength_model": 0.5, "strength_clip": 0.5},
             },
-            "UID-2": {
+            "UID.0.0.2": {
                 "class_type": "CreateHookKeyframe",
                 "inputs": {"strength_mult": 0.0, "start_percent": 0.0},
             },
-            "UID-3": {
+            "UID.0.0.3": {
                 "class_type": "CreateHookKeyframe",
                 "inputs": {
                     "start_percent": 0.5,
-                    "prev_hook_kf": ["UID-2", 0],
+                    "prev_hook_kf": ["UID.0.0.2", 0],
                     "strength_mult": 1.0,
                 },
             },
-            "UID-4": {
+            "UID.0.0.4": {
                 "class_type": "SetHookKeyframes",
-                "inputs": {"hooks": ["UID-1", 0], "hook_kf": ["UID-3", 0]},
+                "inputs": {"hooks": ["UID.0.0.1", 0], "hook_kf": ["UID.0.0.3", 0]},
             },
-            "UID-5": {
+            "UID.0.0.5": {
                 "class_type": "SetClipHooks",
                 "inputs": {
                     "clip": [0, 0],
-                    "hooks": ["UID-4", 0],
+                    "hooks": ["UID.0.0.4", 0],
                     "apply_to_conds": True,
                     "schedule_clip": True,
                 },
             },
         }
         self.assertEqual(result, expected)
-        result2 = apply(PCLazyLoraLoaderAdvanced, "prompt [<lora:test:0.5>:0.5]", start=0.6)["expand"]
+        result2 = loraloader("prompt [<lora:test:0.5>:0.5]", adv=True, start=0.6)["expand"]
         self.assertEqual(
             result2,
             {
-                "UID-1": {
+                "UID.0.0.1": {
                     "class_type": "LoraLoader",
                     "inputs": {
                         "model": [0, 1],
@@ -205,9 +234,7 @@ class GraphTests(unittest.TestCase):
                 }
             },
         )
-        result2 = PCLazyLoraLoaderAdvanced().apply(model, clip, "prompt [<lora:test:0.5>:0.5]", "UID", end=0.5)[
-            "expand"
-        ]
+        result2 = loraloader("prompt [<lora:test:0.5>:0.5]", end=0.5)["expand"]
         self.assertEqual(result2, {})
 
 
