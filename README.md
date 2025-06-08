@@ -12,7 +12,7 @@ You can use text prompts to control the following:
 
 - A1111-style prompt scheduling and filtering without noodle soup.
 - LoRA loading and scheduling via ComfyUI's hook system
-- Masking, composition and area control (regional prompting) with an implementation of [Attention Couple](doc/attention_couple.md), also fully schedulable.
+- Masking, composition and area control (regional prompting) with an implementation of [Attention Couple](/doc/attention_couple.md), also fully schedulable.
 - Per-encoder prompts for models with multiple text encoders, such as SDXL and Flux
 - Prompt combinators like `BREAK`, as well as `CAT`, `AVG()` and `AND` corresponding to ComfyUI's `ConditioningConcat`, `ConditioningAverage` and `ConditioningCombine` nodes.
 - Different weight interpretation types (ComfyUI, A1111, compel, etc.)

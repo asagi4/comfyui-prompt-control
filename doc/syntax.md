@@ -393,7 +393,7 @@ a "A" b "$2"
 
 ## COUPLE: Attention couple
 
-See [here](doc/attention_couple.md)
+See [here](/doc/attention_couple.md)
 
 ## TE_WEIGHT
 
