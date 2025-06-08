@@ -592,7 +592,7 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
         if attention_couple:
             fill = base_cond[0][1].get("x-promptcontrol.fill")
             if not fill:
-                ensure_mask(base_cond)
+                ensure_mask(base_cond[0])
             # else, set_cond_attnmask will have the base mask fill any unspecified areas
             base_cond = set_cond_attnmask(
                 base_cond,
