@@ -14,6 +14,12 @@ test_graph:
 test_encode:
 	PYTHONPATH=../../ python -m prompt_control.test_encode
 
+test_encode_t5:
+	PYTHONPATH=../../ python -m prompt_control.test_encode_t5
+
+test_heavy: test_graph test_encode test_encode_t5
+	echo "OK"
+
 manual_test:
 	PYTHONPATH=../../ python -im prompt_control.manual_test
 

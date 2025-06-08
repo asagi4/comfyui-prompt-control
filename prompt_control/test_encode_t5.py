@@ -100,7 +100,7 @@ if __name__ == "__main__":
     import comfy_extras.nodes_mask
     from .nodes_base import PCTextEncode
 
-    (clip_l,) = nodes.CLIPLoader().load_clip("clip_l.safetensors")
-    clips.append(("clip_l", clip_l))
+    (dual,) = nodes.DualCLIPLoader().load_clip("clip_l.safetensors", "t5xxl_fp16.safetensors", "flux")
+    clips.append(("dual", dual))
     print("Starting tests")
     unittest.main()
