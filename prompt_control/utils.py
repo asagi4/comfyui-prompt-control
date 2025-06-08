@@ -116,12 +116,28 @@ def get_function(text, func, defaults, return_func_name=False, placeholder="", r
             instances.append(args)
 
         if placeholder:
-            text = text[:start] + f"\0{placeholder}{count}\0" + text[end + 1 :]
+            text = text[:start] + f"\0{placeholder}{count}\0" + text[end:]
         else:
-            text = text[:start] + text[end + 1 :]
+            text = text[:start] + text[end:]
         match = rex.search(text)
         count += 1
     return text, instances
+
+
+def split_by_function(text, func, defaults=None):
+    """
+    Splits a string by function calls, returning the text preceding the first call and a list of dictionaries with a "text" key with the prompt before the next split or until hthe end of the text.
+    """
+    text, functions = get_function(text, func, defaults, return_dict=True)
+    chunks = []
+    prev = 0
+    for f in functions:
+        chunks.append(text[prev : f["position"]])
+        prev = f["position"]
+    chunks.append(text[prev:])
+    for i, f in enumerate(functions):
+        f["text"] = chunks[i + 1]
+    return chunks[0], functions
 
 
 def parse_args(strings, arg_spec, strip=True):

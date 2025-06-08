@@ -5,7 +5,7 @@ from functools import partial
 from comfy_extras.nodes_mask import FeatherMask, MaskComposite
 from nodes import ConditioningAverage
 
-from .utils import safe_float, get_function, parse_floats, smarter_split
+from .utils import safe_float, get_function, split_by_function, parse_floats, smarter_split
 from .adv_encode import advanced_encode_from_tokens
 from .cutoff import process_cuts
 from .parser import parse_cuts
@@ -231,15 +231,13 @@ def encode_prompt_segment(
 
     # Chunks to ConditioningAverage:
 
-    text, averages = get_function(text, "AVG", ["0.5"], return_dict=True)
-    prev = 0
+    text, averages = split_by_function(text, "AVG", ["0.5"])
     prompts_to_avg = []
     for avg in averages:
         w = safe_float(avg["args"][0], 0.5)
-        p = text[prev : avg["position"]], w
-        prompts_to_avg.append(p)
-        prev = avg["position"]
-    prompts_to_avg.append((text[prev:], 1.0))
+        prompts_to_avg.append(text, w)
+        text = avg["text"]
+    prompts_to_avg.append((text, 1.0))
 
     conds_to_avg = []
     for prompt, weight in prompts_to_avg:
