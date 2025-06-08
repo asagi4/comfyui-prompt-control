@@ -503,15 +503,9 @@ def apply_noise(cond, weight, gen):
     return cond * (1 - weight) + n * weight
 
 
-def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
-    # First style modifier applies to ANDed prompts too unless overridden
-    style, normalization, text = get_style(text)
-    text, mask_size = get_mask_size(text, defaults)
-
-    prompts = [p.strip() for p in re.split(r"\bAND\b", text)]
-
-    p, sdxl_opts = get_sdxl(prompts[0], defaults)
-    prompts[0] = p
+def process_settings(prompt, defaults, masks, mask_size, sdxl_opts):
+    if "ATTN()" in prompt:
+        raise ValueError("ATTN() no longer works and has been replaced by COUPLE()")
 
     def weight(t):
         opts = {}
@@ -526,55 +520,46 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
 
         return w, opts, t
 
+    settings = {"prompt": prompt}
+
+    if "FILL()" in prompt:
+        prompt = prompt.replace("FILL()", "")
+        settings["x-promptcontrol.fill"] = True
+    prompt, mask, mask_weight = get_mask(prompt, mask_size, masks)
+    prompt, noise_w, generator = get_noise(prompt)
+    prompt, area = get_area(prompt)
+    prompt, local_sdxl_opts = get_sdxl(prompt, defaults)
+    # Get weight last so other syntax doesn't interfere with it
+    w, opts, prompt = weight(prompt)
+    settings["strength"] = w
+    settings.update(sdxl_opts)
+    settings.update(local_sdxl_opts)
+    if area:
+        settings["area"] = area[0]
+        settings["strength"] = area[1]
+        settings["set_area_to_bounds"] = False
+    if mask is not None:
+        settings["mask"] = mask
+        settings["mask_strength"] = mask_weight
+
+    if not w:
+        settings = None
+    return prompt, settings
+
+
+def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
+    # First style modifier applies to ANDed prompts too unless overridden
+    style, normalization, text = get_style(text)
+    text, mask_size = get_mask_size(text, defaults)
+
+    prompts = [p.strip() for p in re.split(r"\bAND\b", text)]
+
+    p, sdxl_opts = get_sdxl(prompts[0], defaults)
+    prompts[0] = p
+
     conds = []
     # TODO: is this still needed?
     # scale = sum(abs(weight(p)[0]) for p in prompts if not ("AREA(" in p or "MASK(" in p))
-    attnmasked_prompts = []
-    fill = False
-    for prompt in prompts:
-        attn_couple = False
-        prompt_has_fill = False
-        if "ATTN()" in prompt:
-            prompt = prompt.replace("ATTN()", "")
-            attn_couple = True
-        if "FILL()" in prompt:
-            prompt = prompt.replace("FILL()", "")
-            prompt_has_fill = True
-        prompt, mask, mask_weight = get_mask(prompt, mask_size, masks)
-        text, noise_w, generator = get_noise(text)
-        prompt, area = get_area(prompt)
-        prompt, local_sdxl_opts = get_sdxl(prompt, defaults)
-        # Get weight last so other syntax doesn't interfere with it
-        w, opts, prompt = weight(prompt)
-        if not w:
-            continue
-        settings = {"prompt": prompt}
-        settings["strength"] = w
-        settings.update(sdxl_opts)
-        settings.update(local_sdxl_opts)
-        if area:
-            settings["area"] = area[0]
-            settings["strength"] = area[1]
-            settings["set_area_to_bounds"] = False
-        if mask is not None:
-            settings["mask"] = mask
-            settings["mask_strength"] = mask_weight
-
-        settings["start_percent"] = start_pct
-        settings["end_percent"] = end_pct
-
-        x = encode_prompt_segment(clip, prompt, settings, style, normalization)
-        if attn_couple:
-            if prompt_has_fill:
-                if attnmasked_prompts:
-                    log.warning("FILL() can only be used for the first prompt, ignoring")
-                elif mask is not None:
-                    log.warning("MASK() and FILL() can't be used together, ignoring FILL()")
-                else:
-                    fill = True
-            attnmasked_prompts.extend(x)
-        else:
-            conds.extend(x)
 
     def ensure_mask(c):
         if "mask" not in c[1]:
@@ -583,20 +568,37 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
             c[1]["mask_strength"] = 1.0
         return c
 
-    if attnmasked_prompts:
-        base_cond = attnmasked_prompts[0]
-        if not fill:
-            ensure_mask(base_cond)
-        # else, set_cond_attnmask will have the base mask fill any unspecified areas
+    def couple_mask(args):
+        if args is None:
+            return ""
+        return f"MASK({args})"
+
+    for prompt in prompts:
+        base_prompt, attn_couple_prompts = split_by_function(prompt, "COUPLE", defaults=None)
+
+        prompts = [base_prompt] + [couple_mask(p["args"]) + p["text"] for p in attn_couple_prompts]
+        encoded = []
+        for p in prompts:
+            p, settings = process_settings(p, defaults, masks, mask_size, sdxl_opts)
+            if settings is None:  # weight = 0
+                continue
+            settings["start_percent"] = start_pct
+            settings["end_percent"] = end_pct
+            x = encode_prompt_segment(clip, p, settings, style, normalization)
+            encoded.extend(x)
+
+        base_cond, *attention_couple = encoded
         base_cond = [base_cond]
-        if len(attnmasked_prompts) > 1:
+        if attention_couple:
+            fill = base_cond[0][1].get("x-promptcontrol.fill")
+            if not fill:
+                ensure_mask(base_cond)
+            # else, set_cond_attnmask will have the base mask fill any unspecified areas
             base_cond = set_cond_attnmask(
                 base_cond,
-                [ensure_mask(c) for c in attnmasked_prompts[1:]],
+                [ensure_mask(c) for c in attention_couple],
                 fill=fill,
             )
-        else:
-            log.warning("You must specify at least two prompt segments with ATTN() for attention couple to work")
         conds.extend(base_cond)
 
     return conds

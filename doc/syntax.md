@@ -103,7 +103,7 @@ This syntax is also available in outside scheduled with the `PCTextEncode` node,
 
 `AND` can be used to create "prompt segments". By default, it works as if you had combined the different prompts with `ConditioningCombine`. 
 
-It is also used with regional prompting to separate different prompts; see `MASK` and `ATTN` below.
+It is also used with regional prompting, see `MASK` and `COUPLE` below.
 
 Prompts can have a weight at the end:
 ```
@@ -123,14 +123,18 @@ Note that the `:` needs to be escaped with a `\` or it will be interpreted as sc
 Prompt operators are processed in the following order, meaning that all features "below" another can be affected by the feature above it. That is, `BREAK` can go inside a `TE()` call, but not `AND` or `CAT`.
 
 - DEF macros are expanded
-- Scheduling is expanded
-- Prompts are split by AND
-- Most functions (like STYLE, MASK) and cutoffs are evaluated
-- prompts are split by AVG()
-- prompts are split by CAT
-- the TE() function is evaluated to set per-encoder prompts
-- BREAK is evaluated
-- Everything else
+- Scheduling is expanded, and for each scheduled prompt:
+  - The prompt is split by AND, and for each:
+    - Prompts are split by COUPLE. and for each:
+      - Most functions (like MASK) and cutoffs are evaluated
+      - prompts are split by `AVG()` or CAT
+        - the TE() function is evaluated to set per-encoder prompts
+        - BREAK is evaluated
+        - Everything else
+      - Prompts are combined with `ConditioningAverage` (for `AVG`) or `ConditioningConcat` (for `CAT`)
+    - If coupled prompts exist, the base cond is set up for attention coupling and returned
+  - Prompts split with `AND` are combined with `ConditioningCombine`
+- Each scheduled prompt is restricted to its effective range with  `ConditioningSetTimestepRange`
 
 ## Functions
 
@@ -387,7 +391,7 @@ a "" b "$2"
 a "A" b "$2"
 ```
 
-## ATTN: Attention couple
+## COUPLE: Attention couple
 
 See [here](doc/attention_couple.md)
 
