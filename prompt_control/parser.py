@@ -408,7 +408,6 @@ def expand_macros(text):
             return text
         for search, replace in replacements:
             res = substitute_defcall(res, search, replace)
-            res = substitute_def(res, search, replace)
         if res == prevres:
             break
         prevres = res
@@ -427,10 +426,12 @@ def substitute_def(text, search, replace):
 
 def substitute_defcall(text, search, replace):
     name, default_args = search
-    text, defns = get_function(text, name, defaults=None, placeholder=f"DEFNCALL{search}")
-    for i, defn in enumerate(defns):
-        ph = f"\0DEFNCALL{search}{i}\0"
-        paramvals = [x.strip() for x in defn.split(";")]
+    text, defns = get_function(text, name, defaults=None, placeholder=f"DEFNCALL{name}")
+    for i, parameters in enumerate(defns):
+        ph = f"\0DEFNCALL{name}{i}\0"
+        paramvals = []
+        if parameters is not None:
+            paramvals = [x.strip() for x in parameters.split(";")]
         r = replace
         for i, v in enumerate(paramvals):
             r = re.sub(rf"\${i+1}\b", v, r)

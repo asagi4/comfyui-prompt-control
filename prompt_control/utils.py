@@ -88,16 +88,22 @@ def find_closing_paren(text, start):
 
 
 def get_function(text, func, defaults, return_func_name=False, placeholder="", return_dict=False):
-    rex = re.compile(rf"\b{func}\(", re.MULTILINE)
+    rex = re.compile(rf"\b{func}\b", re.MULTILINE)
     instances = []
     match = rex.search(text)
     count = 0
     while match:
         # Match start, content start
-        start, after_first_paren = match.span()
-        funcname = text[start : after_first_paren - 1]
-        end = find_closing_paren(text, after_first_paren)
-        args = parse_strings(text[after_first_paren:end], defaults)
+        start, at_paren = match.span()
+        funcname = text[start:at_paren]
+        after_first_paren = at_paren + 1
+        if text[at_paren:after_first_paren] == "(":
+            end = find_closing_paren(text, after_first_paren)
+            args = parse_strings(text[after_first_paren:end], defaults)
+            end += 1
+        else:
+            end = at_paren
+            args = None
         ph = None
         if placeholder:
             ph = f"\0{placeholder}{count}\0"
