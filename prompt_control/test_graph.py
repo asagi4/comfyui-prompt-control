@@ -2,14 +2,12 @@ import unittest
 import unittest.mock as mock
 import logging
 
-from comfy_execution.graph_utils import GraphBuilder
-
-from .nodes_lazy import PCLazyLoraLoader, PCLazyLoraLoaderAdvanced, PCLazyTextEncode, PCLazyTextEncodeAdvanced
-
 log = logging.getLogger("comfyui-prompt-control")
 
 
 def reset_graphbuilder_state():
+    from comfy_execution.graph_utils import GraphBuilder
+
     GraphBuilder.set_default_prefix("UID", 0, 0)
 
 
@@ -19,6 +17,8 @@ def find_file(name):
 
 
 def loraloader(text, adv=False, **kwargs):
+    from .nodes_lazy import PCLazyLoraLoader, PCLazyLoraLoaderAdvanced
+
     reset_graphbuilder_state()
     if adv:
         cls = PCLazyLoraLoader
@@ -30,6 +30,8 @@ def loraloader(text, adv=False, **kwargs):
 
 
 def te(text, adv=False, **kwargs):
+    from .nodes_lazy import PCLazyTextEncode, PCLazyTextEncodeAdvanced
+
     if adv:
         cls = PCLazyTextEncode
     else:
