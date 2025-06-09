@@ -74,8 +74,6 @@ class AttentionCoupleHook(TransformerOptionsHook):
 
         # calculate later. All clones must refer to the same kv dict
         self.kv = {"k": None, "v": None}
-        self.conds_k: list[torch.Tensor] = None
-        self.conds_v: list[torch.Tensor] = None
 
     def initialize_regions(self, base_cond, conds, fill):
         self._base_cond = base_cond
@@ -161,6 +159,10 @@ class AttentionCoupleHook(TransformerOptionsHook):
         cond_or_uncond_couple = extra_options[self.COND_UNCOND_COUPLE_OPTION] = list(cond_or_uncond)
         num_chunks = len(cond_or_uncond)
 
+        # Cloning messes up the device sometimes
+        if self.kv["k"][0].device != k.device:
+            self.to(k)
+
         conds_k = self.kv["k"]
         conds_v = self.kv["v"]
 
@@ -175,7 +177,7 @@ class AttentionCoupleHook(TransformerOptionsHook):
         conds_k_tensor = conds_v_tensor = torch.cat(
             [cond.repeat(bs, lcm_tokens_k // cond.shape[1], 1) * self.strengths[i] for i, cond in enumerate(conds_k)],
             dim=0,
-        ).to(k)
+        )
         if self.has_negpip:
             conds_v_tensor = torch.cat(
                 [
@@ -183,7 +185,7 @@ class AttentionCoupleHook(TransformerOptionsHook):
                     for i, cond in enumerate(conds_v)
                 ],
                 dim=0,
-            ).to(v)
+            )
 
         qs, ks, vs = [], [], []
         cond_or_uncond_couple.clear()
