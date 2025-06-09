@@ -30,7 +30,7 @@ def set_cond_attnmask(base_cond, extra_conds, fill=False):
     group = HookGroup()
     group.add(hook)
 
-    return set_hooks_for_conditioning(c, hooks=group)
+    return set_hooks_for_conditioning(c, hooks=group, append_hooks=True)
 
 
 def get_mask(mask, batch_size, num_tokens, extra_options):
