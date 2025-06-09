@@ -585,20 +585,32 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
             settings["start_percent"] = start_pct
             settings["end_percent"] = end_pct
             x = encode_prompt_segment(clip, p, settings, style, normalization)
-            encoded.extend(x)
+            encoded.append(x)
 
-        base_cond, *attention_couple = encoded
-        base_cond = [base_cond]
-        if attention_couple:
-            fill = base_cond[0][1].get("x-promptcontrol.fill")
-            if not fill:
-                ensure_mask(base_cond[0])
-            # else, set_cond_attnmask will have the base mask fill any unspecified areas
-            base_cond = set_cond_attnmask(
-                base_cond,
-                [ensure_mask(c) for c in attention_couple],
-                fill=fill,
-            )
+        assert all(
+            len(c) == len(encoded[0]) for c in encoded
+        ), "All encoded prompts didn't produce the same number of conds, I don't know what to do in this situation."
+
+        # each call to encode_prompt_segment can produce a number of conds based on any
+        # scheduled LoRA hooks on the clip model. Zip them together with coupled prompts
+        for base_cond, *attention_couple in zip(*encoded):
+            s = base_cond[1]
+            # If there are LoRAs on the CLIP, we need to fix start_percent and end_percent on the new conds for things to work properly.
+            s["start_percent"] = s.get("clip_start_percent", s["start_percent"])
+            s["end_percent"] = s.get("clip_end_percent", s["end_percent"])
+            s.pop("clip_start_percent", None)
+            s.pop("clip_end_percent", None)
+            base_cond = [base_cond]
+            if attention_couple:
+                fill = base_cond[0][1].get("x-promptcontrol.fill")
+                if not fill:
+                    ensure_mask(base_cond[0])
+                # else, set_cond_attnmask will have the base mask fill any unspecified areas
+                base_cond = set_cond_attnmask(
+                    base_cond,
+                    [ensure_mask(c) for c in attention_couple],
+                    fill=fill,
+                )
         conds.extend(base_cond)
 
     return conds
