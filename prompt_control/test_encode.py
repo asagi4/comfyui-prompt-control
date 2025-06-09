@@ -1,8 +1,12 @@
 import unittest
 import numpy.testing as npt
+from os import environ
 
-dual = None
 clips = []
+
+import logging
+
+logging.basicConfig()
 
 
 def run(f, *args):
@@ -18,7 +22,7 @@ class TestEncode(unittest.TestCase):
         for i in range(len(c1)):
             a, b = c1[i], c2[i]
             if key:
-                (key_assert or self.assertEqual)(a[1][key], b[1][key])
+                (key_assert or self.assertEqual)(a[1].get(key), b[1].get(key))
             else:
                 self.tensorsEqual(a[0], b[0])
 
@@ -42,8 +46,10 @@ class TestEncode(unittest.TestCase):
                     c = c2  # Used in later tests
                     self.condEqual(c1, c2)
 
-                    (c1,) = run(pc, clip, "(test:1.2)")
-                    (c2,) = run(comfy, clip, "(test:1.2)")
+                with self.subTest("Weights"):
+                    (c1,) = run(pc, clip, "(test:1.2) (test:0.6)")
+                    (c2,) = run(comfy, clip, "(test:1.2) (test:0.6)")
+                    self.condEqual(c1, c2)
 
                 with self.subTest("Concat"):
                     (c1,) = run(pc, clip, "test CAT test")
@@ -59,6 +65,26 @@ class TestEncode(unittest.TestCase):
                     (c1,) = run(pc, clip, "test TE_WEIGHT(all=0)")
                     (c2,) = run(zeroout, c)
                     self.condEqual(c1, c2)
+
+    def test_weight(self):
+        pc = PCTextEncode()
+        comfy = nodes.CLIPTextEncode()
+        combine = nodes.ConditioningCombine()
+        strength = nodes.ConditioningSetAreaStrength()
+        for k, clip in clips:
+            (c,) = run(comfy, clip, "test")
+            (c2,) = run(strength, c, 0.5)
+            with self.subTest(f"Testing {k}"):
+                with self.subTest("Conditioning weights"):
+                    (a,) = run(pc, clip, "test :0.5 AND test :0.5")
+                    (b,) = run(combine, c2, c2)
+                    self.condEqual(a, b)
+                    self.condEqual(a, b, "strength")
+                with self.subTest("Weight == 0"):
+                    (a,) = run(pc, clip, "test :0.5 AND test :0 AND test")
+                    (b,) = run(combine, c2, c)
+                    self.condEqual(a, b)
+                    self.condEqual(a, b, "strength")
 
     def test_styles(self):
         pc = PCTextEncode()
@@ -93,14 +119,30 @@ class TestEncode(unittest.TestCase):
 
 if __name__ == "__main__":
     print("Loading ComfyUI")
-    import main
-
-    id(main)  # get rid of flake warning
+    from comfy.sd import load_clip
     import nodes
     import comfy_extras.nodes_mask
     from .nodes_base import PCTextEncode
+    from pathlib import Path
 
-    (clip_l,) = nodes.CLIPLoader().load_clip("clip_l.safetensors")
-    clips.append(("clip_l", clip_l))
+    to_test = environ.get("TEST_TE", "clip_l").split()
+    model_path = environ.get("COMFYUI_MODEL_ROOT", ".")
+
+    te_root = (Path(model_path) / "text_encoders").resolve()
+
+    if "clip_l" in to_test:
+        clip_l = load_clip(
+            ckpt_paths=[str(te_root / "clip_l.safetensors")], clip_type="stable_diffusion", model_options={}
+        )
+        clips.append(("clip_l", clip_l))
+
+    if "t5" in to_test:
+        dual = load_clip(
+            [str(te_root / "clip_l.safetensors"), str(te_root / "t5xxl_fp16.safetensors")],
+            clip_type="flux",
+            model_options={},
+        )
+        clips.append(("clip_l+t5", dual))
+
     print("Starting tests")
     unittest.main()

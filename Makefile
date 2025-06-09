@@ -14,11 +14,10 @@ test_graph:
 test_encode:
 	PYTHONPATH=../../ python -m prompt_control.test_encode
 
-test_encode_t5:
-	PYTHONPATH=../../ python -m prompt_control.test_encode_t5
+test_encode_both:
+	TEST_TE="clip_l t5" PYTHONPATH=../../ python -m prompt_control.test_encode
 
-test_heavy: test_graph test_encode test_encode_t5
-	echo "OK"
+test_heavy: test_graph test_encode_both
 
 manual_test:
 	PYTHONPATH=../../ python -im prompt_control.manual_test
