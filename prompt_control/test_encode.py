@@ -86,6 +86,15 @@ class TestEncode(unittest.TestCase):
                     self.condEqual(a, b)
                     self.condEqual(a, b, "strength")
 
+    def test_attn_couple(self):
+        pc = PCTextEncode()
+        for k, clip in clips:
+            with self.subTest(f"Testing {k}"):
+                (c,) = run(pc, clip, "test COUPLE prompt1 AND test2 COUPLE prompt2")
+                (c2,) = run(pc, clip, "test COUPLE prompt1 COUPLE test2 COUPLE prompt2")
+                self.assertTrue(len(c) == 2)
+                self.assertTrue(len(c2) == 1)
+
     def test_styles(self):
         pc = PCTextEncode()
         comfy = nodes.CLIPTextEncode()
