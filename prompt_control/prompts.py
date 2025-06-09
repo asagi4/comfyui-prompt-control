@@ -509,9 +509,9 @@ def process_settings(prompt, defaults, masks, mask_size, sdxl_opts):
 
     def weight(t):
         opts = {}
-        m = re.search(r":(-?\d\.?\d*)(![A-Za-z]+)?$", t)
+        m = re.search(r":(-?\d\.?\d*)(![A-Za-z]+)?$", t.strip())
         if not m:
-            return (1.0, opts, t)
+            return (None, opts, t)
         w = float(m[1])
         tag = m[2]
         t = t[: m.span()[0]]
@@ -531,7 +531,8 @@ def process_settings(prompt, defaults, masks, mask_size, sdxl_opts):
     prompt, local_sdxl_opts = get_sdxl(prompt, defaults)
     # Get weight last so other syntax doesn't interfere with it
     w, opts, prompt = weight(prompt)
-    settings["strength"] = w
+    if w is not None:
+        settings["strength"] = w
     settings.update(sdxl_opts)
     settings.update(local_sdxl_opts)
     if area:
@@ -542,8 +543,6 @@ def process_settings(prompt, defaults, masks, mask_size, sdxl_opts):
         settings["mask"] = mask
         settings["mask_strength"] = mask_weight
 
-    if not w:
-        settings = None
     return prompt, settings
 
 
@@ -580,7 +579,7 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
         encoded = []
         for p in prompts:
             p, settings = process_settings(p, defaults, masks, mask_size, sdxl_opts)
-            if settings is None:  # weight = 0
+            if settings.get("strength") == 0:  # weight is explicitly set to 0, skip
                 continue
             settings["start_percent"] = start_pct
             settings["end_percent"] = end_pct
@@ -593,6 +592,7 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
 
         # each call to encode_prompt_segment can produce a number of conds based on any
         # scheduled LoRA hooks on the clip model. Zip them together with coupled prompts
+        base_cond = []
         for base_cond, *attention_couple in zip(*encoded):
             s = base_cond[1]
             # If there are LoRAs on the CLIP, we need to fix start_percent and end_percent on the new conds for things to work properly.
