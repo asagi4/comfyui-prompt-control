@@ -156,6 +156,37 @@ class TestParser(unittest.TestCase):
             expand_macros("DEF(X=recurse Y) DEF(Y=recurse X) X")
         self.assertTrue("Unable to resolve DEFs" in str(c.exception))
 
+    def test_escapes(self):
+        p = parse(r"[a:\:a:0.5] :\[a:b:0.5]")
+        self.assertPrompt(p, 0, 0.5, r"a :\[a:b:0.5]")
+        self.assertPrompt(p, 0.55, 1, r":a :\[a:b:0.5]")
+
+        p = parse(r"[embedding\:a:embedding\:b:0.1,0.5]")
+        self.assertPrompt(p, 0.15, 0.5, r"embedding:a")
+        self.assertPrompt(p, 0.55, 1, r"embedding:b")
+
+        p = parse(r"[embedding\:a:embedding\:b:embedding\:c:0.1,0.5]")
+        self.assertPrompt(p, 0.0, 0.1, r"embedding:a")
+        self.assertPrompt(p, 0.15, 0.5, r"embedding:b")
+        self.assertPrompt(p, 0.55, 1, r"embedding:c")
+
+        p = parse(r"[a\:b\\:c:0.5]")
+        self.assertPrompt(p, 0.0, 0.5, "a:b\\")
+        self.assertPrompt(p, 0.55, 1, r"c")
+
+        p = parse(r"[a:\#b:0.5]")
+        self.assertPrompt(p, 0.0, 0.5, "a")
+        self.assertPrompt(p, 0.55, 1, "#b")
+
+    def test_comments(self):
+        p = parse("this is a # comment")
+        self.assertPrompt(p, 0, 1.0, "this is a ")
+        p = parse("this is a [comment#:scheduled:0.6]")
+        self.assertPrompt(p, 0, 1.0, "this is a [comment")
+        p = parse(r"this is a [comment\#:scheduled:0.6]")
+        self.assertPrompt(p, 0, 0.6, "this is a comment#")
+        self.assertPrompt(p, 0.65, 1.0, "this is a scheduled")
+
     def test_misc(self):
         p = parse("[[a:c:0.5]:0.7]")
         p2 = parse("[:[a:c:0.5]:0.7]")

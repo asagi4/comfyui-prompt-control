@@ -24,10 +24,40 @@ if lark.__version__ == "0.12.0":
     raise ImportError(x)
 
 
+ESCAPES = [
+    ("XxPCBackslashESCAPExX", "\\"),
+    ("XxPCColonESCAPExX", ":"),
+    ("XxPCCommentESCAPExX", "#"),
+]
+
+
+def escape_specials(string):
+    for ph, c in ESCAPES:
+        string = string.replace(rf"\{c}", ph)
+    return string
+
+
+def restore_escaped(string):
+    for ph, c in ESCAPES:
+        string = string.replace(ph, c)
+    return string
+
+
+def remove_comments(string):
+    r = []
+    for line in string.split("\n"):
+        comment = line.find("#")
+        if comment > 0:
+            r.append(line[:comment])
+        else:
+            r.append(line)
+    return "\n".join(r)
+
+
 prompt_parser = lark.Lark(
     r"""
 !start: (prompt | /[][():|]/+)*
-prompt: (emphasized | embedding | scheduled | alternate | sequence | loraspec | PLAIN | /</ | />/ | WHITESPACE)+
+prompt: (emphasized | embedding | scheduled | alternate | sequence | loraspec | PLAIN | | /\\:/ | /</ | />/ | WHITESPACE)+
 !emphasized: "(" prompt? ")"
         | "(" prompt ":" prompt ")"
         | "[" prompt "]"
@@ -241,7 +271,7 @@ def at_step(step, filters, tree):
             return {"prompt": p, "loras": loraspecs}
 
         def PLAIN(self, args):
-            return args.replace("\\:", ":")
+            return restore_escaped(args)
 
         def FILENAME(self, value):
             return str(value)
@@ -284,7 +314,8 @@ class PromptSchedule(object):
         self.start = start
         self.end = end
         self.num_steps = num_steps
-        self.prompt = prompt.strip()
+        # placeholder is restored on parse
+        self.prompt = remove_comments(escape_specials(prompt.strip()))
         self.defaults = {}
         self.loaded_loras = {}
 
