@@ -186,6 +186,8 @@ class TestParser(unittest.TestCase):
         p = parse(r"this is a [comment\#:scheduled:0.6]")
         self.assertPrompt(p, 0, 0.6, "this is a comment#")
         self.assertPrompt(p, 0.65, 1.0, "this is a scheduled")
+        p = parse("#this is a comment\nthis is a prompt")
+        self.assertPrompt(p, 0, 1.0, "\nthis is a prompt")
 
     def test_misc(self):
         p = parse("[[a:c:0.5]:0.7]")

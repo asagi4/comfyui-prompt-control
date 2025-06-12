@@ -47,7 +47,7 @@ def remove_comments(string):
     r = []
     for line in string.split("\n"):
         comment = line.find("#")
-        if comment > 0:
+        if comment >= 0:
             r.append(line[:comment])
         else:
             r.append(line)
