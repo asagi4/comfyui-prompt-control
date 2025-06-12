@@ -46,7 +46,7 @@ For convenience `[cat:0.5]` is equivalent to `[:cat:0.5]` meaning it switches fr
 
 ### Range expressions
 
-The most general form of a schedule is a range expression: For example, in `[before:during:after:0.3,0.7]`, The prompt be `a before` until 0.3, `a during` until 0.7, and then `a after`. This form is equivalent to `[before:[during:after:0.7]:0.3]`
+The most general form of a schedule is a range expression: For example, in `prompt [before:during:after:0.3,0.7]`, The prompt be `prompt before` until 0.3, `prompt during` until 0.7, and then `prompt after`. This form is equivalent to `prompt [before:[during:after:0.7]:0.3]`
 
 For convenience, `[during:0.1,0.4]` is equivalent to `[:during::0.1,0.4]` and `[during:after:0.1,0.4]` is equivalent to `[:during:after:0.1,0.4]`.
 
