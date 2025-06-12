@@ -1,13 +1,27 @@
-# Prompt Control Syntax
+# Prompt Schedule Syntax
 
-If you're viewing this on GitHub, I recommend opening the outline by clicking the button in the top right corner of the text view (it is annoyingly easy to miss).
+> [!TIP]
+> If you're viewing this on GitHub, I recommend opening the outline by clicking the button in the top right corner of the text view (it is annoyingly easy to miss).
 
-Scheduling syntax is similar to A1111, but only fractions are supported for steps. LoRAs are scheduled by including them in a scheduling expression.
+> [!NOTE]
+> The syntax documented in this section is only available with the `PC: Schedule Prompt` and `PC: Schedule LoRAs` nodes and their advanced variants.
+
+Scheduling syntax is available with is similar to A1111, but only fractions are supported for steps. LoRAs are scheduled by including them in a scheduling expression.
 
 ```
 a [large::0.1] [cat|dog:0.05] [<lora:somelora:0.5:0.6>::0.5]
 [in a park:in space:0.4]
 ```
+## Comments and escaping
+
+In schedules, any text on a line following a `#` is considered a comment and removed, including the `#` character.
+You can escape the following characters in places where they would otherwise conflict with syntax:
+
+- `#` with `\#`
+- `:` with `\:`
+- `\` with `\\`
+
+Escaping is only required if it would otherwise be considered syntax, that is `\o/` will be interpreted literally and the `\` does not need to be escaped, but in `[embedding:a:0.5]` you would need to escape the `:`.
 
 ## Scheduled prompts
 
@@ -93,9 +107,10 @@ Might be useful with Jinja templating (see https://github.com/asagi4/comfyui-uti
 ```
 generates a LoRA schedule based on a sinewave
 
-# Basic prompt syntax
+# Basic non-scheduled prompt syntax
 
-This syntax is also available in outside scheduled with the `PCTextEncode` node, where applicable.
+[!NOTE]
+> The syntax documented below is also available in unscheduled prompts with the `PCTextEncode` node, where applicable.
 
 ## Combining prompts
 
