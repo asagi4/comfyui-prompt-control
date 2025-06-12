@@ -109,7 +109,7 @@ generates a LoRA schedule based on a sinewave
 
 # Basic non-scheduled prompt syntax
 
-[!NOTE]
+> [!NOTE]
 > The syntax documented below is also available in unscheduled prompts with the `PCTextEncode` node, where applicable.
 
 ## Combining prompts
