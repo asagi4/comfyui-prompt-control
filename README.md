@@ -14,10 +14,10 @@ You can use text prompts to control the following:
 - LoRA loading and [scheduling](/doc/schedules.md) via the prompt, using ComfyUI's hook system
 - Masking, composition and area control ([regional prompting](/doc/regional_prompts.md)) with an implementation of [Attention Couple](/doc/attention_couple.md), also fully schedulable.
 - [Advanced prompt encoding](/doc/basic.md)
--- Per-encoder prompts for models with multiple text encoders, such as SDXL and Flux
--- Prompt combinators like `BREAK`, as well as `CAT`, `AVG()` and `AND` corresponding to ComfyUI's `ConditioningConcat`, `ConditioningAverage` and `ConditioningCombine` nodes.
--- Different weight interpretation types (ComfyUI, A1111, compel, etc.)
--- Prompt masking with an implementation of [cutoff](https://github.com/BlenderNeko/ComfyUI_Cutoff)
+  - Per-encoder prompts for models with multiple text encoders, such as SDXL and Flux
+  - Prompt combinators like `BREAK`, as well as `CAT`, `AVG()` and `AND` corresponding to ComfyUI's `ConditioningConcat`, `ConditioningAverage` and `ConditioningCombine` nodes.
+  - Different weight interpretation types (ComfyUI, A1111, compel, etc.)
+  - Prompt masking with an implementation of [cutoff](https://github.com/BlenderNeko/ComfyUI_Cutoff)
 - Simple [prompt macros](/doc/macros.md) with `DEF`
 
 All features are fully schedulable unless otherwise stated. See the [scheduling syntax documentation](doc/schedules.md) to get started.
