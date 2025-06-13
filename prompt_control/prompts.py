@@ -235,7 +235,7 @@ def encode_prompt_segment(
     prompts_to_avg = []
     for avg in averages:
         w = safe_float(avg["args"][0], 0.5)
-        prompts_to_avg.append(text, w)
+        prompts_to_avg.append((text, w))
         text = avg["text"]
     prompts_to_avg.append((text, 1.0))
 

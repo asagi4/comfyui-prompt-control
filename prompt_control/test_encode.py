@@ -30,6 +30,7 @@ class TestEncode(unittest.TestCase):
         pc = PCTextEncode()
         comfy = nodes.CLIPTextEncode()
         combine = nodes.ConditioningCombine()
+        average = nodes.ConditioningAverage()
         concat = nodes.ConditioningConcat()
         zeroout = nodes.ConditioningZeroOut()
         for k, clip in clips:
@@ -65,6 +66,13 @@ class TestEncode(unittest.TestCase):
                     (c1,) = run(pc, clip, "test TE_WEIGHT(all=0)")
                     (c2,) = run(zeroout, c)
                     self.condEqual(c1, c2)
+
+                with self.subTest("Average"):
+                    (c1,) = run(comfy, clip, "test1")
+                    (c2,) = run(comfy, clip, "test2")
+                    (c3,) = run(pc, clip, "test1 AVG() test2")
+                    (avg,) = run(average, c1, c2, 0.5)
+                    self.condEqual(avg, c3)
 
     def test_weight(self):
         pc = PCTextEncode()
