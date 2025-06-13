@@ -4,13 +4,17 @@ on:
   workflow_dispatch:
   push:
     paths:
+      - prompt_control/adv_encode.py
+      - prompt_control/attention_couple_ppm.py
       - prompt_control/nodes_lazy.py
+      - prompt_control/prompts.py
+      - prompt_control/parser.py
       - prompt_control/utils.py
 
 
 jobs:
   run-graph-tests:
-    name: Run graph tests
+    name: Run tests requiring ComfyUI
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -23,6 +27,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
-      - run: pip install -r requirements.txt -r ComfyUI/requirements.txt
-      - run: PYTHONPATH=ComfyUI python -m prompt_control.test_graph
+          cache: pip
+      - name: install-torch
+        run: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+      - name: install ComfyUI
+        run: pip install -r requirements.txt -r ComfyUI/requirements.txt
+      - name: Download clip_l.safetensors
+        run: curl -LO https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors
+      - name: Run graph tests
+        run: PYTHONPATH=ComfyUI python -m prompt_control.test_graph
+      - name: Run encoder tests (clip_l only)
+        run: PYTHONPATH=ComfyUI python -m prompt_control.test_encode
