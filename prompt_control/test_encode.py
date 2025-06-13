@@ -27,9 +27,9 @@ class TestEncode(unittest.TestCase):
         from pathlib import Path
 
         to_test = environ.get("TEST_TE", "clip_l").split()
-        model_path = environ.get("COMFYUI_MODEL_ROOT", ".")
+        model_dir = environ.get("COMFYUI_TE_DIR", ".")
 
-        te_root = (Path(model_path) / "text_encoders").resolve()
+        te_root = Path(model_dir).resolve()
 
         if "clip_l" in to_test:
             clip_l = load_clip(
