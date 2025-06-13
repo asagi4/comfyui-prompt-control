@@ -1,4 +1,5 @@
 import unittest
+import unittest.mock as mock
 import numpy.testing as npt
 from os import environ
 
