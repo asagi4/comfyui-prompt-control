@@ -1,6 +1,10 @@
 import unittest
+import unittest.mock as mock
 import numpy.testing as npt
 from os import environ
+import nodes
+import comfy_extras.nodes_mask
+from .nodes_base import PCTextEncode
 
 clips = []
 
@@ -13,7 +17,36 @@ def run(f, *args):
     return getattr(f, f.FUNCTION)(*args)
 
 
+@mock.patch("torch.cuda.current_device", lambda: "cpu")
 class TestEncode(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        global clips
+        print("Loading ComfyUI")
+        from comfy.sd import load_clip
+        from pathlib import Path
+
+        to_test = environ.get("TEST_TE", "clip_l").split()
+        model_path = environ.get("COMFYUI_MODEL_ROOT", ".")
+
+        te_root = (Path(model_path) / "text_encoders").resolve()
+
+        if "clip_l" in to_test:
+            clip_l = load_clip(
+                ckpt_paths=[str(te_root / "clip_l.safetensors")], clip_type="stable_diffusion", model_options={}
+            )
+            clips.append(("clip_l", clip_l))
+
+        if "t5" in to_test:
+            dual = load_clip(
+                [str(te_root / "clip_l.safetensors"), str(te_root / "t5xxl_fp16.safetensors")],
+                clip_type="flux",
+                model_options={},
+            )
+            clips.append(("clip_l+t5", dual))
+
+        print("Starting tests")
+
     def tensorsEqual(self, t1, t2):
         npt.assert_equal(t1.detach().numpy(), t2.detach().numpy())
 
@@ -135,33 +168,4 @@ class TestEncode(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    print("Loading ComfyUI")
-    import comfy.model_management
-    comfy.model_management.cpu_state = comfy.model_management.CPUState.CPU
-    from comfy.sd import load_clip
-    import nodes
-    import comfy_extras.nodes_mask
-    from .nodes_base import PCTextEncode
-    from pathlib import Path
-
-    to_test = environ.get("TEST_TE", "clip_l").split()
-    model_path = environ.get("COMFYUI_MODEL_ROOT", ".")
-
-    te_root = (Path(model_path) / "text_encoders").resolve()
-
-    if "clip_l" in to_test:
-        clip_l = load_clip(
-            ckpt_paths=[str(te_root / "clip_l.safetensors")], clip_type="stable_diffusion", model_options={}
-        )
-        clips.append(("clip_l", clip_l))
-
-    if "t5" in to_test:
-        dual = load_clip(
-            [str(te_root / "clip_l.safetensors"), str(te_root / "t5xxl_fp16.safetensors")],
-            clip_type="flux",
-            model_options={},
-        )
-        clips.append(("clip_l+t5", dual))
-
-    print("Starting tests")
     unittest.main()
