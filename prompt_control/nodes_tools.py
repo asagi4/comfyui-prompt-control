@@ -1,10 +1,10 @@
 import logging
 from .parser import parse_prompt_schedules, expand_macros
 from .nodes_lazy import NODE_CLASS_MAPPINGS as LAZY_NODES
+from .utils import expand_graph
 import json
 import folder_paths
 from pathlib import Path
-from comfy_execution.graph_utils import is_link
 
 log = logging.getLogger("comfyui-prompt-control")
 
@@ -20,7 +20,7 @@ class PCSaveExpandedWorkflow:
                 "any": ("*", {}),
             },
             "hidden": {
-                "prompt": "DYNPROMPT",
+                "prompt": "PROMPT",
             },
         }
 
@@ -31,7 +31,7 @@ class PCSaveExpandedWorkflow:
     OUTPUT_NODE = True
     RETURN_TYPES = ()
     CATEGORY = "promptcontrol/tools"
-    DESCRIPTION = "Saves the current expanded dynamic prompt into a JSON file"
+    DESCRIPTION = "Expands lazy prompt control nodes in the prompt and saves the expanded prompt into a JSON file"
 
     FUNCTION = "apply"
 
@@ -39,29 +39,12 @@ class PCSaveExpandedWorkflow:
         full_output_folder, filename, counter, subfolder, prefix = folder_paths.get_save_image_path(
             "pc_workflow_debug", self.output_dir
         )
-        p = {}
-        input_replace_map = {}
-        for node in prompt.all_node_ids():
-            n = prompt.get_node(node)
-            t = n["class_type"]
-            if t in LAZY_NODES:
-                expanded_prompt = LAZY_NODES[t]().apply(**n["inputs"], unique_id=node)
-                for k in expanded_prompt["expand"]:
-                    p[k] = expanded_prompt["expand"][k]
-                for i, _ in enumerate(expanded_prompt["result"]):
-                    input_replace_map[(node, i)] = [k, i]
-            else:
-                p[node] = n
-        for k in p:
-            for ik in p[k]["inputs"]:
-                x = p[k]["inputs"][ik]
-                if is_link(x) and tuple(x) in input_replace_map:
-                    p[k]["inputs"][ik] = input_replace_map[tuple(x)]
+        expanded = expand_graph(LAZY_NODES, prompt)
         file = f"{filename}_{counter:05}_.json"
         full_path = Path(full_output_folder) / file
         with open(full_path, "w") as f:
             log.info(f"Saving workflow to {full_path}")
-            json.dump(p, f)
+            json.dump(expanded, f)
 
         return ()
 
