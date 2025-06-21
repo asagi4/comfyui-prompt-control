@@ -1,6 +1,7 @@
 from pathlib import Path
 import re
 import logging
+import copy
 
 # Allow testing
 try:
@@ -195,3 +196,38 @@ def lora_name_to_file(name):
             if p.name == n or str(p) == n:
                 return f
     return None
+
+
+def map_inputs(input_map, inputs):
+    new_inputs = {}
+    for k in inputs:
+        key = inputs[k]
+        new_inputs[k] = key
+        if isinstance(key, list):
+            key = tuple(key)
+            x = input_map.get(key, inputs[k])
+            new_inputs[k] = x
+    return new_inputs
+
+
+def expand_graph(node_mappings, graph):
+    input_map = {}
+    new_graph = copy.deepcopy(graph)
+    for k in graph:
+        data = graph[k]
+        if not isinstance(data, dict) or "class_type" not in data or data["class_type"] not in node_mappings:
+            continue
+        node = node_mappings[data["class_type"]]()
+        inputs = map_inputs(input_map, data["inputs"].copy())
+        inputs["unique_id"] = k
+        fn = getattr(node, getattr(node, "FUNCTION"))
+        expansion = fn(**inputs)
+        for i, v in enumerate(expansion["result"]):
+            input_map[(k, i)] = v
+        del new_graph[k]
+        new_graph.update(expansion["expand"])
+
+    for k in new_graph:
+        data = new_graph[k]
+        data["inputs"] = map_inputs(input_map, data["inputs"])
+    return new_graph
