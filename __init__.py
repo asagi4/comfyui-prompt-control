@@ -29,6 +29,8 @@ cache_hack.init()
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 
+WEB_DIRECTORY = "web"
+
 nodes = ["base", "lazy", "tools", "hooks"]
 
 for node in nodes:
