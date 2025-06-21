@@ -18,7 +18,7 @@ For example, consider a 1024 by 1024 (width x height) generation:
 
 - `cat MASK(0 0.5, 0 1) AND dog MASK(0.5 1, 0 1)` generates two outputs at 1024x1024 for "dog" and "cat", then masks half of them off and adds the results together. The following step still see both the dog and the cat from the previous step, so they may blend slightly.
 
-- `cat AREA(0 0.5, 0 1) AND dog AREA(0.5 1, 0 1)` generates two completely separate outputs at **512**x1024 and then composites them together into the 1024x1024 latent. The generation for `cat` will not see the output of `dog` and vice versa in subsequent steps as long as the area restriction is in effect.
+- `cat AREA(0 0.5, 0 1) AND dog AREA(0.5 1, 0 1)` generates two completely separate outputs at **512**x1024 and then composites them together into the 1024x1024 latent. Because the areas do not overlap, the generation for `cat` will not see the output of `dog` and vice versa in subsequent steps as long as the area restriction is in effect.
 
 ## MASK, IMASK and AREA
 
