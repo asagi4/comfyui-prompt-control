@@ -32,21 +32,6 @@ Prompt Control uses graph generation,  and tries to delegate functionality to co
 
 If you encounter issues as a user or if you're a node developer and Prompt Control somehow breaks something, feel free to file a bug report.
 
-## Prompt Control v2
-
-Prompt control has been almost completely rewritten. It now uses ComfyUI's lazy execution to build graphs from the text prompt at runtime. The generated graph is often exactly equivalent to a manually built workflow using native ComfyUI nodes. There are no more weird sampling hooks that could cause problems with other nodes
-
-### Removed features
-
-- Prompt interpolation syntax; it was too cumbersome to maintain
-- LoRA block weight integration; ditto, for now.
-
-### Everything broke, where are the old nodes?
-
-If you really need them, you can install the [legacy nodes](https://github.com/asagi4/comfyui-prompt-control-legacy). However, I will not fix bugs in those nodes, and I strongly recommend just migrating your workflows to the new nodes.
-
-You can have both installed at the same time; none of the nodes conflict.
-
 ## Requirements
 
 For LoRA scheduling to work, you'll need at least version 0.3.7 of ComfyUI (0.3.36 of ComfyUI desktop).
@@ -99,9 +84,5 @@ This node configures `PCTextEncode` default values for some functions by attachi
 # Known issues
 
 - ComfyUI's caching mechanism has an issue that makes it unnecessarily invalidate caches for certain inputs; you'll still get some benefit from the lazy nodes, but changing inputs that shouldn't affect downstream nodes (especially if using filtering) will still cause them to be recomputed because ComfyUI doesn't realize the inputs haven't changed.
-
-If you want to enable a hack to fix this, set `PROMPTCONTROL_ENABLE_CACHE_HACK=1` in your environment. Unset it to disable.
-
-It's a purely optional performance optimization that allows Prompt Control nodes to override their cache keys in a way that should not interfere with other nodes. Note that the optimization only works if the text input to the lazy nodes is a constant (so either directly on the node or from a primitive); outputs from other nodes can't be optimized.
 
 - Cutoff does not work with models that use non-CLIP text encoders, like Flux. This might be fixable, but it's uncertain if cutoff even makes sense for those models.

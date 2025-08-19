@@ -23,9 +23,6 @@ if os.environ.get("PROMPTCONTROL_DEBUG"):
 else:
     log.setLevel(logging.INFO)
 
-cache_hack = importlib.import_module(".prompt_control.cache_hack", package=__name__)
-cache_hack.init()
-
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 
