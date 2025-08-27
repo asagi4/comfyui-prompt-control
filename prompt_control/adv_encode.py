@@ -3,7 +3,6 @@ import numpy as np
 from math import copysign
 import logging
 import itertools
-from .adv_encode_old import old_advanced_encode_from_tokens
 
 log = logging.getLogger("comfyui-prompt-control")
 
@@ -373,20 +372,7 @@ def advanced_encode_from_tokens(
     tokenizer=None,
     **extra_args,
 ):
-    if "old+" not in weight_interpretation:
-        enc = AdvancedEncoder(
-            encode_func, weight_interpretation, token_normalization, tokenizer, m_token, w_max, **extra_args
-        )
-        return enc(tokenized, return_pooled=return_pooled, apply_to_pooled=apply_to_pooled)
-    else:
-        weight_interpretation = weight_interpretation.replace("old+", "")
-        log.warning("Using old implementation of %s", weight_interpretation)
-        return old_advanced_encode_from_tokens(
-            tokenized,
-            token_normalization,
-            weight_interpretation,
-            encode_func,
-            266,
-            return_pooled=return_pooled,
-            apply_to_pooled=apply_to_pooled,
-        )
+    enc = AdvancedEncoder(
+        encode_func, weight_interpretation, token_normalization, tokenizer, m_token, w_max, **extra_args
+    )
+    return enc(tokenized, return_pooled=return_pooled, apply_to_pooled=apply_to_pooled)
