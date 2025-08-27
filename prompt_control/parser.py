@@ -448,13 +448,6 @@ def expand_macros(text):
     return res
 
 
-def substitute_def(text, search, replace):
-    search, default_args = search
-    for i, v in enumerate(default_args):
-        replace = re.sub(rf"\${i+1}\b", v, replace)
-    return re.sub(rf"\b{re.escape(search)}\b", replace, text)
-
-
 def substitute_defcall(text, search, replace):
     name, default_args = search
     text, defns = get_function(text, name, defaults=None, placeholder=f"DEFNCALL{name}", require_args=False)
