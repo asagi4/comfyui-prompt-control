@@ -457,7 +457,7 @@ def substitute_def(text, search, replace):
 
 def substitute_defcall(text, search, replace):
     name, default_args = search
-    text, defns = get_function(text, name, defaults=None, placeholder=f"DEFNCALL{name}")
+    text, defns = get_function(text, name, defaults=None, placeholder=f"DEFNCALL{name}", require_args=False)
     for i, parameters in enumerate(defns):
         ph = f"\0DEFNCALL{name}{i}\0"
         paramvals = []

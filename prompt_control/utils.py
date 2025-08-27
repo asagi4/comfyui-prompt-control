@@ -88,14 +88,19 @@ def find_closing_paren(text, start):
     return len(text)
 
 
-def get_function(text, func, defaults, return_func_name=False, placeholder="", return_dict=False):
-    rex = re.compile(rf"\b{func}\b", re.MULTILINE)
+def get_function(text, func, defaults, return_func_name=False, placeholder="", return_dict=False, require_args=True):
+    if require_args:
+        rex = re.compile(rf"\b{func}\(", re.MULTILINE)
+    else:
+        rex = re.compile(rf"\b{func}\b", re.MULTILINE)
     instances = []
     match = rex.search(text)
     count = 0
     while match:
         # Match start, content start
         start, at_paren = match.span()
+        if require_args:
+            at_paren = at_paren - 1
         funcname = text[start:at_paren]
         after_first_paren = at_paren + 1
         if text[at_paren:after_first_paren] == "(":
@@ -104,7 +109,7 @@ def get_function(text, func, defaults, return_func_name=False, placeholder="", r
             end += 1
         else:
             end = at_paren
-            args = None
+            args = defaults
         ph = None
         if placeholder:
             ph = f"\0{placeholder}{count}\0"
@@ -131,11 +136,11 @@ def get_function(text, func, defaults, return_func_name=False, placeholder="", r
     return text, instances
 
 
-def split_by_function(text, func, defaults=None):
+def split_by_function(text, func, defaults=None, require_args=True):
     """
     Splits a string by function calls, returning the text preceding the first call and a list of dictionaries with a "text" key with the prompt before the next split or until hthe end of the text.
     """
-    text, functions = get_function(text, func, defaults, return_dict=True)
+    text, functions = get_function(text, func, defaults, return_dict=True, require_args=require_args)
     chunks = []
     prev = 0
     for f in functions:

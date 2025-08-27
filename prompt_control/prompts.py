@@ -231,7 +231,7 @@ def encode_prompt_segment(
 
     # Chunks to ConditioningAverage:
 
-    text, averages = split_by_function(text, "AVG", ["0.5"])
+    text, averages = split_by_function(text, "AVG", ["0.5"], require_args=False)
     prompts_to_avg = []
     for avg in averages:
         w = safe_float(avg["args"][0], 0.5)
@@ -573,7 +573,7 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
         return f"MASK({args})"
 
     for prompt in prompts:
-        base_prompt, attn_couple_prompts = split_by_function(prompt, "COUPLE", defaults=None)
+        base_prompt, attn_couple_prompts = split_by_function(prompt, "COUPLE", defaults=None, require_args=False)
 
         prompts = [base_prompt] + [couple_mask(p["args"]) + p["text"] for p in attn_couple_prompts]
         encoded = []

@@ -80,6 +80,12 @@ class TestEncode(unittest.TestCase):
                     c = c2  # Used in later tests
                     self.condEqual(c1, c2)
 
+                with self.subTest("Function cornercase"):
+                    (c1,) = run(pc, clip, "test SDXL function")
+                    (c2,) = run(comfy, clip, "test SDXL function")
+                    (c3,) = run(pc, clip, "test SDXL() function")
+                    self.condEqual(c1, c2)
+
                 with self.subTest("Weights"):
                     (c1,) = run(pc, clip, "(test:1.2) (test:0.6)")
                     (c2,) = run(comfy, clip, "(test:1.2) (test:0.6)")
@@ -104,8 +110,20 @@ class TestEncode(unittest.TestCase):
                     (c1,) = run(comfy, clip, "test1")
                     (c2,) = run(comfy, clip, "test2")
                     (c3,) = run(pc, clip, "test1 AVG() test2")
+                    (c4,) = run(pc, clip, "test1 AVG test2")
                     (avg,) = run(average, c1, c2, 0.5)
                     self.condEqual(avg, c3)
+                    self.condEqual(avg, c4)
+
+    @unittest.expectedFailure
+    def test_failure(self):
+        pc = PCTextEncode()
+        comfy = nodes.CLIPTextEncode()
+        for k, clip in clips:
+            with self.subTest(k):
+                (c1,) = run(comfy, clip, "test SDXL function")
+                (c2,) = run(pc, clip, "test SDXL() function")
+                self.condEqual(c1, c2)
 
     def test_weight(self):
         pc = PCTextEncode()
