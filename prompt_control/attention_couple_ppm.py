@@ -76,10 +76,6 @@ class AttentionCoupleHook(TransformerOptionsHook):
         self.kv = {"k": None, "v": None}
 
     def initialize_regions(self, base_cond, conds, fill):
-        self._base_cond = base_cond
-        self._conds = conds
-        self._fill = fill
-
         self.num_conds = len(conds) + 1
         self.base_strength = base_cond[1].get("strength", 1.0)
         self.strengths = [cond[1].get("strength", 1.0) for cond in conds]
