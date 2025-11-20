@@ -200,6 +200,12 @@ def lora_name_to_file(name):
             p = Path(f).with_suffix("")
             if p.name == n or str(p) == n:
                 return f
+    # Finally, try to find unique match from parts
+    parts = name.split()
+    search = [f for f in filenames if all(p in f for p in parts)]
+    if len(search) == 1:
+        return search[0]
+
     return None
 
 

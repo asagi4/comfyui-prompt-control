@@ -89,10 +89,17 @@ You can refer to LoRAs by using the filename without extension and subdirectorie
 
 Alternatively, the name can include the full directory path relative to ComfyUI's search paths, without extension: `<lora:XL/sdxllora:0.5>`. In this case, the *full* path must match.
 
+You can also give the exact path (including the extension) as shown in `LoRALoader`.
+
 If no match is found, the node will try to replace spaces with underscores and search again. That is, `<lora:cats and dogs:1>` will find `cats_and_dogs.safetensors`. This helps with some autocompletion scripts that replace underscores with spaces.
 
-Finally, you can give the exact path (including the extension) as shown in `LoRALoader`.
+Finally, if none of the above produce a match, the search term will be split by whitespace and files that contain all of the parts in any order will be considered. If this returns only a single match, it will be loaded. For example, consider LoRAs:
 
+- `xl/red_cats.safetensors`
+- `flux/blue_cats.safetensors`
+- `flux/red_cats.safetensors`
+
+Then `<lora:cats xl:1>` would match the red cats LoRA, but `cats flux` would be ambiguous and not match.
 
 ## Alternating
 
