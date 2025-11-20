@@ -20,6 +20,15 @@ AVAILABLE_NORMALIZATIONS = ["none", "mean", "length", "length+mean"]
 SHUFFLE_GEN = torch.Generator(device="cpu")
 
 
+def call_node(cls, *args, **kwargs):
+    if hasattr(cls, "execute"):
+        # v3 node
+        return cls.execute(*args, **kwargs)
+    else:
+        func = getattr(cls(), cls.FUNCTION)
+        return func(*args, **kwargs)
+
+
 def get_sdxl(text, defaults):
     # Defaults fail to parse and get looked up from the defaults dict
     text, sdxl = get_function(text, "SDXL", ["none", "none", "none"])
@@ -264,7 +273,7 @@ def encode_prompt_segment(
             w = next_w
             continue
         for i in range(len(base)):
-            (cond,) = ConditioningAverage.addWeighted(None, [base[i]], [cond[i]], w)
+            (cond,) = call_node(ConditioningAverage, [base[i]], [cond[i]], w)
             base[i] = cond[0]
         w = next_w
 
@@ -429,7 +438,7 @@ def get_mask(text, size, input_masks):
 
     def feather(f, mask):
         l, t, r, b, *_ = [int(x) for x in parse_floats(f[0], [0, 0, 0, 0], split_re="\\s+")]
-        mask = FeatherMask().feather(mask, l, t, r, b)[0]
+        mask = call_node(FeatherMask, mask, l, t, r, b)[0]
         log.info("FeatherMask l=%s, t=%s, r=%s, b=%s", l, t, r, b)
         return mask
 
@@ -447,7 +456,7 @@ def get_mask(text, size, input_masks):
         i += 1
         if mask is not None:
             log.info("MaskComposite op=%s", op)
-            mask = MaskComposite().combine(mask, nextmask, 0, 0, op)[0]
+            mask = call_node(MaskComposite, mask, nextmask, 0, 0, op)[0]
         else:
             mask = nextmask
 
@@ -462,7 +471,7 @@ def get_mask(text, size, input_masks):
             nextmask = feather(feathers[i], nextmask)
         i += 1
         if mask is not None:
-            mask = MaskComposite().combine(mask, nextmask, 0, 0, op)[0]
+            mask = call_node(MaskComposite, mask, nextmask, 0, 0, op)[0]
         else:
             mask = nextmask
 
