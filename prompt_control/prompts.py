@@ -1,6 +1,7 @@
 import logging
 import re
 import torch
+import math
 from functools import partial
 from comfy_extras.nodes_mask import FeatherMask, MaskComposite
 from nodes import ConditioningAverage
@@ -271,6 +272,15 @@ def encode_prompt_segment(
     return base
 
 
+def calc_w(tensor, w):
+    if math.isclose(w, 0):
+        return torch.zeros_like(tensor)
+    elif math.isclose(w, 1.0):
+        return tensor
+    else:
+        return tensor * w
+
+
 def apply_weights(output, te_name, spec):
     """Applies weights to TE outputs"""
     if not spec:
@@ -292,16 +302,16 @@ def apply_weights(output, te_name, spec):
             if pooled_w is None:
                 pooled_w = 1.0
             log.info("Weighting %s output by %s, pooled by %s", te_name, w, pooled_w)
-            out = out * w
+            out = calc_w(out, w)
             if pooled is not None:
-                pooled = pooled * pooled_w
+                pooled = calc_w(pooled, pooled_w)
 
         return out, pooled
     else:
         if te_name in spec or default is not None:
             w = spec.get(te_name, default)
             log.info("Weighting %s output by %s", te_name, w)
-            output = output * w
+            output = calc_w(output, w)
         return output
 
 
