@@ -14,7 +14,10 @@ logging.basicConfig()
 
 
 def run(f, *args):
-    return getattr(f, f.FUNCTION)(*args)
+    if hasattr(f, "execute"):
+        return f.execute(*args)
+    else:
+        return getattr(f, f.FUNCTION)(*args)
 
 
 @mock.patch("torch.cuda.current_device", lambda: "cpu")

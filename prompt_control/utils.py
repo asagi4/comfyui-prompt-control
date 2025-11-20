@@ -15,6 +15,15 @@ except ImportError:
 log = logging.getLogger("comfyui-prompt-control")
 
 
+def call_node(cls, *args, **kwargs):
+    if hasattr(cls, "execute"):
+        # v3 node
+        return cls.execute(*args, **kwargs)
+    else:
+        func = getattr(cls(), cls.FUNCTION)
+        return func(*args, **kwargs)
+
+
 def consolidate_schedule(prompt_schedule):
     prev_loras = {}
     not_found = []

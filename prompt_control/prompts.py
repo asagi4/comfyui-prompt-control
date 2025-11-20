@@ -5,7 +5,7 @@ from functools import partial
 from comfy_extras.nodes_mask import FeatherMask, MaskComposite
 from nodes import ConditioningAverage
 
-from .utils import safe_float, get_function, split_by_function, parse_floats, smarter_split
+from .utils import safe_float, get_function, split_by_function, parse_floats, smarter_split, call_node
 from .adv_encode import advanced_encode_from_tokens
 from .cutoff import process_cuts
 from .parser import parse_cuts
@@ -18,15 +18,6 @@ AVAILABLE_STYLES = ["comfy", "perp", "A1111", "compel", "comfy++", "down_weight"
 AVAILABLE_NORMALIZATIONS = ["none", "mean", "length", "length+mean"]
 
 SHUFFLE_GEN = torch.Generator(device="cpu")
-
-
-def call_node(cls, *args, **kwargs):
-    if hasattr(cls, "execute"):
-        # v3 node
-        return cls.execute(*args, **kwargs)
-    else:
-        func = getattr(cls(), cls.FUNCTION)
-        return func(*args, **kwargs)
 
 
 def get_sdxl(text, defaults):
