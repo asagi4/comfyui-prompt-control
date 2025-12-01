@@ -464,6 +464,12 @@ def get_mask(text, size, input_masks):
     for idx, w, op in imasks:
         idx = int(safe_float(idx, 0.0))
         w = safe_float(w, 1.0)
+        if input_masks is None:
+            log.warn(
+                "IMASK requires you to attach custom masks to the CLIP object using PCAddMasksToClIP before using it"
+            )
+            input_masks = []
+
         if len(input_masks) < idx + 1:
             log.warn("IMASK index %s not found, ignoring...", idx)
             continue

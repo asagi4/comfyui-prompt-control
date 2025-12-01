@@ -15,7 +15,7 @@ To enable batching negative prompts, run your positive and negative prompt throu
 
 ## Syntax
 
-See also the main syntax documentation for `MASK` etc.
+See also the [regional prompting documentation](/doc/regional_prompts.md) for information about `MASK` etc.
 
 ### COUPLE: Trigger Attention Couple
 
@@ -38,3 +38,5 @@ For example:
 ```
 dog FILL() COUPLE(0.5 1) cat
 ```
+
+Note that because the generation still sees and diffuses the full latent, attention coupling is not guaranteed to perfectly limit the effect of your prompt to the masked area.
