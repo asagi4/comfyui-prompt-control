@@ -25,7 +25,7 @@ def _grouper(n, iterable):
 def batched_clip_encode(tokens, length, encode_func, num_chunks):
     embs = []
     for e in _grouper(32, tokens):
-        enc, pooled = encode_func(e)
+        enc, pooled, *_ = encode_func(e)
         enc = enc.reshape((len(e), length, -1))
         embs.append(enc)
 
@@ -100,24 +100,24 @@ def style_comfy(encoder, tokens, **kwargs):
 
 
 def style_a1111(encoder, tokens, **kwargs):
-    base_emb, pooled = encoder.base_emb(tokens)
+    base_emb, pooled, *extra = encoder.base_emb(tokens)
     weighted_emb = base_emb * weights_like(encoder.weights(tokens), base_emb)
     weighted_emb = (base_emb.mean() / weighted_emb.mean()) * weighted_emb  # renormalize
-    return weighted_emb, pooled
+    return (weighted_emb, pooled) + tuple(extra)
 
 
 def style_compel(encoder, tokens, **kwargs):
     pos_tokens = encoder.weighted_with(tokens, lambda w: w if w > 1.0 else 1.0)
-    weighted_emb, pooled = encoder.encode_fn(pos_tokens)
+    weighted_emb, pooled, *extra = encoder.encode_fn(pos_tokens)
     weighted_emb, _, pooled = encoder.down_weight(
         pos_tokens, encoder.weights(tokens), encoder.word_ids(tokens), weighted_emb, pooled
     )
-    return weighted_emb, pooled
+    return (weighted_emb, pooled) + tuple(extra)
 
 
 def style_comfypp(encoder, tokens, **kwargs):
     unweighted_tokens = encoder.unweighted(tokens)
-    base_emb, pooled_base = encoder.base_emb(tokens)
+    base_emb, pooled_base, *extra = encoder.base_emb(tokens)
     weighted_emb, tokens_down, _ = encoder.down_weight(
         unweighted_tokens, encoder.weights(tokens), encoder.word_ids(tokens), base_emb, pooled_base
     )
@@ -131,23 +131,23 @@ def style_comfypp(encoder, tokens, **kwargs):
     )
     weighted_emb += embs
 
-    return weighted_emb, pooled
+    return (weighted_emb, pooled) + tuple(extra)
 
 
 def style_downweight(encoder, tokens, **kwargs):
     weights = scale_to_norm(encoder.weights(tokens), encoder.word_ids(tokens), encoder.w_max)
-    base_emb, pooled_base = encoder.base_emb(tokens)
+    base_emb, pooled_base, *extra = encoder.base_emb(tokens)
     weighted_emb, _, pooled = encoder.down_weight(
         encoder.unweighted(tokens), weights, encoder.word_ids(tokens), base_emb, pooled_base
     )
 
-    return weighted_emb, pooled
+    return (weighted_emb, pooled) + tuple(extra)
 
 
 def style_perp(encoder, tokens, **kwargs):
-    zero_emb, zero_pooled = encoder.encode_fn(encoder.tokenizer.tokenize_with_weights(""))
-    base_emb, pooled = encoder.base_emb(tokens)
-    return perp_weight(encoder.weights(tokens), (base_emb, pooled), (zero_emb, zero_pooled))
+    zero_emb, zero_pooled, *_ = encoder.encode_fn(encoder.tokenizer.tokenize_with_weights(""))
+    base_emb, pooled, *extra = encoder.base_emb(tokens)
+    return perp_weight(encoder.weights(tokens), (base_emb, pooled), (zero_emb, zero_pooled)) + tuple(extra)
 
 
 def apply_negpip(encoder, emb, pooled, **kwargs):
@@ -257,8 +257,8 @@ class AdvancedEncoder:
         if negpip:
 
             def _encode(t):
-                emb, pooled = encode_fn(t)
-                return emb[:, 0::2, :], pooled
+                emb, pooled, *extra = encode_fn(t)
+                return (emb[:, 0::2, :], pooled) + tuple(extra)
 
             self.encode_fn = _encode
             self.preprocessors.insert(0, lambda encoder, tokens, **kwargs: encoder.weighted_with(tokens, abs))
@@ -288,7 +288,7 @@ class AdvancedEncoder:
             if w[i] >= 1:
                 continue
             masked_current = mask_inds(masked_current, np.where(w_inv == i)[0], self.m_token)
-            masked, _ = self.encode_fn(masked_current)
+            masked, _, *extra = self.encode_fn(masked_current)
             emblist.append(masked)
 
         embs = torch.cat(emblist)
@@ -348,16 +348,16 @@ class AdvancedEncoder:
         for op in self.preprocessors:
             normalized_tokens = op(self, normalized_tokens)
 
-        emb, pooled = self.weight_fn(self, normalized_tokens, original_tokens=tokens)
+        emb, pooled, *extra = self.weight_fn(self, normalized_tokens, original_tokens=tokens)
 
         for fn in self.postprocessors:
             emb, pooled = fn(self, emb, pooled, tokens=tokens, original_tokens=tokens)
 
-        if return_pooled:
-            if not apply_to_pooled:
-                _, pooled = self.base_emb(tokens)
-            return emb, pooled
-        return emb, None
+        if not return_pooled:
+            pooled = None
+        elif not apply_to_pooled:
+            _, pooled, *_ = self.base_emb(tokens)
+        return (emb, pooled) + tuple(extra)
 
 
 def advanced_encode_from_tokens(

@@ -292,7 +292,7 @@ def apply_weights(output, te_name, spec):
     default = spec.get("all", None)
 
     if isinstance(output, tuple):
-        out, pooled = output
+        out, pooled, *extra = output
         pkey = te_name + "_pooled"
         if te_name in spec or pkey in spec or default is not None:
             w = spec.get(te_name, default)
@@ -306,7 +306,7 @@ def apply_weights(output, te_name, spec):
             if pooled is not None:
                 pooled = calc_w(pooled, pooled_w)
 
-        return out, pooled
+        return (out, pooled) + tuple(extra)
     else:
         if te_name in spec or default is not None:
             w = spec.get(te_name, default)
