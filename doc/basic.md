@@ -23,6 +23,8 @@ cat [\:0::0.5] AND dog
 ```
 Note that the `:` needs to be escaped with a `\` or it will be interpreted as scheduling syntax.
 
+If `AND` is placed inside quotes (eg. `Text saying "CAT AND DOG"`) it will be treated as regular text.
+
 ## Note about processing order
 
 Prompt operators are processed in the following order, meaning that all features "below" another can be affected by the feature above it. That is, `BREAK` can go inside a `TE()` call, but not `AND` or `CAT`.
@@ -52,6 +54,8 @@ In general, function parameters will have default values that are used if the pa
 Note: Whitespace is usually *not* stripped from string parameters by default. Commas can be escaped with `\,`
 
 Like `AND`, functions are parsed after regular scheduling syntax has been expanded, allowing things like `[AREA:MASK:0.3](...)`, in case that's somehow useful.
+
+like AND, if any function is placed inside quotes, it will *not* activate and is instead treated as regular text.
 
 ### BREAK
 The keyword `BREAK` causes the prompt to be tokenized in separate chunks, padding each chunk to the text encoder's maximum size before encoding.

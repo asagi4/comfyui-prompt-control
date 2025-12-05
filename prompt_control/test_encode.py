@@ -83,6 +83,11 @@ class TestEncode(unittest.TestCase):
                     c = c2  # Used in later tests
                     self.condEqual(c1, c2)
 
+                with self.subTest("Quotes"):
+                    (c1,) = run(pc, clip, 'Text saying "DOG MASK AND CAT COUPLE MASK(X)"')
+                    (c2,) = run(comfy, clip, 'Text saying "DOG MASK AND CAT COUPLE MASK(X)"')
+                    self.condEqual(c1, c2)
+
                 with self.subTest("Function cornercase"):
                     (c1,) = run(pc, clip, "test SDXL function")
                     (c2,) = run(comfy, clip, "test SDXL function")

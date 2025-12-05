@@ -18,6 +18,13 @@ class TestParser(unittest.TestCase):
         self.assertEqual(p.at_step(0.5), expected)
         self.assertEqual(p.at_step(1), expected)
 
+    def test_quote(self):
+        p = parse('This is a text with a "QUOTED DEF(X=Y)"')
+        expected = prompt(1.0, 'This is a text with a "QUOTED DEF(X=Y)"')
+        self.assertEqual(p.at_step(0), expected)
+        self.assertEqual(p.at_step(0.5), expected)
+        self.assertEqual(p.at_step(1), expected)
+
     def test_equivalences(self):
         eqs = [
             [parse(p) for p in ["[a:0.1]", "[:a:0.1]", "[:a:0,0.1]", "[:a::0.1,1.0]", "[:a::0.1]"]],

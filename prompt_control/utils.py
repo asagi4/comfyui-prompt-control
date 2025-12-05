@@ -93,20 +93,18 @@ def find_closing_paren(text, start):
             stack += 1
         if stack == 0:
             return start + i
-    # Implicit closing paren after end
-    return len(text)
+    return -1
 
 
-def get_function(text, func, defaults, return_func_name=False, placeholder="", return_dict=False, require_args=True):
+def find_function_spans(text, func, require_args, defaults):
     if require_args:
         rex = re.compile(rf"\b{func}\(", re.MULTILINE)
     else:
         rex = re.compile(rf"\b{func}\b", re.MULTILINE)
-    instances = []
+
+    idx = 0
     match = rex.search(text)
-    count = 0
     while match:
-        # Match start, content start
         start, at_paren = match.span()
         if require_args:
             at_paren = at_paren - 1
@@ -114,12 +112,30 @@ def get_function(text, func, defaults, return_func_name=False, placeholder="", r
         after_first_paren = at_paren + 1
         if text[at_paren:after_first_paren] == "(":
             end = find_closing_paren(text, after_first_paren)
+            if end < 0:
+                print("no closing paren:", text)
+                continue
             args = parse_strings(text[after_first_paren:end], defaults)
             end += 1
         else:
             end = at_paren
             args = defaults
+        yield idx + start, idx + end, funcname, args
+        idx = idx + end
+        text = text[end:]
+        match = rex.search(text)
+
+
+def get_function(text, func, defaults, return_func_name=False, placeholder="", return_dict=False, require_args=True):
+    spans = [x.span() for x in re.finditer(r'".+?"', text)]
+    instances = []
+    count = 0
+    chunks = []
+    current = 0
+    for start, end, funcname, args in find_function_spans(text, func, require_args, defaults):
         ph = None
+        if spans_include(spans, start, end):
+            continue
         if placeholder:
             ph = f"\0{placeholder}{count}\0"
         if return_dict:
@@ -137,12 +153,31 @@ def get_function(text, func, defaults, return_func_name=False, placeholder="", r
             instances.append(args)
 
         if placeholder:
-            text = text[:start] + f"\0{placeholder}{count}\0" + text[end:]
+            chunks.append(text[current:start] + f"\0{placeholder}{count}\0")
         else:
-            text = text[:start] + text[end:]
-        match = rex.search(text)
+            chunks.append(text[current:start])
+        current = end
         count += 1
+    chunks.append(text[current:])
+    text = "".join(chunks)
     return text, instances
+
+
+def spans_include(spans, s, e):
+    return any((s > a and e < b) for a, b in spans)
+
+
+def split_quotable(text, regexp):
+    res = []
+    start_from = 0
+    spans = [x.span() for x in re.finditer(r'".+?"', text)]
+    for x in re.finditer(regexp, text):
+        s, e = x.span()
+        if not spans_include(spans, s, e):
+            res.append(text[start_from:s].strip())
+            start_from = e
+    res.append(text[start_from:].strip())
+    return res
 
 
 def split_by_function(text, func, defaults=None, require_args=True):

@@ -404,9 +404,11 @@ def parse_search(search):
     args = ""
     name = search.strip()
     if arg_start > 0:
-        arg_end = find_closing_paren(search, arg_start)
+        arg_end = find_closing_paren(search, arg_start + 1)
+        if arg_end < 0:
+            arg_end = len(search)
         name = search[:arg_start].strip()
-        args = search[arg_start + 1 : arg_end - 1]
+        args = search[arg_start + 1 : arg_end]
 
     if not name:
         return None
@@ -450,9 +452,12 @@ def expand_macros(text):
 
 def substitute_defcall(text, search, replace):
     name, default_args = search
-    text, defns = get_function(text, name, defaults=None, placeholder=f"DEFNCALL{name}", require_args=False)
-    for i, parameters in enumerate(defns):
-        ph = f"\0DEFNCALL{name}{i}\0"
+    text, defns = get_function(
+        text, name, defaults=None, placeholder=f"DEFNCALL{name}", require_args=False, return_dict=True
+    )
+    for i, d in enumerate(defns):
+        ph = d["placeholder"]
+        parameters = d["args"]
         paramvals = []
         if parameters is not None:
             paramvals = [x.strip() for x in parameters.split(";")]
