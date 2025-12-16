@@ -82,7 +82,7 @@ def lora_hooks_from_schedule(schedules, non_scheduled):
 
 class PCAttentionCoupleBatchNegative(ComfyNodeABC):
     @classmethod
-    def INPUT_TYPES(cls) -> InputTypeDict:
+    def INPUT_TYPES(s) -> InputTypeDict:
         return {
             "required": {
                 "positive": (IO.CONDITIONING, {}),

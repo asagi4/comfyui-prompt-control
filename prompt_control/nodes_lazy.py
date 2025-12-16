@@ -168,7 +168,7 @@ class PCLazyLoraLoaderAdvanced:
             "hidden": {"unique_id": "UNIQUE_ID"},
         }
 
-    RETURN_TYPES = ("MODEL", "CLIP", "HOOKS")
+    RETURN_TYPES: tuple[str, ...] = ("MODEL", "CLIP", "HOOKS")
     OUTPUT_TOOLTIPS = ("Returns a model and clip with LoRAs scheduled",)
     CATEGORY = "promptcontrol"
     FUNCTION = "apply"
