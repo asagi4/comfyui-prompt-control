@@ -16,6 +16,7 @@ from .utils import (
     call_node,
     split_quotable,
     FunctionSpec,
+    ComfyConditioning,
 )
 from .adv_encode import advanced_encode_from_tokens
 from .cutoff import process_cuts
@@ -224,7 +225,7 @@ def encode_prompt_segment(
     default_style="comfy",
     default_normalization="none",
     clip_weights=None,
-) -> list[tuple[torch.Tensor, dict[str]]]:
+) -> list[ComfyConditioning]:
     style, normalization, text = get_style(text, default_style, default_normalization)
     clip_weights, text = get_clipweights(text, clip_weights)
     text, cuts = parse_cuts(text)

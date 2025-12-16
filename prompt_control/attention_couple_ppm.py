@@ -74,6 +74,7 @@ class AttentionCoupleHook(TransformerOptionsHook):
 
         # calculate later. All clones must refer to the same kv dict
         self.kv = {"k": None, "v": None}
+        self.conds = None
 
     def initialize_regions(self, base_cond, conds, fill):
         self.num_conds = len(conds) + 1

@@ -5,16 +5,19 @@ import logging
 import copy
 
 from dataclasses import dataclass
-from typing import Any, TypeAlias, Iterator
+from typing import Any, TypeAlias, Iterator, TypeVar, TYPE_CHECKING
 
+if TYPE_CHECKING:
+    import torch
 
 FunctionArgs: TypeAlias = list[str] | str
+ComfyConditioning: TypeAlias = tuple[torch.Tensor, dict[str, Any]]
 
 
 @dataclass
 class FunctionSpec:
     name: str
-    args: FunctionArgs
+    args: FunctionArgs | None
     position: int
     placeholder: str | None
 
@@ -84,6 +87,7 @@ def smarter_split(separator: str, string: str) -> list[str]:
     """Does not break () when splitting"""
     splits = []
     prev = 0
+    idx = 0
     stack = 0
     escape = False
     for idx, x in enumerate(string):
@@ -114,7 +118,7 @@ def find_closing_paren(text: str, start: int) -> int:
 
 def find_function_spans(
     text: str, func: str, require_args: bool, defaults: list[str] | None
-) -> Iterator[tuple[int, int, str, FunctionArgs]]:
+) -> Iterator[tuple[int, int, str, FunctionArgs | None]]:
     if require_args:
         rex = re.compile(rf"\b{func}\(", re.MULTILINE)
     else:
@@ -131,7 +135,6 @@ def find_function_spans(
         if text[at_paren:after_first_paren] == "(":
             end = find_closing_paren(text, after_first_paren)
             if end < 0:
-                print("no closing paren:", text)
                 continue
             args = parse_strings(text[after_first_paren:end], defaults)
             end += 1
@@ -167,7 +170,7 @@ def get_function(
     return text, instances
 
 
-def spans_include(spans: tuple(int, int), s: int, e: int) -> bool:
+def spans_include(spans: list[tuple[int, int]], s: int, e: int) -> bool:
     return any((s > a and e < b) for a, b in spans)
 
 
@@ -198,13 +201,17 @@ def split_by_function(text, func, defaults=None, require_args=True):
     return chunks[0], functions
 
 
-def parse_args(strings: list[str], arg_spec: list[str], strip: bool = True) -> list[str]:
+T = TypeVar("T")
+
+
+def parse_args(strings: list[str], arg_spec: list[tuple[Any, T]], strip: bool = True) -> list[T]:
     args = [s[1] for s in arg_spec]
     for i, spec in list(enumerate(arg_spec))[: len(strings)]:
         try:
             if strip:
                 strings[i] = strings[i].strip()
-            args[i] = spec[0](strings[i])
+            f = spec[0]
+            args[i] = f(strings[i])
         except ValueError:
             pass
     return args
@@ -215,10 +222,12 @@ def parse_floats(string: str, defaults: list[float], split_re: str = ",") -> lis
     return parse_args(re.split(split_re, string.strip()), spec)
 
 
-def parse_strings(string, defaults, split_re=r"(?<!\\),", replace=(r"\,", ",")) -> FunctionArgs:
+def parse_strings(
+    string: str, defaults: list[str] | None, split_re: str = r"(?<!\\),", replace: tuple[str, str] = (r"\,", ",")
+) -> FunctionArgs:
     if defaults is None:
         return string
-    spec = [(lambda x: x, d) for d in defaults]
+    spec = [(str, d) for d in defaults]
     splits = re.split(split_re, string)
     if replace:
         f, t = replace
@@ -235,7 +244,7 @@ def safe_float(f: Any, default: float) -> float:
         return default
 
 
-def lora_name_to_file(name):
+def lora_name_to_file(name: str) -> str | None:
     filenames = get_filename_list("loras")
     # Return exact matches as is
     if name in filenames:
