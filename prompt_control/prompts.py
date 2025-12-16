@@ -140,7 +140,7 @@ def fix_word_ids(tokens):
 
 
 def tokenize_chunks(clip, text, need_word_ids, can_break):
-    chunks = split_quotable(text, r"\bBREAK\b")
+    chunks = list(split_quotable(text, r"\bBREAK\b"))
     token_chunks = []
     shuffled_chunks = []
     for c in chunks:
@@ -255,8 +255,7 @@ def encode_prompt_segment(
     conds_to_avg = []
     for prompt, weight in prompts_to_avg:
         conds_to_cat = []
-        chunks = split_quotable(prompt, r"\bCAT\b")
-        for c in chunks:
+        for c in split_quotable(prompt, r"\bCAT\b"):
             tokens = tokenize(clip, c, can_break, empty)
             conds_to_cat.append(clip.encode_from_tokens_scheduled(tokens, add_dict=settings))
 
@@ -580,7 +579,7 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
     style, normalization, text = get_style(text)
     text, mask_size = get_mask_size(text, defaults)
 
-    prompts = split_quotable(text, r"\bAND\b")
+    prompts = list(split_quotable(text, r"\bAND\b"))
 
     p, sdxl_opts = get_sdxl(prompts[0], defaults)
     prompts[0] = p

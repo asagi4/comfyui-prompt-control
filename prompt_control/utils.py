@@ -171,17 +171,15 @@ def spans_include(spans: tuple(int, int), s: int, e: int) -> bool:
     return any((s > a and e < b) for a, b in spans)
 
 
-def split_quotable(text: str, regexp: re.Pattern) -> list[str]:
-    res = []
+def split_quotable(text: str, regexp: str) -> Iterator[str]:
     start_from = 0
     spans = [x.span() for x in re.finditer(r'".+?"', text)]
     for x in re.finditer(regexp, text):
         s, e = x.span()
         if not spans_include(spans, s, e):
-            res.append(text[start_from:s].strip())
+            yield text[start_from:s].strip()
             start_from = e
-    res.append(text[start_from:].strip())
-    return res
+    yield text[start_from:].strip()
 
 
 def split_by_function(text, func, defaults=None, require_args=True):
