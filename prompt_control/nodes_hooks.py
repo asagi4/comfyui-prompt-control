@@ -1,3 +1,4 @@
+# pyright: reportSelfClsParameterName=false
 import logging
 
 import comfy.hooks
@@ -38,7 +39,6 @@ def lora_hooks_from_schedule(schedules, non_scheduled):
     all_hooks = []
 
     def create_hook(loraspec, start_pct, end_pct, non_scheduled):
-        nonlocal lora_cache
         hooks = []
         hook_kf = comfy.hooks.HookKeyframeGroup()
         for path, info in loras.items():
@@ -53,7 +53,8 @@ def lora_hooks_from_schedule(schedules, non_scheduled):
                 lora_cache[path], strength_model=info["weight"], strength_clip=info["weight_clip"]
             )
             # Set hook_ref so that identical hooks compare equal
-            new_hook.hooks[0].hook_ref = f"pc-{path}-{info['weight']}-{info['weight_clip']}"
+            ref = f"pc-{path}-{info['weight']}-{info['weight_clip']}"
+            new_hook.hooks[0].hook_ref = ref  # pyright: ignore[reportAttributeAccessIssue]
             hooks.append(new_hook)
         if start_pct > 0.0:
             kf = comfy.hooks.HookKeyframe(strength=0.0, start_percent=0.0)
@@ -74,8 +75,6 @@ def lora_hooks_from_schedule(schedules, non_scheduled):
         all_hooks.append(hook)
         start_pct = end_pct
 
-    del lora_cache
-
     all_hooks = [x for x in all_hooks if x]
 
     if all_hooks:
@@ -85,7 +84,7 @@ def lora_hooks_from_schedule(schedules, non_scheduled):
 
 class PCAttentionCoupleBatchNegative(ComfyNodeABC):
     @classmethod
-    def INPUT_TYPES(cls) -> InputTypeDict:
+    def INPUT_TYPES(s) -> InputTypeDict:
         return {
             "required": {
                 "positive": (IO.CONDITIONING, {}),

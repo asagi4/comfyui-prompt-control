@@ -24,7 +24,6 @@ def run(f, *args):
 class TestEncode(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        global clips
         print("Loading ComfyUI")
         from comfy.sd import load_clip
         from pathlib import Path

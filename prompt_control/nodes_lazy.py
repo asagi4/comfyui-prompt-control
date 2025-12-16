@@ -1,3 +1,5 @@
+# pyright: reportSelfClsParameterName=false
+from __future__ import annotations
 import logging
 from .parser import parse_prompt_schedules
 from comfy_execution.graph_utils import GraphBuilder, is_link
@@ -167,7 +169,7 @@ class PCLazyLoraLoaderAdvanced:
             "hidden": {"unique_id": "UNIQUE_ID"},
         }
 
-    RETURN_TYPES = ("MODEL", "CLIP", "HOOKS")
+    RETURN_TYPES: tuple[str, ...] = ("MODEL", "CLIP", "HOOKS")
     OUTPUT_TOOLTIPS = ("Returns a model and clip with LoRAs scheduled",)
     CATEGORY = "promptcontrol"
     FUNCTION = "apply"
@@ -214,8 +216,7 @@ def build_scheduled_prompts(graph, schedules, clip):
         classname = "PCTextEncode"
         paramname = "text"
         if classnames:
-            classname = classnames[0][0]
-            paramname = classnames[0][1]
+            classname, paramname = classnames[0].args
         node = graph.node(classname)
         node.set_input("clip", clip)
         node.set_input(paramname, p)

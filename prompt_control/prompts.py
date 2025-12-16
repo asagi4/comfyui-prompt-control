@@ -1,3 +1,4 @@
+from __future__ import annotations
 import logging
 import re
 import torch
@@ -6,7 +7,17 @@ from functools import partial
 from comfy_extras.nodes_mask import FeatherMask, MaskComposite
 from nodes import ConditioningAverage
 
-from .utils import safe_float, get_function, split_by_function, parse_floats, smarter_split, call_node, split_quotable
+from .utils import (
+    safe_float,
+    get_function,
+    split_by_function,
+    parse_floats,
+    smarter_split,
+    call_node,
+    split_quotable,
+    FunctionSpec,
+    ComfyConditioning,
+)
 from .adv_encode import advanced_encode_from_tokens
 from .cutoff import process_cuts
 from .parser import parse_cuts
@@ -26,7 +37,7 @@ def get_sdxl(text, defaults):
     text, sdxl = get_function(text, "SDXL", ["none", "none", "none"])
     if not sdxl:
         return text, {}
-    args = sdxl[0]
+    args = sdxl[0].args
     d = defaults
     w, h = parse_floats(args[0], [d.get("sdxl_width", 1024), d.get("sdxl_height", 1024)], split_re="\\s+")
     tw, th = parse_floats(args[1], [d.get("sdxl_twidth", 1024), d.get("sdxl_theight", 1024)], split_re="\\s+")
@@ -47,7 +58,7 @@ def get_clipweights(text, existing_spec=None):
     text, spec = get_function(text, "TE_WEIGHT", defaults=None)
     if not spec:
         return existing_spec or {}, text
-    args = spec[0].strip()
+    args = spec[0].args[0].strip()
     res = {}
     for arg in args.split(","):
         try:
@@ -63,7 +74,7 @@ def get_style(text, default_style="comfy", default_normalization="none"):
     text, styles = get_function(text, "STYLE", [default_style, default_normalization])
     if not styles:
         return default_style, default_normalization, text
-    style, normalization = styles[0]
+    style, normalization = styles[0].args
     style = style.strip()
     normalization = normalization.strip()
     if style.replace("old+", "") not in AVAILABLE_STYLES:
@@ -78,8 +89,9 @@ def get_style(text, default_style="comfy", default_normalization="none"):
     return style, normalization, text
 
 
-def shuffle_chunk(shuffle, c):
-    func, shuffle = shuffle
+def shuffle_chunk(func_spec: FunctionSpec, c: str) -> str:
+    func = func_spec.name
+    shuffle = func_spec.args
     shuffle_count = int(safe_float(shuffle[0], 0))
     _, separator, joiner = shuffle
     if separator == "default":
@@ -129,11 +141,11 @@ def fix_word_ids(tokens):
 
 
 def tokenize_chunks(clip, text, need_word_ids, can_break):
-    chunks = split_quotable(text, r"\bBREAK\b")
+    chunks = list(split_quotable(text, r"\bBREAK\b"))
     token_chunks = []
     shuffled_chunks = []
     for c in chunks:
-        c, shuffles = get_function(c.strip(), "(SHIFT|SHUFFLE)", ["0", "default", "default"], return_func_name=True)
+        c, shuffles = get_function(c.strip(), "(SHIFT|SHUFFLE)", ["0", "default", "default"])
         r = c
         for s in shuffles:
             r = shuffle_chunk(s, r)
@@ -169,9 +181,10 @@ def tokenize(clip, text, can_break, empty_tokens):
     per_te_prompts = {}
     if l_prompts:
         log.warning("Note: CLIP_L is deprecated. Use TE(l=prompt) instead")
-        per_te_prompts["l"] = l_prompts
+        per_te_prompts["l"] = [x.args for x in l_prompts]
 
     for prompt in te_prompts:
+        prompt = prompt.args[0]
         if prompt.strip() == "help":
             log.info("Encoders available for TE: %s", ", ".join(tokens.keys()))
             continue
@@ -212,7 +225,7 @@ def encode_prompt_segment(
     default_style="comfy",
     default_normalization="none",
     clip_weights=None,
-) -> list[tuple[torch.Tensor, dict[str]]]:
+) -> list[ComfyConditioning]:
     style, normalization, text = get_style(text, default_style, default_normalization)
     clip_weights, text = get_clipweights(text, clip_weights)
     text, cuts = parse_cuts(text)
@@ -234,17 +247,16 @@ def encode_prompt_segment(
 
     text, averages = split_by_function(text, "AVG", ["0.5"], require_args=False)
     prompts_to_avg = []
-    for avg in averages:
-        w = safe_float(avg["args"][0], 0.5)
+    for chunk, avg in averages:
+        w = safe_float(avg.args[0], 0.5)
         prompts_to_avg.append((text, w))
-        text = avg["text"]
+        text = chunk
     prompts_to_avg.append((text, 1.0))
 
     conds_to_avg = []
     for prompt, weight in prompts_to_avg:
         conds_to_cat = []
-        chunks = split_quotable(prompt, r"\bCAT\b")
-        for c in chunks:
+        for c in split_quotable(prompt, r"\bCAT\b"):
             tokens = tokenize(clip, c, can_break, empty)
             conds_to_cat.append(clip.encode_from_tokens_scheduled(tokens, add_dict=settings))
 
@@ -366,7 +378,7 @@ def get_area(text):
     if not areas:
         return text, None
 
-    args = areas[0]
+    args = areas[0].args
     x, w = parse_floats(args[0], [0.0, 1.0], split_re="\\s+")
     y, h = parse_floats(args[1], [0.0, 1.0], split_re="\\s+")
     weight = safe_float(args[2], 1.0)
@@ -393,7 +405,7 @@ def get_mask_size(text, defaults):
     text, sizes = get_function(text, "MASK_SIZE", ["512", "512"])
     if not sizes:
         return text, (defaults.get("mask_width", 512), defaults.get("mask_height", 512))
-    w, h = sizes[0]
+    w, h = sizes[0].args
     return text, (int(w), int(h))
 
 
@@ -446,14 +458,14 @@ def get_mask(text, size, input_masks):
     mask = None
     totalweight = 1.0
     if maskw:
-        totalweight = safe_float(maskw[0][0], 1.0)
+        totalweight = safe_float(maskw[0].args[0], 1.0)
     i = 0
     for m in masks:
-        weight = safe_float(m[2], 1.0)
-        op = m[3]
-        nextmask = make_mask(m, size, weight)
+        weight = safe_float(m.args[2], 1.0)
+        op = m.args[3]
+        nextmask = make_mask(m.args, size, weight)
         if i < len(feathers):
-            nextmask = feather(feathers[i], nextmask)
+            nextmask = feather(feathers[i].args, nextmask)
         i += 1
         if mask is not None:
             log.info("MaskComposite op=%s", op)
@@ -461,7 +473,8 @@ def get_mask(text, size, input_masks):
         else:
             mask = nextmask
 
-    for idx, w, op in imasks:
+    for im in imasks:
+        idx, w, op = im.args
         idx = int(safe_float(idx, 0.0))
         w = safe_float(w, 1.0)
         if input_masks is None:
@@ -475,7 +488,7 @@ def get_mask(text, size, input_masks):
             continue
         nextmask = input_masks[idx] * w
         if i < len(feathers):
-            nextmask = feather(feathers[i], nextmask)
+            nextmask = feather(feathers[i].args, nextmask)
         i += 1
         if mask is not None:
             mask = call_node(MaskComposite, mask, nextmask, 0, 0, op)[0]
@@ -484,7 +497,7 @@ def get_mask(text, size, input_masks):
 
     # apply leftover FEATHER() specs to the whole
     for f in feathers[i:]:
-        mask = feather(f, mask)
+        mask = feather(f.args, mask)
 
     return text, mask, totalweight
 
@@ -499,14 +512,15 @@ def get_noise(text):
         return text, None, None
     w = 0
     # Only take seed from first noise spec, for simplicity
-    seed = safe_float(noises[0][1], "none")
+    seed = noises[0].args[0].strip()
     if seed == "none":
         gen = None
     else:
+        seed = safe_float(seed, 0)
         gen = torch.Generator()
         gen.manual_seed(int(seed))
     for n in noises:
-        w += safe_float(n[0], 0.0)
+        w += safe_float(n.args[0], 0.0)
     return text, max(min(w, 1.0), 0.0), gen
 
 
@@ -567,7 +581,7 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
     style, normalization, text = get_style(text)
     text, mask_size = get_mask_size(text, defaults)
 
-    prompts = split_quotable(text, r"\bAND\b")
+    prompts = list(split_quotable(text, r"\bAND\b"))
 
     p, sdxl_opts = get_sdxl(prompts[0], defaults)
     prompts[0] = p
@@ -591,7 +605,7 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
     for prompt in prompts:
         base_prompt, attn_couple_prompts = split_by_function(prompt, "COUPLE", defaults=None, require_args=False)
 
-        prompts = [base_prompt] + [couple_mask(p["args"]) + p["text"] for p in attn_couple_prompts]
+        prompts = [base_prompt] + [couple_mask(f.args) + chunk for (chunk, f) in attn_couple_prompts]
         encoded = []
         for p in prompts:
             p, settings = process_settings(p, defaults, masks, mask_size, sdxl_opts)

@@ -13,3 +13,7 @@ Repository = "https://github.com/asagi4/comfyui-prompt-control"
 PublisherId = "asagi4"
 DisplayName = "ComfyUI Prompt Control"
 Icon = ""
+
+[tool.pyright]
+extraPaths = ["../../"]
+exclude = ["prompt_control/*test*"]

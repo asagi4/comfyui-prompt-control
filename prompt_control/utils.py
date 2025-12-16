@@ -1,15 +1,34 @@
+from __future__ import annotations
 from pathlib import Path
 import re
 import logging
 import copy
+
+from dataclasses import dataclass
+from typing import Any, TypeAlias, Iterator, TypeVar, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import torch  # flakes8: noqa
+
+FunctionArgs: TypeAlias = list[str]
+ComfyConditioning: TypeAlias = tuple["torch.Tensor", dict[str, Any]]
+
+
+@dataclass
+class FunctionSpec:
+    name: str
+    args: FunctionArgs
+    position: int
+    placeholder: str | None
+
 
 # Allow testing
 try:
     from folder_paths import get_filename_list
 except ImportError:
 
-    def get_filename_list(x):
-        raise NotImplementedError("How did you get here?")
+    def get_filename_list(folder_name) -> list[str]:
+        return []
 
 
 log = logging.getLogger("comfyui-prompt-control")
@@ -64,10 +83,11 @@ def find_nonscheduled_loras(consolidated_schedule):
     return {k: v for (k, v) in candidate_loras.items() if k not in to_remove}
 
 
-def smarter_split(separator, string):
+def smarter_split(separator: str, string: str) -> list[str]:
     """Does not break () when splitting"""
     splits = []
     prev = 0
+    idx = 0
     stack = 0
     escape = False
     for idx, x in enumerate(string):
@@ -84,7 +104,7 @@ def smarter_split(separator, string):
     return splits
 
 
-def find_closing_paren(text, start):
+def find_closing_paren(text: str, start: int) -> int:
     stack = 1
     for i, char in enumerate(text[start:]):
         if char == ")":
@@ -96,7 +116,9 @@ def find_closing_paren(text, start):
     return -1
 
 
-def find_function_spans(text, func, require_args, defaults):
+def find_function_spans(
+    text: str, func: str, require_args: bool, defaults: FunctionArgs | None
+) -> Iterator[tuple[int, int, str, FunctionArgs]]:
     if require_args:
         rex = re.compile(rf"\b{func}\(", re.MULTILINE)
     else:
@@ -113,20 +135,21 @@ def find_function_spans(text, func, require_args, defaults):
         if text[at_paren:after_first_paren] == "(":
             end = find_closing_paren(text, after_first_paren)
             if end < 0:
-                print("no closing paren:", text)
                 continue
             args = parse_strings(text[after_first_paren:end], defaults)
             end += 1
         else:
             end = at_paren
-            args = defaults
+            args = defaults or []
         yield idx + start, idx + end, funcname, args
         idx = idx + end
         text = text[end:]
         match = rex.search(text)
 
 
-def get_function(text, func, defaults, return_func_name=False, placeholder="", return_dict=False, require_args=True):
+def get_function(
+    text: str, func: str, defaults: list[str] | None, placeholder: str = "", require_args: bool = True
+) -> tuple[str, list[FunctionSpec]]:
     spans = [x.span() for x in re.finditer(r'".+?"', text)]
     instances = []
     count = 0
@@ -138,24 +161,8 @@ def get_function(text, func, defaults, return_func_name=False, placeholder="", r
             continue
         if placeholder:
             ph = f"\0{placeholder}{count}\0"
-        if return_dict:
-            instances.append(
-                {
-                    "name": funcname,
-                    "args": args,
-                    "position": start,
-                    "placeholder": ph,
-                }
-            )
-        elif return_func_name:
-            instances.append((funcname, args))
-        else:
-            instances.append(args)
-
-        if placeholder:
-            chunks.append(text[current:start] + f"\0{placeholder}{count}\0")
-        else:
-            chunks.append(text[current:start])
+        instances.append(FunctionSpec(funcname, args, start, ph))
+        chunks.append(text[current:start] + (ph or ""))
         current = end
         count += 1
     chunks.append(text[current:])
@@ -163,60 +170,67 @@ def get_function(text, func, defaults, return_func_name=False, placeholder="", r
     return text, instances
 
 
-def spans_include(spans, s, e):
+def spans_include(spans: list[tuple[int, int]], s: int, e: int) -> bool:
     return any((s > a and e < b) for a, b in spans)
 
 
-def split_quotable(text, regexp):
-    res = []
+def split_quotable(text: str, regexp: str) -> Iterator[str]:
     start_from = 0
     spans = [x.span() for x in re.finditer(r'".+?"', text)]
     for x in re.finditer(regexp, text):
         s, e = x.span()
         if not spans_include(spans, s, e):
-            res.append(text[start_from:s].strip())
+            yield text[start_from:s].strip()
             start_from = e
-    res.append(text[start_from:].strip())
-    return res
+    yield text[start_from:].strip()
 
 
-def split_by_function(text, func, defaults=None, require_args=True):
+def split_by_function(
+    text: str, func: str, defaults: list[str] | None = None, require_args: bool = True
+) -> tuple[str, list[tuple[str, FunctionSpec]]]:
     """
-    Splits a string by function calls, returning the text preceding the first call and a list of dictionaries with a "text" key with the prompt before the next split or until hthe end of the text.
+    Splits a string by function calls, returning the leftover text along with a list of functions with their associated text chunk.
     """
-    text, functions = get_function(text, func, defaults, return_dict=True, require_args=require_args)
+    text, functions = get_function(text, func, defaults, require_args=require_args)
     chunks = []
     prev = 0
     for f in functions:
-        chunks.append(text[prev : f["position"]])
-        prev = f["position"]
+        chunks.append(text[prev : f.position])
+        prev = f.position
     chunks.append(text[prev:])
+    r = []
     for i, f in enumerate(functions):
-        f["text"] = chunks[i + 1]
-    return chunks[0], functions
+        r.append((chunks[i + 1], f))
+    return chunks[0], r
 
 
-def parse_args(strings, arg_spec, strip=True):
+T = TypeVar("T")
+
+
+def parse_args(strings: list[str], arg_spec: list[tuple[Any, T]], strip: bool = True) -> list[T]:
     args = [s[1] for s in arg_spec]
     for i, spec in list(enumerate(arg_spec))[: len(strings)]:
         try:
             if strip:
                 strings[i] = strings[i].strip()
-            args[i] = spec[0](strings[i])
+            f = spec[0]
+            args[i] = f(strings[i])
         except ValueError:
             pass
     return args
 
 
-def parse_floats(string, defaults, split_re=","):
+def parse_floats(string: str, defaults: list[float], split_re: str = ",") -> list[float]:
     spec = [(float, d) for d in defaults]
     return parse_args(re.split(split_re, string.strip()), spec)
 
 
-def parse_strings(string, defaults, split_re=r"(?<!\\),", replace=(r"\,", ",")):
+def parse_strings(
+    string: str, defaults: FunctionArgs | None, split_re: str = r"(?<!\\),", replace: tuple[str, str] = (r"\,", ",")
+) -> FunctionArgs:
     if defaults is None:
-        return string
-    spec = [(lambda x: x, d) for d in defaults]
+        return [string]
+    spec = [(str, d) for d in defaults]
     splits = re.split(split_re, string)
     if replace:
         f, t = replace
@@ -224,7 +238,7 @@ def parse_strings(string, defaults, split_re=r"(?<!\\),", replace=(r"\,", ",")):
     return parse_args(splits, spec, strip=False)
 
 
-def safe_float(f, default):
+def safe_float(f: Any, default: float) -> float:
     if f is None:
         return default
     try:
@@ -233,7 +247,7 @@ def safe_float(f, default):
         return default
 
 
-def lora_name_to_file(name):
+def lora_name_to_file(name: str) -> str | None:
     filenames = get_filename_list("loras")
     # Return exact matches as is
     if name in filenames:

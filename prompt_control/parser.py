@@ -1,4 +1,5 @@
 # vim: sw=4 ts=4
+from __future__ import annotations
 import lark
 import logging
 from math import ceil
@@ -100,7 +101,15 @@ class CutTransform(lark.Transformer):
     def cut(self, args):
         prompt, cutout, weight, strict_mask, start_from_masked, mask_token = args
 
-        return ("".join(flatten(prompt)), "".join(flatten(cutout)), weight, strict_mask, start_from_masked, mask_token)
+        # prompts and cutouts are always sequences of str
+        return (
+            "".join(flatten(prompt)),  # pyright: ignore
+            "".join(flatten(cutout)),  # pyright: ignore
+            weight,
+            strict_mask,
+            start_from_masked,
+            mask_token,
+        )  # pyright: ignore
 
     def start(self, args):
         prompt = []
@@ -301,8 +310,7 @@ def at_step(step, filters, tree):
             return name, params, lbw
 
         def __default__(self, data, children, meta):
-            for child in children:
-                yield child
+            return children
 
     return AtStep().transform(tree)
 
@@ -427,7 +435,9 @@ def expand_macros(text):
     prevres = text
     replacements = []
     for d in defs:
-        r = d.split("=", 1)
+        if not d.args:
+            continue
+        r = d.args[0].split("=", 1)
         search = parse_search(r[0].strip())
         if not search or len(r) != 2:
             log.warning("Ignoring invalid DEF(%s)", d)
@@ -452,15 +462,14 @@ def expand_macros(text):
 
 def substitute_defcall(text, search, replace):
     name, default_args = search
-    text, defns = get_function(
-        text, name, defaults=None, placeholder=f"DEFNCALL{name}", require_args=False, return_dict=True
-    )
+    text, defns = get_function(text, name, defaults=None, placeholder=f"DEFNCALL{name}", require_args=False)
     for i, d in enumerate(defns):
-        ph = d["placeholder"]
-        parameters = d["args"]
+        ph = d.placeholder
+        assert ph is not None, "This is a bug"
+        parameters = d.args
         paramvals = []
-        if parameters is not None:
-            paramvals = [x.strip() for x in parameters.split(";")]
+        if parameters:
+            paramvals = [x.strip() for x in parameters[0].split(";")]
         r = replace
         for i, v in enumerate(paramvals):
             r = re.sub(rf"\${i+1}\b", v, r)
