@@ -1,3 +1,4 @@
+from __future__ import annotations
 import logging
 from .parser import parse_prompt_schedules
 from comfy_execution.graph_utils import GraphBuilder, is_link
@@ -214,8 +215,7 @@ def build_scheduled_prompts(graph, schedules, clip):
         classname = "PCTextEncode"
         paramname = "text"
         if classnames:
-            classname = classnames[0][0]
-            paramname = classnames[0][1]
+            classname, paramname = classnames[0].args
         node = graph.node(classname)
         node.set_input("clip", clip)
         node.set_input(paramname, p)

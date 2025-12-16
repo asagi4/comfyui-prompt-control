@@ -1,4 +1,5 @@
 # vim: sw=4 ts=4
+from __future__ import annotations
 import lark
 import logging
 from math import ceil
@@ -427,7 +428,7 @@ def expand_macros(text):
     prevres = text
     replacements = []
     for d in defs:
-        r = d.split("=", 1)
+        r = d.args.split("=", 1)
         search = parse_search(r[0].strip())
         if not search or len(r) != 2:
             log.warning("Ignoring invalid DEF(%s)", d)
@@ -452,12 +453,10 @@ def expand_macros(text):
 
 def substitute_defcall(text, search, replace):
     name, default_args = search
-    text, defns = get_function(
-        text, name, defaults=None, placeholder=f"DEFNCALL{name}", require_args=False, return_dict=True
-    )
+    text, defns = get_function(text, name, defaults=None, placeholder=f"DEFNCALL{name}", require_args=False)
     for i, d in enumerate(defns):
-        ph = d["placeholder"]
-        parameters = d["args"]
+        ph = d.placeholder
+        parameters = d.args
         paramvals = []
         if parameters is not None:
             paramvals = [x.strip() for x in parameters.split(";")]

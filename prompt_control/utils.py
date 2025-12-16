@@ -1,7 +1,19 @@
+from __future__ import annotations
 from pathlib import Path
 import re
 import logging
 import copy
+
+from dataclasses import dataclass
+
+
+@dataclass
+class FunctionSpec:
+    name: str
+    args: list[str]
+    position: int
+    placeholder: str | None
+
 
 # Allow testing
 try:
@@ -126,7 +138,9 @@ def find_function_spans(text, func, require_args, defaults):
         match = rex.search(text)
 
 
-def get_function(text, func, defaults, return_func_name=False, placeholder="", return_dict=False, require_args=True):
+def get_function(
+    text: str, func: str, defaults: list[str], placeholder: str = "", require_args: bool = True
+) -> tuple[str, list[FunctionSpec]]:
     spans = [x.span() for x in re.finditer(r'".+?"', text)]
     instances = []
     count = 0
@@ -138,24 +152,8 @@ def get_function(text, func, defaults, return_func_name=False, placeholder="", r
             continue
         if placeholder:
             ph = f"\0{placeholder}{count}\0"
-        if return_dict:
-            instances.append(
-                {
-                    "name": funcname,
-                    "args": args,
-                    "position": start,
-                    "placeholder": ph,
-                }
-            )
-        elif return_func_name:
-            instances.append((funcname, args))
-        else:
-            instances.append(args)
-
-        if placeholder:
-            chunks.append(text[current:start] + f"\0{placeholder}{count}\0")
-        else:
-            chunks.append(text[current:start])
+        instances.append(FunctionSpec(funcname, args, start, ph))
+        chunks.append(text[current:start] + (ph or ""))
         current = end
         count += 1
     chunks.append(text[current:])
@@ -184,7 +182,7 @@ def split_by_function(text, func, defaults=None, require_args=True):
     """
     Splits a string by function calls, returning the text preceding the first call and a list of dictionaries with a "text" key with the prompt before the next split or until hthe end of the text.
     """
-    text, functions = get_function(text, func, defaults, return_dict=True, require_args=require_args)
+    text, functions = get_function(text, func, defaults, require_args=require_args)
     chunks = []
     prev = 0
     for f in functions:
