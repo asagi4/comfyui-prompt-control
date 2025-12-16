@@ -428,7 +428,9 @@ def expand_macros(text):
     prevres = text
     replacements = []
     for d in defs:
-        r = d.args.split("=", 1)
+        if not d.args:
+            continue
+        r = d.args[0].split("=", 1)
         search = parse_search(r[0].strip())
         if not search or len(r) != 2:
             log.warning("Ignoring invalid DEF(%s)", d)
@@ -458,8 +460,8 @@ def substitute_defcall(text, search, replace):
         ph = d.placeholder
         parameters = d.args
         paramvals = []
-        if parameters is not None:
-            paramvals = [x.strip() for x in parameters.split(";")]
+        if parameters:
+            paramvals = [x.strip() for x in parameters[0].split(";")]
         r = replace
         for i, v in enumerate(paramvals):
             r = re.sub(rf"\${i+1}\b", v, r)

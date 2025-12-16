@@ -38,7 +38,6 @@ def lora_hooks_from_schedule(schedules, non_scheduled):
     all_hooks = []
 
     def create_hook(loraspec, start_pct, end_pct, non_scheduled):
-        nonlocal lora_cache
         hooks = []
         hook_kf = comfy.hooks.HookKeyframeGroup()
         for path, info in loras.items():
@@ -73,8 +72,6 @@ def lora_hooks_from_schedule(schedules, non_scheduled):
         hook = create_hook(loras, start_pct, end_pct, non_scheduled)
         all_hooks.append(hook)
         start_pct = end_pct
-
-    del lora_cache
 
     all_hooks = [x for x in all_hooks if x]
 

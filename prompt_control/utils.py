@@ -10,14 +10,14 @@ from typing import Any, TypeAlias, Iterator, TypeVar, TYPE_CHECKING
 if TYPE_CHECKING:
     import torch
 
-FunctionArgs: TypeAlias = list[str] | str
-ComfyConditioning: TypeAlias = tuple[torch.Tensor, dict[str, Any]]
+FunctionArgs: TypeAlias = list[str]
+ComfyConditioning: TypeAlias = tuple["torch.Tensor", dict[str, Any]]
 
 
 @dataclass
 class FunctionSpec:
     name: str
-    args: FunctionArgs | None
+    args: FunctionArgs
     position: int
     placeholder: str | None
 
@@ -117,8 +117,8 @@ def find_closing_paren(text: str, start: int) -> int:
 
 
 def find_function_spans(
-    text: str, func: str, require_args: bool, defaults: list[str] | None
-) -> Iterator[tuple[int, int, str, FunctionArgs | None]]:
+    text: str, func: str, require_args: bool, defaults: FunctionArgs | None
+) -> Iterator[tuple[int, int, str, FunctionArgs]]:
     if require_args:
         rex = re.compile(rf"\b{func}\(", re.MULTILINE)
     else:
@@ -140,7 +140,7 @@ def find_function_spans(
             end += 1
         else:
             end = at_paren
-            args = defaults
+            args = defaults or []
         yield idx + start, idx + end, funcname, args
         idx = idx + end
         text = text[end:]
@@ -223,10 +223,10 @@ def parse_floats(string: str, defaults: list[float], split_re: str = ",") -> lis
 
 
 def parse_strings(
-    string: str, defaults: list[str] | None, split_re: str = r"(?<!\\),", replace: tuple[str, str] = (r"\,", ",")
+    string: str, defaults: FunctionArgs | None, split_re: str = r"(?<!\\),", replace: tuple[str, str] = (r"\,", ",")
 ) -> FunctionArgs:
     if defaults is None:
-        return string
+        return [string]
     spec = [(str, d) for d in defaults]
     splits = re.split(split_re, string)
     if replace:
