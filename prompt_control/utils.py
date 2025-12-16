@@ -5,12 +5,16 @@ import logging
 import copy
 
 from dataclasses import dataclass
+from typing import Any, TypeAlias, Iterator
+
+
+FunctionArgs: TypeAlias = list[str] | str
 
 
 @dataclass
 class FunctionSpec:
     name: str
-    args: list[str]
+    args: FunctionArgs
     position: int
     placeholder: str | None
 
@@ -76,7 +80,7 @@ def find_nonscheduled_loras(consolidated_schedule):
     return {k: v for (k, v) in candidate_loras.items() if k not in to_remove}
 
 
-def smarter_split(separator, string):
+def smarter_split(separator: str, string: str) -> list[str]:
     """Does not break () when splitting"""
     splits = []
     prev = 0
@@ -96,7 +100,7 @@ def smarter_split(separator, string):
     return splits
 
 
-def find_closing_paren(text, start):
+def find_closing_paren(text: str, start: int) -> int:
     stack = 1
     for i, char in enumerate(text[start:]):
         if char == ")":
@@ -108,7 +112,9 @@ def find_closing_paren(text, start):
     return -1
 
 
-def find_function_spans(text, func, require_args, defaults):
+def find_function_spans(
+    text: str, func: str, require_args: bool, defaults: list[str] | None
+) -> Iterator[tuple[int, int, str, FunctionArgs]]:
     if require_args:
         rex = re.compile(rf"\b{func}\(", re.MULTILINE)
     else:
@@ -161,11 +167,11 @@ def get_function(
     return text, instances
 
 
-def spans_include(spans, s, e):
+def spans_include(spans: tuple(int, int), s: int, e: int) -> bool:
     return any((s > a and e < b) for a, b in spans)
 
 
-def split_quotable(text, regexp):
+def split_quotable(text: str, regexp: re.Pattern) -> list[str]:
     res = []
     start_from = 0
     spans = [x.span() for x in re.finditer(r'".+?"', text)]
@@ -194,7 +200,7 @@ def split_by_function(text, func, defaults=None, require_args=True):
     return chunks[0], functions
 
 
-def parse_args(strings, arg_spec, strip=True):
+def parse_args(strings: list[str], arg_spec: list[str], strip: bool = True) -> list[str]:
     args = [s[1] for s in arg_spec]
     for i, spec in list(enumerate(arg_spec))[: len(strings)]:
         try:
@@ -206,12 +212,12 @@ def parse_args(strings, arg_spec, strip=True):
     return args
 
 
-def parse_floats(string, defaults, split_re=","):
+def parse_floats(string: str, defaults: list[float], split_re: str = ",") -> list[float]:
     spec = [(float, d) for d in defaults]
     return parse_args(re.split(split_re, string.strip()), spec)
 
 
-def parse_strings(string, defaults, split_re=r"(?<!\\),", replace=(r"\,", ",")):
+def parse_strings(string, defaults, split_re=r"(?<!\\),", replace=(r"\,", ",")) -> FunctionArgs:
     if defaults is None:
         return string
     spec = [(lambda x: x, d) for d in defaults]
@@ -222,7 +228,7 @@ def parse_strings(string, defaults, split_re=r"(?<!\\),", replace=(r"\,", ",")):
     return parse_args(splits, spec, strip=False)
 
 
-def safe_float(f, default):
+def safe_float(f: Any, default: float) -> float:
     if f is None:
         return default
     try:
