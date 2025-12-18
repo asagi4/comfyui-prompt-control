@@ -1,3 +1,4 @@
+# pyright: reportSelfClsParameterName=false
 from __future__ import annotations
 import logging
 from .parser import parse_prompt_schedules

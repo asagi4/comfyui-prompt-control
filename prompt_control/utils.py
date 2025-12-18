@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from typing import Any, TypeAlias, Iterator, TypeVar, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import torch
+    import torch  # flakes8: noqa
 
 FunctionArgs: TypeAlias = list[str]
 ComfyConditioning: TypeAlias = tuple["torch.Tensor", dict[str, Any]]
@@ -27,8 +27,8 @@ try:
     from folder_paths import get_filename_list
 except ImportError:
 
-    def get_filename_list(x):
-        raise NotImplementedError("How did you get here?")
+    def get_filename_list(folder_name) -> list[str]:
+        return []
 
 
 log = logging.getLogger("comfyui-prompt-control")
@@ -148,7 +148,7 @@ def find_function_spans(
 
 
 def get_function(
-    text: str, func: str, defaults: list[str], placeholder: str = "", require_args: bool = True
+    text: str, func: str, defaults: list[str] | None, placeholder: str = "", require_args: bool = True
 ) -> tuple[str, list[FunctionSpec]]:
     spans = [x.span() for x in re.finditer(r'".+?"', text)]
     instances = []
@@ -185,20 +185,23 @@ def split_quotable(text: str, regexp: str) -> Iterator[str]:
     yield text[start_from:].strip()
 
 
-def split_by_function(text, func, defaults=None, require_args=True):
+def split_by_function(
+    text: str, func: str, defaults: list[str] | None = None, require_args: bool = True
+) -> tuple[str, list[tuple[str, FunctionSpec]]]:
     """
-    Splits a string by function calls, returning the text preceding the first call and a list of dictionaries with a "text" key with the prompt before the next split or until hthe end of the text.
+    Splits a string by function calls, returning the leftover text along with a list of functions with their associated text chunk.
     """
     text, functions = get_function(text, func, defaults, require_args=require_args)
     chunks = []
     prev = 0
     for f in functions:
-        chunks.append(text[prev : f["position"]])
-        prev = f["position"]
+        chunks.append(text[prev : f.position])
+        prev = f.position
     chunks.append(text[prev:])
+    r = []
     for i, f in enumerate(functions):
-        f["text"] = chunks[i + 1]
-    return chunks[0], functions
+        r.append((chunks[i + 1], f))
+    return chunks[0], r
 
 
 T = TypeVar("T")

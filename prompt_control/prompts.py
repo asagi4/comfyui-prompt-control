@@ -58,7 +58,7 @@ def get_clipweights(text, existing_spec=None):
     text, spec = get_function(text, "TE_WEIGHT", defaults=None)
     if not spec:
         return existing_spec or {}, text
-    args = spec[0].args.strip()
+    args = spec[0].args[0].strip()
     res = {}
     for arg in args.split(","):
         try:
@@ -184,7 +184,7 @@ def tokenize(clip, text, can_break, empty_tokens):
         per_te_prompts["l"] = [x.args for x in l_prompts]
 
     for prompt in te_prompts:
-        prompt = prompt.args
+        prompt = prompt.args[0]
         if prompt.strip() == "help":
             log.info("Encoders available for TE: %s", ", ".join(tokens.keys()))
             continue
@@ -247,10 +247,10 @@ def encode_prompt_segment(
 
     text, averages = split_by_function(text, "AVG", ["0.5"], require_args=False)
     prompts_to_avg = []
-    for avg in averages:
-        w = safe_float(avg["args"][0], 0.5)
+    for chunk, avg in averages:
+        w = safe_float(avg.args[0], 0.5)
         prompts_to_avg.append((text, w))
-        text = avg["text"]
+        text = chunk
     prompts_to_avg.append((text, 1.0))
 
     conds_to_avg = []
@@ -512,10 +512,11 @@ def get_noise(text):
         return text, None, None
     w = 0
     # Only take seed from first noise spec, for simplicity
-    seed = safe_float(noises[0].args, "none")
+    seed = noises[0].args[0].strip()
     if seed == "none":
         gen = None
     else:
+        seed = safe_float(seed, 0)
         gen = torch.Generator()
         gen.manual_seed(int(seed))
     for n in noises:
@@ -604,7 +605,7 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
     for prompt in prompts:
         base_prompt, attn_couple_prompts = split_by_function(prompt, "COUPLE", defaults=None, require_args=False)
 
-        prompts = [base_prompt] + [couple_mask(p["args"]) + p["text"] for p in attn_couple_prompts]
+        prompts = [base_prompt] + [couple_mask(f.args) + chunk for (chunk, f) in attn_couple_prompts]
         encoded = []
         for p in prompts:
             p, settings = process_settings(p, defaults, masks, mask_size, sdxl_opts)

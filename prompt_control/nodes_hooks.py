@@ -1,3 +1,4 @@
+# pyright: reportSelfClsParameterName=false
 import logging
 
 import comfy.hooks
@@ -52,7 +53,8 @@ def lora_hooks_from_schedule(schedules, non_scheduled):
                 lora_cache[path], strength_model=info["weight"], strength_clip=info["weight_clip"]
             )
             # Set hook_ref so that identical hooks compare equal
-            new_hook.hooks[0].hook_ref = f"pc-{path}-{info['weight']}-{info['weight_clip']}"
+            ref = f"pc-{path}-{info['weight']}-{info['weight_clip']}"
+            new_hook.hooks[0].hook_ref = ref  # pyright: ignore[reportAttributeAccessIssue]
             hooks.append(new_hook)
         if start_pct > 0.0:
             kf = comfy.hooks.HookKeyframe(strength=0.0, start_percent=0.0)

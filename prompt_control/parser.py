@@ -101,7 +101,15 @@ class CutTransform(lark.Transformer):
     def cut(self, args):
         prompt, cutout, weight, strict_mask, start_from_masked, mask_token = args
 
-        return ("".join(flatten(prompt)), "".join(flatten(cutout)), weight, strict_mask, start_from_masked, mask_token)
+        # prompts and cutouts are always sequences of str
+        return (
+            "".join(flatten(prompt)),  # pyright: ignore
+            "".join(flatten(cutout)),  # pyright: ignore
+            weight,
+            strict_mask,
+            start_from_masked,
+            mask_token,
+        )  # pyright: ignore
 
     def start(self, args):
         prompt = []
@@ -302,8 +310,7 @@ def at_step(step, filters, tree):
             return name, params, lbw
 
         def __default__(self, data, children, meta):
-            for child in children:
-                yield child
+            return children
 
     return AtStep().transform(tree)
 
@@ -458,6 +465,7 @@ def substitute_defcall(text, search, replace):
     text, defns = get_function(text, name, defaults=None, placeholder=f"DEFNCALL{name}", require_args=False)
     for i, d in enumerate(defns):
         ph = d.placeholder
+        assert ph is not None, "This is a bug"
         parameters = d.args
         paramvals = []
         if parameters:
