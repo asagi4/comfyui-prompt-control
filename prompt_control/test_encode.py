@@ -20,7 +20,6 @@ def run(f, *args):
         return getattr(f, f.FUNCTION)(*args)
 
 
-@mock.patch("torch.cuda.current_device", lambda: "cpu")
 class TestEncode(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
