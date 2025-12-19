@@ -1,8 +1,9 @@
 import main
 import nodes
+
 import prompt_control.adv_encode
 
-(l,) = nodes.CLIPLoader.load_clip(None, "clip_l.safetensors")
+(clip_l,) = nodes.CLIPLoader.load_clip(None, "clip_l.safetensors")
 (t5,) = nodes.CLIPLoader.load_clip(None, "t5base.safetensors")
 
 id(main)  # get rid of warning
@@ -23,10 +24,11 @@ def adv(t, text, style="A1111", norm="none", new=True, **kwargs):
     return prompt_control.adv_encode.advanced_encode_from_tokens(tok, norm, style, te, tokenizer=token)
 
 
-def adv_all(t, text, styles=[], **kwargs):
+def adv_all(t, text, styles=None, **kwargs):
+    if styles is None:
+        styles = []
     r = []
     for s in styles or prompt_control.adv_encode.AdvancedEncoder.STYLES:
-        print("Testing", s, kwargs)
         r.append([s, adv(t, text, style=s, **kwargs)])
     return r
 

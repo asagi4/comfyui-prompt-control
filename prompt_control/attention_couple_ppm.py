@@ -9,7 +9,6 @@ from typing import Any
 
 import torch
 import torch.nn.functional as F
-
 from comfy.hooks import EnumHookScope, HookGroup, TransformerOptionsHook, set_hooks_for_conditioning
 from comfy.model_patcher import ModelPatcher
 
@@ -72,7 +71,7 @@ class AttentionCoupleHook(TransformerOptionsHook):
         }
         self.has_negpip = False
         # calculate later. All clones must refer to the same kv dict
-        self.kv = {}
+        self.kv = {"k": [], "v": []}
 
     def initialize_regions(self, base_cond, conds, fill):
         self.num_conds = len(conds) + 1
