@@ -1,6 +1,6 @@
+import logging
 import unittest
 import unittest.mock as mock
-import logging
 
 log = logging.getLogger("comfyui-prompt-control")
 
@@ -20,10 +20,7 @@ def loraloader(text, adv=False, **kwargs):
     from .nodes_lazy import PCLazyLoraLoader, PCLazyLoraLoaderAdvanced
 
     reset_graphbuilder_state()
-    if adv:
-        cls = PCLazyLoraLoader
-    else:
-        cls = PCLazyLoraLoaderAdvanced
+    cls = PCLazyLoraLoader if adv else PCLazyLoraLoaderAdvanced
     model = [0, 1]
     clip = [0, 0]
     return cls().apply(unique_id="UID", model=model, clip=clip, text=text, **kwargs)
@@ -32,10 +29,7 @@ def loraloader(text, adv=False, **kwargs):
 def te(text, adv=False, **kwargs):
     from .nodes_lazy import PCLazyTextEncode, PCLazyTextEncodeAdvanced
 
-    if adv:
-        cls = PCLazyTextEncode
-    else:
-        cls = PCLazyTextEncodeAdvanced
+    cls = PCLazyTextEncode if adv else PCLazyTextEncodeAdvanced
     reset_graphbuilder_state()
     clip = [0, 0]
     return cls().apply(clip=clip, text=text, unique_id="UID", **kwargs)

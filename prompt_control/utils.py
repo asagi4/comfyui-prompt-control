@@ -1,11 +1,12 @@
 from __future__ import annotations
-from pathlib import Path
-import re
-import logging
-import copy
 
+import copy
+import logging
+import re
+from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Any, TypeAlias, Iterator, TypeVar, TYPE_CHECKING
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar
 
 if TYPE_CHECKING:
     import torch  # flakes8: noqa
@@ -119,10 +120,8 @@ def find_closing_paren(text: str, start: int) -> int:
 def find_function_spans(
     text: str, func: str, require_args: bool, defaults: FunctionArgs | None
 ) -> Iterator[tuple[int, int, str, FunctionArgs]]:
-    if require_args:
-        rex = re.compile(rf"\b{func}\(", re.MULTILINE)
-    else:
-        rex = re.compile(rf"\b{func}\b", re.MULTILINE)
+    e = r"\(" if require_args else r"\b"
+    rex = re.compile(rf"\b{func}{e}", re.MULTILINE)
 
     idx = 0
     match = rex.search(text)
@@ -189,7 +188,8 @@ def split_by_function(
     text: str, func: str, defaults: list[str] | None = None, require_args: bool = True
 ) -> tuple[str, list[tuple[str, FunctionSpec]]]:
     """
-    Splits a string by function calls, returning the leftover text along with a list of functions with their associated text chunk.
+    Splits a string by function calls, returning the leftover text
+    along with a list of functions with their associated text chunk.
     """
     text, functions = get_function(text, func, defaults, require_args=require_args)
     chunks = []
@@ -289,7 +289,7 @@ def expand_graph(node_mappings, graph):
         node = node_mappings[data["class_type"]]()
         inputs = map_inputs(input_map, data["inputs"].copy())
         inputs["unique_id"] = k
-        fn = getattr(node, getattr(node, "FUNCTION"))
+        fn = getattr(node, node.FUNCTION)
         expansion = fn(**inputs)
         for i, v in enumerate(expansion["result"]):
             input_map[(k, i)] = v

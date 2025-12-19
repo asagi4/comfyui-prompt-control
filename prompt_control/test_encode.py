@@ -1,14 +1,15 @@
+import logging
 import unittest
-import unittest.mock as mock
-import numpy.testing as npt
 from os import environ
-import nodes
+
 import comfy_extras.nodes_mask
+import nodes
+import numpy.testing as npt
+
 from .nodes_base import PCTextEncode
 
 clips = []
 
-import logging
 
 logging.basicConfig()
 
@@ -24,9 +25,9 @@ def run(f, *args):
 class TestEncode(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        print("Loading ComfyUI")
-        from comfy.sd import load_clip
         from pathlib import Path
+
+        from comfy.sd import load_clip
 
         to_test = environ.get("TEST_TE", "clip_l").split()
         model_dir = environ.get("COMFYUI_TE_DIR", ".")
@@ -46,8 +47,6 @@ class TestEncode(unittest.TestCase):
                 model_options={},
             )
             clips.append(("clip_l+t5", dual))
-
-        print("Starting tests")
 
     def tensorsEqual(self, t1, t2):
         npt.assert_equal(t1.detach().numpy(), t2.detach().numpy())
@@ -184,7 +183,7 @@ class TestEncode(unittest.TestCase):
         comfy = nodes.CLIPTextEncode()
         solidmask = comfy_extras.nodes_mask.SolidMask()
         setMask = nodes.ConditioningSetMask()
-        for k, clip in clips:
+        for _k, clip in clips:
             (c1,) = run(pc, clip, "test MASK()")
             (c2,) = run(comfy, clip, "test")
             (c2,) = run(setMask, c2, run(solidmask, 1.0, 512, 512)[0], "default", 1.0)

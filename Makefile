@@ -1,9 +1,11 @@
 all: format check test
 	@echo "Done"
+
 check:
-	find . -name "*.py" | xargs pyflakes
+	ty check && ruff check
+
 format:
-	find . -name "*.py" | xargs black -l 120
+	ruff format
 
 test:
 	python -m prompt_control.test_parser

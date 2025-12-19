@@ -1,9 +1,9 @@
-import torch
 import copy
+import logging
 import re
 
 import numpy as np
-import logging
+import torch
 
 log = logging.getLogger("comfyui-prompt-control")
 
@@ -69,10 +69,7 @@ def cutoff_add_region(
         clip_regions["start_from_masked"] = float(start_from_masked)
     if mask_token is not None:
         clip_regions["mask_token"] = tokenizer.tokenizer(mask_token)["input_ids"][1]
-    if weight is None:
-        weight = 1.0
-    else:
-        weight = float(weight)
+    weight = 1.0 if weight is None else float(weight)
 
     region_text = region_text.strip()
     target_text = target_text.strip()
@@ -139,7 +136,7 @@ def cutoff_add_region(
 
 
 def create_masked_prompt(weighted_tokens, mask, mask_token):
-    mask_ids = list(zip(*np.nonzero(mask.reshape((len(weighted_tokens), -1)))))
+    mask_ids = list(zip(*np.nonzero(mask.reshape((len(weighted_tokens), -1))), strict=False))
     new_prompt = copy.deepcopy(weighted_tokens)
     for x, y in mask_ids:
         new_prompt[x][y] = (mask_token,) + new_prompt[x][y][1:]
@@ -200,7 +197,9 @@ def encode_regions(clip_regions, encode, tokenizer):
     base_embedding_outer = base_embedding_full * (1 - strict_mask) + base_embedding_masked * strict_mask
 
     region_embeddings = []
-    for region, target, weight in zip(clip_regions["regions"], clip_regions["targets"], clip_regions["weights"]):
+    for region, target, weight in zip(
+        clip_regions["regions"], clip_regions["targets"], clip_regions["weights"], strict=False
+    ):
         region_masking = torch.tensor(
             regions_normalized * region * weight, dtype=base_embedding_full.dtype, device=base_embedding_full.device
         ).unsqueeze(-1)

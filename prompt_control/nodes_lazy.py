@@ -1,17 +1,16 @@
 # pyright: reportSelfClsParameterName=false
 from __future__ import annotations
+
+import json
 import logging
-from .parser import parse_prompt_schedules
-from comfy_execution.graph_utils import GraphBuilder, is_link
 
 from comfy_execution.graph import ExecutionBlocker
+from comfy_execution.graph_utils import GraphBuilder, is_link
 
-from .utils import get_function
+from .parser import parse_prompt_schedules
+from .utils import consolidate_schedule, find_nonscheduled_loras, get_function
 
 log = logging.getLogger("comfyui-prompt-control")
-
-from .utils import consolidate_schedule, find_nonscheduled_loras
-import json
 
 
 def _cache_key(cachekey, inputs):

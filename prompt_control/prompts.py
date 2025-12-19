@@ -1,28 +1,31 @@
 from __future__ import annotations
+
 import logging
-import re
-import torch
 import math
+import re
+from collections import defaultdict
 from functools import partial
+from typing import Any
+
+import torch
 from comfy_extras.nodes_mask import FeatherMask, MaskComposite
 from nodes import ConditioningAverage
 
-from .utils import (
-    safe_float,
-    get_function,
-    split_by_function,
-    parse_floats,
-    smarter_split,
-    call_node,
-    split_quotable,
-    FunctionSpec,
-    ComfyConditioning,
-)
 from .adv_encode import advanced_encode_from_tokens
+from .attention_couple_ppm import set_cond_attnmask
 from .cutoff import process_cuts
 from .parser import parse_cuts
-
-from .attention_couple_ppm import set_cond_attnmask
+from .utils import (
+    ComfyConditioning,
+    FunctionSpec,
+    call_node,
+    get_function,
+    parse_floats,
+    safe_float,
+    smarter_split,
+    split_by_function,
+    split_quotable,
+)
 
 log = logging.getLogger("comfyui-prompt-control")
 
@@ -32,7 +35,7 @@ AVAILABLE_NORMALIZATIONS = ["none", "mean", "length", "length+mean"]
 SHUFFLE_GEN = torch.Generator(device="cpu")
 
 
-def get_sdxl(text, defaults):
+def get_sdxl(text: str, defaults: dict[str, Any]) -> tuple[str, dict[str, int]]:
     # Defaults fail to parse and get looked up from the defaults dict
     text, sdxl = get_function(text, "SDXL", ["none", "none", "none"])
     if not sdxl:
@@ -54,7 +57,7 @@ def get_sdxl(text, defaults):
     return text, opts
 
 
-def get_clipweights(text, existing_spec=None):
+def get_clipweights(text: str, existing_spec: dict[str, float] | None = None) -> tuple[dict[str, float], str]:
     text, spec = get_function(text, "TE_WEIGHT", defaults=None)
     if not spec:
         return existing_spec or {}, text
@@ -70,7 +73,7 @@ def get_clipweights(text, existing_spec=None):
     return res, text
 
 
-def get_style(text, default_style="comfy", default_normalization="none"):
+def get_style(text: str, default_style="comfy", default_normalization="none") -> tuple[str, str, str]:
     text, styles = get_function(text, "STYLE", [default_style, default_normalization])
     if not styles:
         return default_style, default_normalization, text
@@ -125,7 +128,8 @@ def shuffle_chunk(func_spec: FunctionSpec, c: str) -> str:
 
 
 def fix_word_ids(tokens):
-    """Fix word indexes. Tokenizing separately (when BREAKs exist) causes the indexes to restart which causes problems with some weighting algorithms that rely on them"""
+    """Fix word indexes. Tokenizing separately (when BREAKs exist) causes the indexes
+    to restart which causes problems with some weighting algorithms that rely on them"""
     for key in tokens:
         max_idx = 0
         for group in range(len(tokens[key])):
@@ -178,7 +182,7 @@ def tokenize(clip, text, can_break, empty_tokens):
     need_word_ids = True
     tokens = tokenize_chunks(clip, text, need_word_ids, can_break)
 
-    per_te_prompts = {}
+    per_te_prompts = defaultdict(list)
     if l_prompts:
         log.warning("Note: CLIP_L is deprecated. Use TE(l=prompt) instead")
         per_te_prompts["l"] = [x.args for x in l_prompts]
@@ -198,9 +202,7 @@ def tokenize(clip, text, can_break, empty_tokens):
             log.warning("Invalid TE call, no TE with key '%s', ignoring: %s", te)
             log.info("Encoders available for TE: %s", ", ".join(tokens.keys()))
             continue
-        l = per_te_prompts.get(te, [])
-        l.append(prompt)
-        per_te_prompts[te] = l
+        per_te_prompts[te].append(prompt)
 
     if per_te_prompts:
         for key in per_te_prompts:
@@ -395,7 +397,8 @@ def get_area(text):
         area = (int(h) // 8, int(w) // 8, int(y) // 8, int(x) // 8)
     else:
         raise Exception(
-            f"AREA specified with invalid size {x} {w}, {h} {y}. They must either all be percentages between 0 and 1 or positive integer pixel values excluding 1"
+            f"AREA specified with invalid size {x} {w}, {h} {y}. They must either all"
+            " be percentages between 0 and 1 or positive integer pixel values excluding 1"
         )
 
     return text, (area, weight)
@@ -429,7 +432,8 @@ def make_mask(args, size, weight):
         ys = int(y1), int(y2)
     else:
         raise Exception(
-            f"MASK specified with invalid size {x1} {x2}, {y1} {y2}. They must either all be percentages between 0 and 1 or positive integer pixel values excluding 1"
+            f"MASK specified with invalid size {x1} {x2}, {y1} {y2}. They must either all"
+            " be percentages between 0 and 1 or positive integer pixel values excluding 1"
         )
 
     mask = torch.full((h, w), 0, dtype=torch.float32, device="cpu")
@@ -450,9 +454,9 @@ def get_mask(text, size, input_masks):
         return text, None, None
 
     def feather(f, mask):
-        l, t, r, b, *_ = [int(x) for x in parse_floats(f[0], [0, 0, 0, 0], split_re="\\s+")]
-        mask = call_node(FeatherMask, mask, l, t, r, b)[0]
-        log.info("FeatherMask l=%s, t=%s, r=%s, b=%s", l, t, r, b)
+        left, top, right, bottom, *_ = [int(x) for x in parse_floats(f[0], [0, 0, 0, 0], split_re="\\s+")]
+        mask = call_node(FeatherMask, mask, left, top, right, bottom)[0]
+        log.info("FeatherMask l=%s, t=%s, r=%s, b=%s", left, top, right, bottom)
         return mask
 
     mask = None
@@ -478,22 +482,19 @@ def get_mask(text, size, input_masks):
         idx = int(safe_float(idx, 0.0))
         w = safe_float(w, 1.0)
         if input_masks is None:
-            log.warn(
+            log.warning(
                 "IMASK requires you to attach custom masks to the CLIP object using PCAddMasksToClIP before using it"
             )
             input_masks = []
 
         if len(input_masks) < idx + 1:
-            log.warn("IMASK index %s not found, ignoring...", idx)
+            log.warning("IMASK index %s not found, ignoring...", idx)
             continue
         nextmask = input_masks[idx] * w
         if i < len(feathers):
             nextmask = feather(feathers[i].args, nextmask)
         i += 1
-        if mask is not None:
-            mask = call_node(MaskComposite, mask, nextmask, 0, 0, op)[0]
-        else:
-            mask = nextmask
+        mask = call_node(MaskComposite, mask, nextmask, 0, 0, op)[0] if mask is not None else nextmask
 
     # apply leftover FEATHER() specs to the whole
     for f in feathers[i:]:
@@ -616,16 +617,17 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
             x = encode_prompt_segment(clip, p, settings, style, normalization)
             encoded.append(x)
 
-        assert all(
-            len(c) == len(encoded[0]) for c in encoded
-        ), "All encoded prompts didn't produce the same number of conds, I don't know what to do in this situation."
+        assert all(len(c) == len(encoded[0]) for c in encoded), (
+            "All encoded prompts didn't produce the same number of conds, I don't know what to do in this situation."
+        )
 
         # each call to encode_prompt_segment can produce a number of conds based on any
         # scheduled LoRA hooks on the clip model. Zip them together with coupled prompts
         base_cond = []
-        for base_cond, *attention_couple in zip(*encoded):
+        for base_cond, *attention_couple in zip(*encoded, strict=False):
             s = base_cond[1]
-            # If there are LoRAs on the CLIP, we need to fix start_percent and end_percent on the new conds for things to work properly.
+            # If there are LoRAs on the CLIP, we need to fix start_percent and
+            # end_percent on the new conds for things to work properly.
             s["start_percent"] = s.get("clip_start_percent", s["start_percent"])
             s["end_percent"] = s.get("clip_end_percent", s["end_percent"])
             s.pop("clip_start_percent", None)

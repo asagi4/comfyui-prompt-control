@@ -1,11 +1,13 @@
 # pyright: reportSelfClsParameterName=false
-import logging
-from .parser import parse_prompt_schedules, expand_macros
-from .nodes_lazy import NODE_CLASS_MAPPINGS as LAZY_NODES
-from .utils import expand_graph
 import json
-import folder_paths
+import logging
 from pathlib import Path
+
+import folder_paths
+
+from .nodes_lazy import NODE_CLASS_MAPPINGS as LAZY_NODES
+from .parser import expand_macros, parse_prompt_schedules
+from .utils import expand_graph
 
 log = logging.getLogger("comfyui-prompt-control")
 

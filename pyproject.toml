@@ -30,6 +30,8 @@ extra-paths = ["../.."]
 line-length = 120
 
 [tool.ruff.lint]
+# Ignore line length and let the formatter handle it
+ignore = ["E501"]
 select = [
 	"E",
 	"F",
