@@ -1,5 +1,6 @@
 # pyright: reportSelfClsParameterName=false
 import logging
+
 from .prompts import encode_prompt
 
 log = logging.getLogger("comfyui-prompt-control")

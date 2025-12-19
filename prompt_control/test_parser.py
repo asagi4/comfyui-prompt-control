@@ -1,5 +1,9 @@
 import unittest
-from .parser import parse_prompt_schedules as parse, expand_macros
+
+from .parser import expand_macros
+from .parser import parse_prompt_schedules as parse
+
+# ruff: noqa: E501
 
 
 def prompt(until, text, *loras):

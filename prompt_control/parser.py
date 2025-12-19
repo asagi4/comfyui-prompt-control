@@ -1,22 +1,26 @@
 # vim: sw=4 ts=4
 from __future__ import annotations
-import lark
+
 import logging
+import re
+from functools import lru_cache
 from math import ceil
+from typing import TypeAlias
+
+import lark
+
+from .utils import find_closing_paren, get_function
 
 logging.basicConfig()
 log = logging.getLogger("comfyui-prompt-control")
-import re
-
-from functools import lru_cache
-from .utils import get_function, find_closing_paren
 
 if lark.__version__ == "0.12.0":
     from sys import executable
 
     x = "\n".join(
         [
-            "Your lark package reports an ancient version (0.12.0) and will not work. If you have the 'lark-parser' package in your Python environment, remove that and *reinstall* lark!",
+            "Your lark package reports an ancient version (0.12.0) and will not work.",
+            "If you have the 'lark-parser' package in your Python environment, remove that and *reinstall* lark!",
             f"{executable} -m pip uninstall lark-parser lark",
             f"{executable} -m pip install lark",
         ]
@@ -32,19 +36,19 @@ ESCAPES = [
 ]
 
 
-def escape_specials(string):
+def escape_specials(string: str) -> str:
     for ph, c in ESCAPES:
         string = string.replace(rf"\{c}", ph)
     return string
 
 
-def restore_escaped(string):
+def restore_escaped(string: str) -> str:
     for ph, c in ESCAPES:
         string = string.replace(ph, c)
     return string
 
 
-def remove_comments(string):
+def remove_comments(string: str) -> str:
     r = []
     for line in string.split("\n"):
         comment = line.find("#")
@@ -109,7 +113,7 @@ class CutTransform(lark.Transformer):
             strict_mask,
             start_from_masked,
             mask_token,
-        )  # pyright: ignore
+        )
 
     def start(self, args):
         prompt = []
@@ -122,11 +126,14 @@ class CutTransform(lark.Transformer):
                 cuts.append(a)
         return "".join(prompt), cuts
 
-    def PLAIN(self, args):
+    def PLAIN(self, args: str) -> str:
         return args
 
 
-def parse_cuts(text):
+CutResult: TypeAlias = tuple[str, str, float, float, float, str]
+
+
+def parse_cuts(text: str) -> tuple[str, CutResult]:
     return CutTransform().transform(cut_parser.parse(text))
 
 
@@ -182,7 +189,7 @@ def get_steps(tree, num_steps):
 
         def sequence(self, tree):
             steps = tree.children[1::2]
-            for i, steps in enumerate(steps):
+            for i, _ in enumerate(steps):
                 w = tostep(tree.children[i * 2 + 1])
                 tree.children[i * 2 + 1] = w
                 res.append(w)
@@ -239,7 +246,7 @@ def at_step(step, filters, tree):
             previous_step = 0.0
             prompts = args[::2]
             steps = args[1::2]
-            for s, p in zip(steps, prompts):
+            for s, p in zip(steps, prompts, strict=False):
                 if s >= step and step >= previous_step:
                     previous_step = step
                     return p or ""
@@ -315,7 +322,7 @@ def at_step(step, filters, tree):
     return AtStep().transform(tree)
 
 
-class PromptSchedule(object):
+class PromptSchedule:
     # 0 num_steps means unconfigured
     def __init__(self, prompt, filters="", start=0.0, end=1.0, num_steps=0):
         self.filters = filters
@@ -422,10 +429,7 @@ def parse_search(search):
         return None
     args = args.strip()
     # If using the form DEF(F()=$1) then the default value of $1 is the empty string
-    if arg_start > 0:
-        args = [a.strip() for a in args.split(";")]
-    else:
-        args = []
+    args = [a.strip() for a in args.split(";")] if arg_start > 0 else []
     return name, args
 
 
@@ -472,10 +476,10 @@ def substitute_defcall(text, search, replace):
             paramvals = [x.strip() for x in parameters[0].split(";")]
         r = replace
         for i, v in enumerate(paramvals):
-            r = re.sub(rf"\${i+1}\b", v, r)
+            r = re.sub(rf"\${i + 1}\b", v, r)
 
         for i, v in enumerate(default_args):
-            r = re.sub(rf"\${i+1}\b", v, r)
+            r = re.sub(rf"\${i + 1}\b", v, r)
 
         text = text.replace(ph, r)
     return text
