@@ -6,6 +6,8 @@ license = { file = "LICENSE" }
 # some lark versions older than 1.1.9 apparently have a bug that breaks things, see https://github.com/asagi4/comfyui-prompt-control/issues/35
 dependencies = ["lark >= 1.1.9"]
 
+requires-python = ">= 3.10"
+
 [project.urls]
 Repository = "https://github.com/asagi4/comfyui-prompt-control"
 
@@ -17,3 +19,22 @@ Icon = ""
 [tool.pyright]
 extraPaths = ["../../"]
 exclude = ["prompt_control/*test*"]
+
+[tool.ty.src]
+exclude = ["prompt_control/*test*"]
+
+[tool.ty.environment]
+extra-paths = ["../.."]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+	"E",
+	"F",
+	"UP",
+	"B",
+	"SIM",
+	"I",
+]
