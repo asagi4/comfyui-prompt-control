@@ -28,6 +28,8 @@ NODE_DISPLAY_NAME_MAPPINGS = {}
 WEB_DIRECTORY = "web"
 
 nodes = ["base", "lazy", "tools", "hooks"]
+if "PYTEST_CURRENT_TEST" in os.environ:
+    nodes = []
 
 for node in nodes:
     mod = importlib.import_module(f".prompt_control.nodes_{node}", package=__name__)

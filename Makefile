@@ -4,6 +4,9 @@ all: format check test
 check:
 	ty check && ruff check
 
+fix:
+	ruff check --fix
+
 format:
 	ruff format
 
