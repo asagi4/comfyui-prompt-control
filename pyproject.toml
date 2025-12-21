@@ -21,7 +21,7 @@ extraPaths = ["../../"]
 exclude = ["prompt_control/*test*"]
 
 [tool.ty.src]
-exclude = ["prompt_control/*test*"]
+exclude = ["tests/*.py", "prompt_control/*test*.py"]
 
 [tool.ty.environment]
 extra-paths = ["../.."]

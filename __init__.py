@@ -11,8 +11,7 @@ import os
 import sys
 
 log = logging.getLogger("comfyui-prompt-control")
-log.propagate = False
-if not log.handlers:
+if not log.handlers and "PYTEST_CURRENT_TEST" not in os.environ:
     h = logging.StreamHandler(sys.stdout)
     h.setFormatter(logging.Formatter("[PromptControl] %(levelname)s: %(message)s"))
     log.addHandler(h)
