@@ -1,3 +1,4 @@
+ARGS=
 all: format check test
 	@echo "Done"
 
@@ -11,16 +12,16 @@ format:
 	ruff format
 
 test:
-	python -m prompt_control.test_parser
+	PYTHONPATH=../../ pytest tests/test_parser.py $(ARGS)
 
 test_graph:
-	PYTHONPATH=../../ python -m prompt_control.test_graph
+	PYTHONPATH=../../  pytest tests/test_graph.py $(ARGS)
 
 test_encode:
-	PYTHONPATH=../../ python -m prompt_control.test_encode --verbose
+	PYTHONPATH=../../  pytest tests/test_encode.py $(ARGS)
 
 test_encode_both:
-	TEST_TE="clip_l t5" PYTHONPATH=../../ python -m prompt_control.test_encode --verbose
+	TEST_TE="clip_l t5" PYTHONPATH=../../  pytest tests/test_encode.py $(ARGS)
 
 test_heavy: test_graph test_encode_both
 
