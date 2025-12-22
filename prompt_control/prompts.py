@@ -557,7 +557,6 @@ def process_settings(prompt, defaults, masks, mask_size, sdxl_opts):
         prompt = prompt.replace("FILL()", "")
         settings["x-promptcontrol.fill"] = True
     prompt, mask, mask_weight = get_mask(prompt, mask_size, masks)
-    prompt, noise_w, generator = get_noise(prompt)
     prompt, area = get_area(prompt)
     prompt, local_sdxl_opts = get_sdxl(prompt, defaults)
     # Get weight last so other syntax doesn't interfere with it
@@ -604,6 +603,7 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
         return f"MASK({args})"
 
     for prompt in prompts:
+        text, noise_w, generator = get_noise(text)
         base_prompt, attn_couple_prompts = split_by_function(prompt, "COUPLE", defaults=None, require_args=False)
 
         prompts = [base_prompt] + [couple_mask(f.args) + chunk for (chunk, f) in attn_couple_prompts]
@@ -643,6 +643,8 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
                     [ensure_mask(c) for c in attention_couple],
                     fill=fill,
                 )
+
+        base_cond = [[apply_noise(c[0], noise_w, generator), c[1]] for c in base_cond]
         conds.extend(base_cond)
 
     return conds
