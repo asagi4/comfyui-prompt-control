@@ -21,12 +21,13 @@ extraPaths = ["../../"]
 exclude = ["prompt_control/*test*"]
 
 [tool.ty.src]
-exclude = ["tests/*.py", "prompt_control/*test*.py"]
+exclude = ["tests/*.py", "prompt_control/*test*.py", "prompt_control/parsy.py"]
 
 [tool.ty.environment]
 extra-paths = ["../.."]
 
 [tool.ruff]
+exclude = ["prompt_control/parsy.py"]
 line-length = 120
 
 [tool.ruff.lint]
