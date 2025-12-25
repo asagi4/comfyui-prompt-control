@@ -14,7 +14,7 @@ from nodes import ConditioningAverage
 from .adv_encode import advanced_encode_from_tokens
 from .attention_couple_ppm import set_cond_attnmask
 from .cutoff import process_cuts
-from .parser import parse_cuts
+from .cutoff_parser import parse_cuts
 from .utils import (
     ComfyConditioning,
     FunctionSpec,
