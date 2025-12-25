@@ -205,3 +205,7 @@ class TestPCTextEncode:
             (c2,) = run(setmask, c2, run(solidmask, 1.0, 512, 512)[0], "default", 1.0)
             cond_equal(c1, c2)
             cond_equal(c1, c2, "mask", tensors_equal)
+
+    def test_cutoff_nofail(self, text_encoder_clips, pc_text_encode, node_class_objs):
+        for _k, clip in text_encoder_clips:
+            (c1,) = run(pc_text_encode, clip, "test [CUT:a:b:0.5]")

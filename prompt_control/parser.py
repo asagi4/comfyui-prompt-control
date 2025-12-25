@@ -4,7 +4,6 @@ from __future__ import annotations
 import logging
 from functools import lru_cache
 from math import ceil
-from typing import TypeAlias
 
 import lark
 
@@ -83,57 +82,6 @@ TAG: /[A-Z_]+/
 """,
     lexer="dynamic",
 )
-
-
-cut_parser = lark.Lark(
-    r"""
-!start: (prompt | /[][:()]/+)*
-prompt: (cut | PLAIN | WHITESPACE)+
-cut: "[CUT:" prompt ":" prompt [":" NUMBER  [ ":" NUMBER [":" NUMBER [ ":" PLAIN ] ] ] ]"]"
-WHITESPACE: /\s+/
-PLAIN: /([^\[\]:])+/
-%import common.SIGNED_NUMBER -> NUMBER
-"""
-)
-
-
-class CutTransform(lark.Transformer):
-    def __default__(self, data, children, meta):
-        return children
-
-    def cut(self, args):
-        prompt, cutout, weight, strict_mask, start_from_masked, mask_token = args
-
-        # prompts and cutouts are always sequences of str
-        return (
-            "".join(flatten(prompt)),  # pyright: ignore
-            "".join(flatten(cutout)),  # pyright: ignore
-            weight,
-            strict_mask,
-            start_from_masked,
-            mask_token,
-        )
-
-    def start(self, args):
-        prompt = []
-        cuts = []
-        for a in flatten(args):
-            if isinstance(a, str):
-                prompt.append(a)
-            else:
-                prompt.append(a[0])
-                cuts.append(a)
-        return "".join(prompt), cuts
-
-    def PLAIN(self, args: str) -> str:
-        return args
-
-
-CutResult: TypeAlias = tuple[str, str, float, float, float, str]
-
-
-def parse_cuts(text: str) -> tuple[str, CutResult]:
-    return CutTransform().transform(cut_parser.parse(text))
 
 
 def flatten(x):
