@@ -4,7 +4,7 @@ import pytest
 
 from prompt_control.parser import expand_macros
 from prompt_control.parser import parse_prompt_schedules as old_parse  # noqa
-from prompt_control.parser_ng import parse_prompt_schedules_new as new_parse  # noqa
+from prompt_control.parser_parsy import parse_prompt_schedules as new_parse  # noqa
 
 
 def lora_dict(*loras):

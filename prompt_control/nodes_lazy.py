@@ -3,14 +3,19 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 
 from comfy_execution.graph import ExecutionBlocker
 from comfy_execution.graph_utils import GraphBuilder, is_link
 
-from .parser import parse_prompt_schedules
 from .utils import consolidate_schedule, find_nonscheduled_loras, get_function
 
 log = logging.getLogger("comfyui-prompt-control")
+if os.environ.get("PC_USE_NEW_PARSER", "0") == "1":
+    log.info("Using new parsy parser")
+    from .parser_parsy import parse_prompt_schedules as parse_prompt_schedules
+else:
+    from .parser import parse_prompt_schedules
 
 
 def _cache_key(cachekey, inputs):
