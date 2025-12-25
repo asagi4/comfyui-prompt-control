@@ -58,6 +58,348 @@ def test_textencode_expansion():
         assert r1 == r2
 
 
+def test_textencode_alternating():
+    r = te("[a|b]")
+    expected_result = {
+        "expand": {
+            "UID.0.0.1": {
+                "class_type": "PCTextEncode",
+                "inputs": {
+                    "clip": [
+                        0,
+                        0,
+                    ],
+                    "text": "a",
+                },
+            },
+            "UID.0.0.10": {
+                "class_type": "ConditioningSetTimestepRange",
+                "inputs": {
+                    "conditioning": [
+                        "UID.0.0.9",
+                        0,
+                    ],
+                    "end": 0.5,
+                    "start": 0.4,
+                },
+            },
+            "UID.0.0.11": {
+                "class_type": "PCTextEncode",
+                "inputs": {
+                    "clip": [
+                        0,
+                        0,
+                    ],
+                    "text": "b",
+                },
+            },
+            "UID.0.0.12": {
+                "class_type": "ConditioningSetTimestepRange",
+                "inputs": {
+                    "conditioning": [
+                        "UID.0.0.11",
+                        0,
+                    ],
+                    "end": 0.6,
+                    "start": 0.5,
+                },
+            },
+            "UID.0.0.13": {
+                "class_type": "PCTextEncode",
+                "inputs": {
+                    "clip": [
+                        0,
+                        0,
+                    ],
+                    "text": "a",
+                },
+            },
+            "UID.0.0.14": {
+                "class_type": "ConditioningSetTimestepRange",
+                "inputs": {
+                    "conditioning": [
+                        "UID.0.0.13",
+                        0,
+                    ],
+                    "end": 0.7,
+                    "start": 0.6,
+                },
+            },
+            "UID.0.0.15": {
+                "class_type": "PCTextEncode",
+                "inputs": {
+                    "clip": [
+                        0,
+                        0,
+                    ],
+                    "text": "b",
+                },
+            },
+            "UID.0.0.16": {
+                "class_type": "ConditioningSetTimestepRange",
+                "inputs": {
+                    "conditioning": [
+                        "UID.0.0.15",
+                        0,
+                    ],
+                    "end": 0.8,
+                    "start": 0.7,
+                },
+            },
+            "UID.0.0.17": {
+                "class_type": "PCTextEncode",
+                "inputs": {
+                    "clip": [
+                        0,
+                        0,
+                    ],
+                    "text": "a",
+                },
+            },
+            "UID.0.0.18": {
+                "class_type": "ConditioningSetTimestepRange",
+                "inputs": {
+                    "conditioning": [
+                        "UID.0.0.17",
+                        0,
+                    ],
+                    "end": 0.9,
+                    "start": 0.8,
+                },
+            },
+            "UID.0.0.19": {
+                "class_type": "PCTextEncode",
+                "inputs": {
+                    "clip": [
+                        0,
+                        0,
+                    ],
+                    "text": "b",
+                },
+            },
+            "UID.0.0.2": {
+                "class_type": "ConditioningSetTimestepRange",
+                "inputs": {
+                    "conditioning": [
+                        "UID.0.0.1",
+                        0,
+                    ],
+                    "end": 0.1,
+                    "start": 0.0,
+                },
+            },
+            "UID.0.0.20": {
+                "class_type": "ConditioningSetTimestepRange",
+                "inputs": {
+                    "conditioning": [
+                        "UID.0.0.19",
+                        0,
+                    ],
+                    "end": 1.0,
+                    "start": 0.9,
+                },
+            },
+            "UID.0.0.21": {
+                "class_type": "ConditioningCombine",
+                "inputs": {
+                    "conditioning_1": [
+                        "UID.0.0.2",
+                        0,
+                    ],
+                    "conditioning_2": [
+                        "UID.0.0.4",
+                        0,
+                    ],
+                },
+            },
+            "UID.0.0.22": {
+                "class_type": "ConditioningCombine",
+                "inputs": {
+                    "conditioning_1": [
+                        "UID.0.0.21",
+                        0,
+                    ],
+                    "conditioning_2": [
+                        "UID.0.0.6",
+                        0,
+                    ],
+                },
+            },
+            "UID.0.0.23": {
+                "class_type": "ConditioningCombine",
+                "inputs": {
+                    "conditioning_1": [
+                        "UID.0.0.22",
+                        0,
+                    ],
+                    "conditioning_2": [
+                        "UID.0.0.8",
+                        0,
+                    ],
+                },
+            },
+            "UID.0.0.24": {
+                "class_type": "ConditioningCombine",
+                "inputs": {
+                    "conditioning_1": [
+                        "UID.0.0.23",
+                        0,
+                    ],
+                    "conditioning_2": [
+                        "UID.0.0.10",
+                        0,
+                    ],
+                },
+            },
+            "UID.0.0.25": {
+                "class_type": "ConditioningCombine",
+                "inputs": {
+                    "conditioning_1": [
+                        "UID.0.0.24",
+                        0,
+                    ],
+                    "conditioning_2": [
+                        "UID.0.0.12",
+                        0,
+                    ],
+                },
+            },
+            "UID.0.0.26": {
+                "class_type": "ConditioningCombine",
+                "inputs": {
+                    "conditioning_1": [
+                        "UID.0.0.25",
+                        0,
+                    ],
+                    "conditioning_2": [
+                        "UID.0.0.14",
+                        0,
+                    ],
+                },
+            },
+            "UID.0.0.27": {
+                "class_type": "ConditioningCombine",
+                "inputs": {
+                    "conditioning_1": [
+                        "UID.0.0.26",
+                        0,
+                    ],
+                    "conditioning_2": [
+                        "UID.0.0.16",
+                        0,
+                    ],
+                },
+            },
+            "UID.0.0.28": {
+                "class_type": "ConditioningCombine",
+                "inputs": {
+                    "conditioning_1": [
+                        "UID.0.0.27",
+                        0,
+                    ],
+                    "conditioning_2": [
+                        "UID.0.0.18",
+                        0,
+                    ],
+                },
+            },
+            "UID.0.0.29": {
+                "class_type": "ConditioningCombine",
+                "inputs": {
+                    "conditioning_1": [
+                        "UID.0.0.28",
+                        0,
+                    ],
+                    "conditioning_2": [
+                        "UID.0.0.20",
+                        0,
+                    ],
+                },
+            },
+            "UID.0.0.3": {
+                "class_type": "PCTextEncode",
+                "inputs": {
+                    "clip": [
+                        0,
+                        0,
+                    ],
+                    "text": "b",
+                },
+            },
+            "UID.0.0.4": {
+                "class_type": "ConditioningSetTimestepRange",
+                "inputs": {
+                    "conditioning": [
+                        "UID.0.0.3",
+                        0,
+                    ],
+                    "end": 0.2,
+                    "start": 0.1,
+                },
+            },
+            "UID.0.0.5": {
+                "class_type": "PCTextEncode",
+                "inputs": {
+                    "clip": [
+                        0,
+                        0,
+                    ],
+                    "text": "a",
+                },
+            },
+            "UID.0.0.6": {
+                "class_type": "ConditioningSetTimestepRange",
+                "inputs": {
+                    "conditioning": [
+                        "UID.0.0.5",
+                        0,
+                    ],
+                    "end": 0.3,
+                    "start": 0.2,
+                },
+            },
+            "UID.0.0.7": {
+                "class_type": "PCTextEncode",
+                "inputs": {
+                    "clip": [
+                        0,
+                        0,
+                    ],
+                    "text": "b",
+                },
+            },
+            "UID.0.0.8": {
+                "class_type": "ConditioningSetTimestepRange",
+                "inputs": {
+                    "conditioning": [
+                        "UID.0.0.7",
+                        0,
+                    ],
+                    "end": 0.4,
+                    "start": 0.3,
+                },
+            },
+            "UID.0.0.9": {
+                "class_type": "PCTextEncode",
+                "inputs": {
+                    "clip": [
+                        0,
+                        0,
+                    ],
+                    "text": "a",
+                },
+            },
+        },
+        "result": (
+            [
+                "UID.0.0.29",
+                0,
+            ],
+        ),
+    }
+    assert r == expected_result
+
+
 def test_textencode_lora():
     reset_graphbuilder_state()
     r = te("test<lora:test:1>")
