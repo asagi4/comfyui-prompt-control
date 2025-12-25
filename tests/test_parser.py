@@ -240,7 +240,7 @@ def test_escapes(text, cases, parse):
 
 
 # I think these were wrong in the old parser too
-@pytest.mark.xfail
+@pytest.mark.xfail(reason="Old parser behaviour, possibly buggy")
 @pytest.mark.parametrize(
     "text, cases",
     [
@@ -291,7 +291,6 @@ def test_filters(parse):
     assert_prompt(p, 1.0, 1.0, "c")
 
 
-@pytest.mark.xfail
 def test_emb(parse):
     p = parse("an [<emb:foo>:<emb:bar>:0.5]")
     prompts = {
@@ -312,6 +311,33 @@ def test_alternating_basic(parse):
     p = parse("[cat|dog|tiger]")
     p2 = parse("[cat|dog|tiger:0.1]")
     assert p.parsed_prompt == p2.parsed_prompt
+
+
+@pytest.mark.parametrize(
+    "equivalent",
+    [
+        "[cat::0.1][dog:0.1,0.2][tiger:0.2,0.3][cat:0.3,0.4][dog:0.4,0.5][tiger:0.5,0.6][cat:0.6,0.7][dog:0.7,0.8][tiger:0.8,0.9][cat:0.9,1.0]"
+    ],
+)
+def test_alternating_equivalences(parse, equivalent):
+    p = parse("[cat|dog|tiger]")
+    p2 = parse(equivalent)
+    assert p.parsed_prompt == p2.parsed_prompt
+
+
+@pytest.mark.xfail(reason="Old parser behaviour")
+def test_cornercase_failure(parse):
+    """p1 returns a prompt entry until 0 at the start"""
+    p = parse("[cat:0,0.1]")
+    p2 = parse("[cat::0.1]")
+    assert p.parsed_prompt == p2.parsed_prompt
+
+
+def test_cornercase_corrected(parse):
+    p = parse("[cat:0,0.1]")
+    p2 = parse("[cat::0.1]")
+    assert p.parsed_prompt[0][0] == 0.0
+    assert p.parsed_prompt[1:] == p2.parsed_prompt
 
 
 def test_alternating_lora(parse):
