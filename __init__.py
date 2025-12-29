@@ -9,6 +9,9 @@ import importlib
 import logging
 import os
 import sys
+from dataclasses import dataclass
+
+from comfy_api.latest import ComfyExtension
 
 log = logging.getLogger("comfyui-prompt-control")
 if not log.handlers and "PYTEST_CURRENT_TEST" not in os.environ:
@@ -21,16 +24,43 @@ if os.environ.get("PROMPTCONTROL_DEBUG"):
 else:
     log.setLevel(logging.INFO)
 
-NODE_CLASS_MAPPINGS = {}
-NODE_DISPLAY_NAME_MAPPINGS = {}
-
 WEB_DIRECTORY = "web"
 
 nodes = ["base", "lazy", "tools", "hooks"]
 if "PYTEST_CURRENT_TEST" in os.environ:
     nodes = []
 
+v1_modules = []
 for node in nodes:
     mod = importlib.import_module(f".prompt_control.nodes_{node}", package=__name__)
-    NODE_CLASS_MAPPINGS.update(mod.NODE_CLASS_MAPPINGS)
-    NODE_DISPLAY_NAME_MAPPINGS.update(mod.NODE_DISPLAY_NAME_MAPPINGS)
+    v1_modules.append(mod)
+
+
+@dataclass
+class PCSchemaStub:
+    node_id: str
+    display_name: str
+
+
+def v3_stub(module):
+    def inject(cls, node_id, display_name):
+        schema = PCSchemaStub(node_id, display_name)
+        if not hasattr(cls, "GET_SCHEMA"):
+            setattr(cls, "GET_SCHEMA", lambda: schema)
+        return cls
+
+    return [
+        inject(cls, name, module.NODE_DISPLAY_NAME_MAPPINGS[name]) for name, cls in module.NODE_CLASS_MAPPINGS.items()
+    ]
+
+
+class PromptControlExtension(ComfyExtension):
+    async def get_node_list(self):
+        r = []
+        for m in v1_modules:
+            r.extend(v3_stub(m))
+        return r
+
+
+async def comfy_entrypoint():
+    return PromptControlExtension()
