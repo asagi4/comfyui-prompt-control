@@ -1,152 +1,106 @@
-# pyright: reportSelfClsParameterName=false
-import json
 import logging
-from pathlib import Path
 
-import folder_paths
+from comfy_api.latest import io
 
-from .nodes_lazy import NODE_CLASS_MAPPINGS as LAZY_NODES
 from .parser import expand_macros, parse_prompt_schedules
-from .utils import expand_graph
 
 log = logging.getLogger("comfyui-prompt-control")
 
 
-class PCSaveExpandedWorkflow:
-    def __init__(self):
-        self.output_dir = folder_paths.get_output_directory()
-
+class PCSetLogLevel(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "any": ("*", {}),
-            },
-            "hidden": {
-                "prompt": "PROMPT",
-            },
-        }
-
-    @classmethod
-    def VALIDATE_INPUTS(self, input_types):
-        return True
-
-    OUTPUT_NODE = True
-    RETURN_TYPES = ()
-    CATEGORY = "promptcontrol/tools"
-    DESCRIPTION = "Expands lazy prompt control nodes in the prompt and saves the expanded prompt into a JSON file"
-
-    FUNCTION = "apply"
-
-    def apply(self, any, prompt):
-        full_output_folder, filename, counter, subfolder, prefix = folder_paths.get_save_image_path(
-            "pc_workflow_debug", self.output_dir
+    def define_schema(cls):
+        return io.Schema(
+            node_id="PCSetLogLevel",
+            display_name="PC: Configure Logging (for debug)",
+            category="promptcontrol/tools",
+            description="A debug node to configure Prompt Control logging level. Pass a CLIP through it before you run any PC nodes",
+            inputs=[
+                io.Clip.Input("clip"),
+                io.Combo.Input("level", options=["INFO", "DEBUG", "WARNING", "ERROR"], default="INFO", optional=True),
+            ],
+            outputs=[io.Clip.Output()],
         )
-        expanded = expand_graph(LAZY_NODES, prompt)
-        file = f"{filename}_{counter:05}_.json"
-        full_path = Path(full_output_folder) / file
-        with open(full_path, "w") as f:
-            log.info(f"Saving workflow to {full_path}")
-            json.dump(expanded, f)
 
-        return ()
-
-
-class PCSetLogLevel:
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "clip": ("CLIP",),
-            },
-            "optional": {
-                "level": (["INFO", "DEBUG", "WARNING", "ERROR"], {"default": "INFO"}),
-            },
-        }
-
-    def apply(self, clip, level="INFO"):
+    def execute(cls, clip, level="INFO") -> io.NodeOutput:
         log.setLevel(getattr(logging, level))
         log.info("Set logging level to %s", level)
-        return (clip,)
-
-    RETURN_TYPES = ("CLIP",)
-    CATEGORY = "promptcontrol/tools"
-    DESCRIPTION = (
-        "A debug node to configure Prompt Control logging level. Pass a CLIP through it before you run any PC nodes"
-    )
-
-    FUNCTION = "apply"
+        return io.NodeOutput(clip)
 
 
-class PCAddMaskToCLIP:
+class PCAddMaskToCLIP(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {"clip": ("CLIP",)},
-            "optional": {
-                "mask": ("MASK",),
-            },
-        }
+    def define_schema(cls):
+        return io.Schema(
+            node_id="PCAddMaskToCLIP",
+            display_name="PC: Attach Mask",
+            category="promptcontrol/tools",
+            description="Attaches a mask to a CLIP object so that they can be referred to in a prompt using IMASK(). Using this node multiple times adds more masks rather than replacing existing ones.",
+            inputs=[
+                io.Clip.Input("clip"),
+                io.Mask.Input("mask", optional=True),
+            ],
+            outputs=[io.Clip.Output()],
+        )
 
-    RETURN_TYPES = ("CLIP",)
-    CATEGORY = "promptcontrol/tools"
-    FUNCTION = "apply"
-    DESCRIPTION = "Attaches a mask to a CLIP object so that they can be referred to in a prompt using IMASK(). Using this node multiple times adds more masks rather than replacing existing ones."
-
-    def apply(self, clip, mask=None):
-        return PCAddMaskToCLIPMany().apply(clip, mask1=mask)
-
-
-class PCAddMaskToCLIPMany:
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {"clip": ("CLIP",)},
-            "optional": {
-                "mask1": ("MASK",),
-                "mask2": ("MASK",),
-                "mask3": ("MASK",),
-                "mask4": ("MASK",),
-            },
-        }
+    def execute(cls, clip, mask=None) -> io.NodeOutput:
+        return PCAddMaskToCLIPMany.execute(clip, mask1=mask)
 
-    RETURN_TYPES = ("CLIP",)
-    CATEGORY = "promptcontrol/tools"
-    FUNCTION = "apply"
-    DESCRIPTION = "Multi-input version of PCAddMaskToCLIP, for convenience"
 
-    def apply(self, clip, mask1=None, mask2=None, mask3=None, mask4=None):
+class PCAddMaskToCLIPMany(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="PCAddMaskToCLIPMany",
+            display_name="PC: Attach Mask (multi)",
+            category="promptcontrol/tools",
+            description="Multi-input version of PCAddMaskToCLIP, for convenience",
+            inputs=[
+                io.Clip.Input("clip"),
+                io.Mask.Input("mask1", optional=True),
+                io.Mask.Input("mask2", optional=True),
+                io.Mask.Input("mask3", optional=True),
+                io.Mask.Input("mask4", optional=True),
+            ],
+            outputs=[io.Clip.Output()],
+        )
+
+    @classmethod
+    def execute(cls, clip, mask1=None, mask2=None, mask3=None, mask4=None) -> io.NodeOutput:
         clip = clip.clone()
         current_masks = clip.patcher.model_options.get("x-promptcontrol.masks", [])
         current_masks.extend(m for m in (mask1, mask2, mask3, mask4) if m is not None)
         clip.patcher.model_options["x-promptcontrol.masks"] = current_masks
-        return (clip,)
+        return io.NodeOutput(clip)
 
 
-class PCSetPCTextEncodeSettings:
+class PCSetPCTextEncodeSettings(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {"clip": ("CLIP",)},
-            "optional": {
-                "mask_width": ("INT", {"default": 512, "min": 64, "max": 4096 * 4}),
-                "mask_height": ("INT", {"default": 512, "min": 64, "max": 4096 * 4}),
-                "sdxl_width": ("INT", {"default": 1024, "min": 0, "max": 4096 * 4}),
-                "sdxl_height": ("INT", {"default": 1024, "min": 0, "max": 4096 * 4}),
-                "sdxl_target_w": ("INT", {"default": 1024, "min": 0, "max": 4096 * 4}),
-                "sdxl_target_h": ("INT", {"default": 1024, "min": 0, "max": 4096 * 4}),
-                "sdxl_crop_w": ("INT", {"default": 0, "min": 0, "max": 4096 * 4}),
-                "sdxl_crop_h": ("INT", {"default": 0, "min": 0, "max": 4096 * 4}),
-            },
-        }
+    def define_schema(cls):
+        return io.Schema(
+            node_id="PCSetPCTextEncodeSettings",
+            display_name="PC: Configure PCTextEncode",
+            category="promptcontrol/tools",
+            description="Configures default values for PCTextEncode",
+            inputs=[
+                io.Clip.Input("clip"),
+                io.Int.Input("mask_width", default=512, min=64, max=4096 * 4, optional=True),
+                io.Int.Input("mask_height", default=512, min=64, max=4096 * 4, optional=True),
+                io.Int.Input("sdxl_width", default=1024, min=0, max=4096 * 4, optional=True),
+                io.Int.Input("sdxl_height", default=1024, min=0, max=4096 * 4, optional=True),
+                io.Int.Input("sdxl_target_w", default=1024, min=0, max=4096 * 4, optional=True),
+                io.Int.Input("sdxl_target_h", default=1024, min=0, max=4096 * 4, optional=True),
+                io.Int.Input("sdxl_crop_w", default=0, min=0, max=4096 * 4, optional=True),
+                io.Int.Input("sdxl_crop_h", default=0, min=0, max=4096 * 4, optional=True),
+            ],
+            outputs=[io.Clip.Output()],
+        )
 
-    RETURN_TYPES = ("CLIP",)
-    CATEGORY = "promptcontrol/tools"
-    FUNCTION = "apply"
-    DESCRIPTION = "Configures default values for PCTextEncode"
-
-    def apply(
-        self,
+    @classmethod
+    def execute(
+        cls,
         clip,
         mask_width=512,
         mask_height=512,
@@ -156,7 +110,7 @@ class PCSetPCTextEncodeSettings:
         sdxl_target_h=1024,
         sdxl_crop_w=0,
         sdxl_crop_h=0,
-    ):
+    ) -> io.NodeOutput:
         settings = {
             "mask_width": mask_width,
             "mask_height": mask_height,
@@ -169,66 +123,57 @@ class PCSetPCTextEncodeSettings:
         }
         clip = clip.clone()
         clip.patcher.model_options["x-promptcontrol.settings"] = settings
-        return (clip,)
+        return io.NodeOutput(clip)
 
 
-class PCExtractScheduledPrompt:
+class PCExtractScheduledPrompt(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "text": ("STRING", {"multiline": True}),
-                "at": ("FLOAT", {"min": 0.0, "max": 1.0, "default": 1.0, "step": 0.01}),
-            },
-            "optional": {"tags": ("STRING", {"default": ""})},
-        }
+    def define_schema(cls):
+        return io.Schema(
+            node_id="PCExtractScheduledPrompt",
+            display_name="PC: Extract Scheduled Prompt",
+            category="promptcontrol/tools",
+            description="Parses the input prompt and returns the prompt scheduled at the specified point",
+            inputs=[
+                io.String.Input("text", multiline=True),
+                io.Float.Input("at", min=0.0, max=1.0, default=1.0, step=0.01),
+                io.String.Input("tags", default="", optional=True),
+            ],
+            outputs=[io.String.Output()],
+        )
 
-    RETURN_TYPES = ("STRING",)
-    CATEGORY = "promptcontrol/tools"
-    FUNCTION = "apply"
-    DESCRIPTION = "Parses the input prompt and returns the prompt scheduled at the specified point"
-
-    def apply(self, text, at, tags=""):
+    @classmethod
+    def execute(cls, text, at, tags="") -> io.NodeOutput:
         schedule = parse_prompt_schedules(text, filters=tags)
         _, entry = schedule.at_step(at, total_steps=1)
         prompt_text = entry.get("prompt", "")
-        return (prompt_text,)
+        return io.NodeOutput(prompt_text)
 
 
-class PCMacroExpand:
+class PCMacroExpand(io.ComfyNode):
     @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "text": ("STRING", {"multiline": True}),
-            },
-        }
+    def define_schema(cls):
+        return io.Schema(
+            node_id="PCMacroExpand",
+            display_name="PC: Expand Macros",
+            category="promptcontrol/tools",
+            description="Expands DEF macros in a string and returns the result",
+            inputs=[
+                io.String.Input("text", multiline=True),
+            ],
+            outputs=[io.String.Output()],
+        )
 
-    RETURN_TYPES = ("STRING",)
-    CATEGORY = "promptcontrol/tools"
-    FUNCTION = "apply"
-    DESCRIPTION = "Expands DEF macros in a string and returns the result"
-
-    def apply(self, text):
-        return (expand_macros(text),)
+    @classmethod
+    def execute(cls, text) -> io.NodeOutput:
+        return io.NodeOutput(expand_macros(text))
 
 
-NODE_CLASS_MAPPINGS = {
-    "PCSetPCTextEncodeSettings": PCSetPCTextEncodeSettings,
-    "PCAddMaskToCLIP": PCAddMaskToCLIP,
-    "PCAddMaskToCLIPMany": PCAddMaskToCLIPMany,
-    "PCSetLogLevel": PCSetLogLevel,
-    "PCExtractScheduledPrompt": PCExtractScheduledPrompt,
-    "PCSaveExpandedWorkflow": PCSaveExpandedWorkflow,
-    "PCMacroExpand": PCMacroExpand,
-}
-
-NODE_DISPLAY_NAME_MAPPINGS = {
-    "PCSetPCTextEncodeSettings": "PC: Configure PCTextEncode",
-    "PCAddMaskToCLIP": "PC: Attach Mask",
-    "PCAddMaskToCLIPMany": "PC: Attach Mask (multi)",
-    "PCSetLogLevel": "PC: Configure Logging (for debug)",
-    "PCExtractScheduledPrompt": "PC: Extract Scheduled Prompt",
-    "PCSaveExpandedWorkflow": "PC: Save Expanded Workflow (for debug)",
-    "PCMacroExpand": "PC: Expand Macros",
-}
+NODES = [
+    PCSetPCTextEncodeSettings,
+    PCAddMaskToCLIP,
+    PCAddMaskToCLIPMany,
+    PCSetLogLevel,
+    PCExtractScheduledPrompt,
+    PCMacroExpand,
+]
