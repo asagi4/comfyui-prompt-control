@@ -31,7 +31,7 @@ jobs:
       - name: install-torch
         run: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
       - name: install ComfyUI
-        run: pip install pytest -r requirements.txt -r ComfyUI/requirements.txt
+        run: pip install pytest typing-extensions -r requirements.txt -r ComfyUI/requirements.txt
       - name: Download clip_l.safetensors
         run: curl -LO https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors
       - name: Force Comfy to use the CPU

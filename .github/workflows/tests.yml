@@ -11,8 +11,13 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
+      - name: Check out ComfyUI
+        uses: actions/checkout@v4
+        with:
+          repository: comfyanonymous/ComfyUI
+          path: ComfyUI
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install pytest -r requirements.txt
-      - run: pytest tests/test_parser.py
+      - run: pip install pytest typing-extensions -r requirements.txt
+      - run: PYTHONPATH=ComfyUI pytest tests/test_parser.py
