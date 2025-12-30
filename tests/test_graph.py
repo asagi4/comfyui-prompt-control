@@ -22,19 +22,22 @@ def find_file(name):
     return names.get(name)
 
 
+def as_dict(out):
+    return {"result": out.result, "expand": out.expand}
+
 def loraloader(text, adv=False, **kwargs):
     reset_graphbuilder_state()
-    cls = PCLazyLoraLoader if adv else PCLazyLoraLoaderAdvanced
+    cls = PCLazyLoraLoaderAdvanced if adv else PCLazyLoraLoader
     model = [0, 1]
     clip = [0, 0]
-    return cls().apply(unique_id="UID", model=model, clip=clip, text=text, **kwargs)
+    return as_dict(cls.execute(model=model, clip=clip, text=text, **kwargs))
 
 
 def te(text, adv=False, **kwargs):
     cls = PCLazyTextEncode if adv else PCLazyTextEncodeAdvanced
     reset_graphbuilder_state()
     clip = [0, 0]
-    return cls().apply(clip=clip, text=text, unique_id="UID", **kwargs)
+    return as_dict(cls.execute(clip=clip, text=text, **kwargs))
 
 
 @pytest.fixture(autouse=True)
@@ -576,5 +579,5 @@ def test_loraloader_adv_start():
 
 
 def test_loraloader_end_zero():
-    result2 = loraloader("prompt [<lora:test:0.5>:0.5]", end=0.5)["expand"]
+    result2 = loraloader("prompt [<lora:test:0.5>:0.5]", adv=True, end=0.5)["expand"]
     assert result2 == {}
