@@ -26,12 +26,18 @@ else:
 
 WEB_DIRECTORY = "web"
 
-nodes = ["base", "lazy", "tools", "hooks"]
+nodes = ["lazy", "tools", "hooks"]
+v3_nodes = ["base"]
 if "PYTEST_CURRENT_TEST" in os.environ:
     nodes = []
 
 v1_modules = []
 for node in nodes:
+    mod = importlib.import_module(f".prompt_control.nodes_{node}", package=__name__)
+    v1_modules.append(mod)
+
+v3_modules = []
+for node in v3_nodes:
     mod = importlib.import_module(f".prompt_control.nodes_{node}", package=__name__)
     v1_modules.append(mod)
 
@@ -59,6 +65,8 @@ class PromptControlExtension(ComfyExtension):
         r = []
         for m in v1_modules:
             r.extend(v3_stub(m))
+        for m in v3_modules:
+            r.extend(m.NODES)
         return r
 
 
