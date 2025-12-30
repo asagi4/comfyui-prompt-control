@@ -26,6 +26,10 @@ exclude = ["tests/*.py", "prompt_control/*test*.py", "prompt_control/parsy.py"]
 [tool.ty.environment]
 extra-paths = ["../.."]
 
+[tool.ty.rules]
+# ComfyUI executes give this...
+invalid-method-override = "ignore"
+
 [tool.ruff]
 exclude = ["prompt_control/parsy.py"]
 line-length = 120
