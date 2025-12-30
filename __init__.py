@@ -26,8 +26,8 @@ else:
 
 WEB_DIRECTORY = "web"
 
-nodes = ["lazy", "tools", "hooks"]
-v3_nodes = ["base"]
+nodes = ["lazy", "tools"]
+v3_nodes = ["base", "hooks"]
 if "PYTEST_CURRENT_TEST" in os.environ:
     nodes = []
 
