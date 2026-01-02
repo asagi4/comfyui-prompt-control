@@ -9,9 +9,9 @@ from typing import Any, TypeAlias
 from typing_extensions import override
 
 from .macros import expand_macros
-from .parsy import any_char, char_from, digit, eof, forward_declaration, regex, seq, string, success
+from .parsy import any_char, char_from, digit, eof, forward_declaration, regex, seq, string, success, generate
 
-FOREVER = float('inf')
+FOREVER = float("inf")
 
 EvalResult: TypeAlias = tuple[float, str, list["LoRA"]]
 
@@ -208,18 +208,6 @@ class LoRACTL(Expression):
         return r
 
 
-def combine_lora(fn, w_model, w_te):
-    if w_te is None:
-        w_te = w_model
-    return LoRA(fn, w_model, w_te)
-
-
-def combine_loractl(fn, w_model, w_te):
-    if w_te is None:
-        w_te = w_model
-    return LoRACTL(fn, w_model, w_te)
-
-
 def combine_arglist(prompts, start_end) -> Schedule:
     a, b, c = prompts
     start_or_tag, end = start_end
@@ -332,6 +320,15 @@ class PromptSchedule:
 
         return res
 
+def lora_weights(p):
+    @generate("lora_weights")
+    def parser():
+        w_model = yield col >> p
+        w_te = yield (col >> p).optional(w_model)
+        return [w_model, w_te]
+
+    return parser
+
 
 prompt = forward_declaration()
 empty = Text("")
@@ -358,11 +355,10 @@ schedule = lsq >> arglist.combine(combine_arglist) << rsq
 alternate = (lsq >> seq(prompt.sep_by(string("|"), min=1), (col >> number).optional(0.1)) << rsq).combine(Alternate)
 sequence = (lsq >> string("SEQ") >> seq(col >> opt_prompt << col, number).at_least(1) << rsq).map(Sequence)
 bracketed = seq(lsq, prompt.at_least(0), rsq) | sequence | schedule | alternate
-lora = (string("<lora:") >> seq(filename, col >> number, (col >> number).optional(None)) << string(">")).combine(
-    combine_lora
-)
+lora = (string("<lora:") >> filename * 1 + lora_weights(number) << string(">")).combine(LoRA)
 # TODO: fix
-loractl = (string("<loractl:") >> seq(filename << col, number) << string(">")).combine(combine_loractl)
+ctlweight = number
+loractl = (string("<loractl:") >> filename * 1 + lora_weights(ctlweight) << string(">")).combine(LoRACTL)
 emb = (string("<emb:") >> filename << string(">")).map(lambda f: Text(f"embedding:{f}"))
 
 expr = escape | comment | non_special | bracketed | emphasis.combine(combine_prompt) | lora | loractl | emb
