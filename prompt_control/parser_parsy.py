@@ -326,13 +326,13 @@ class PromptSchedule:
 
 
 def lora_weights(p):
-    @generate("lora_weights")
+    @generate
     def parser():
         w_model = yield col >> p
         w_te = yield (col >> p).optional(w_model)
         return [w_model, w_te]
 
-    return parser
+    return parser.desc("lora_weights")
 
 
 prompt = forward_declaration()
