@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import itertools as it
-import sys
 from dataclasses import dataclass
 from math import ceil
 from typing import Any, TypeAlias
@@ -9,7 +8,7 @@ from typing import Any, TypeAlias
 from typing_extensions import override
 
 from .macros import expand_macros
-from .parsy import any_char, char_from, digit, eof, forward_declaration, regex, seq, string, success, generate
+from .parsy import any_char, char_from, digit, eof, forward_declaration, generate, regex, seq, string, success
 
 FOREVER = float("inf")
 
