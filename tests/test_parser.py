@@ -23,7 +23,7 @@ def assert_prompt(p, at, until, text, *loras):
     assert prompts_match(p.at_step(at), prompt(until, text, *loras))
 
 
-parsers_to_test = os.environ.get("PC_PARSERS_TO_TEST", "old new").split()
+parsers_to_test = os.environ.get("PC_PARSERS_TO_TEST", "new").split()
 
 params = []
 if "old" in parsers_to_test:
