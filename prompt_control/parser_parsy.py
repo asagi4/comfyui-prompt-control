@@ -272,6 +272,8 @@ class PromptSchedule:
 
     def at_step(self, step: float) -> tuple[float, dict[str, Any]]:
         max_step = self.num_steps or 1.0
+        if max_step > 1 and step < 1:
+            step = step * max_step
         until, p, lora_list = self.parse_tree.eval(step, self.filters)
         loras = {}
         for lora in lora_list:
@@ -279,6 +281,9 @@ class PromptSchedule:
             d["weight"] = d.get("weight", 0) + lora.w_model
             d["weight_clip"] = d.get("weight_clip", 0) + lora.w_te
             loras[lora.filename] = d
+        if max_step > 0 and until > 1:
+            # TODO: better logic for this?
+            until = min(until / max_step, 1.0)
         return (min(max_step, round(until, 2)), {"prompt": p, "loras": loras})
 
     def with_filters(self, filters: str | None = None, start: float | None = None, end: float | None = None):
