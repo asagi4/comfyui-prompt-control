@@ -45,6 +45,23 @@ def test_no_scheduling(step, parse):
     assert prompts_match(p.at_step(step), expected)
 
 
+def test_integer_steps(parse):
+    p = parse("[a:b:25]", num_steps=50)
+    assert prompts_match(p.at_step(0), prompt(0.5, "a"))
+    assert prompts_match(p.at_step(25), prompt(0.5, "a"))
+    assert prompts_match(p.at_step(0.5), prompt(0.5, "a"))
+    assert prompts_match(p.at_step(0.51), prompt(1.0, "b"))
+    assert prompts_match(p.at_step(30), prompt(1.0, "b"))
+
+def test_mixed_steps(parse):
+    p = parse("[a:b:25] [c:d:0.25]", num_steps=50)
+    assert prompts_match(p.at_step(0), prompt(0.25, "a c"))
+    assert prompts_match(p.at_step(25), prompt(0.5, "a d"))
+    assert prompts_match(p.at_step(0.5), prompt(0.5, "a d"))
+    assert prompts_match(p.at_step(0.51), prompt(1.0, "b d"))
+    assert prompts_match(p.at_step(30), prompt(1.0, "b d"))
+
+
 @pytest.mark.parametrize("step", [0, 0.5, 1])
 def test_quote(step, parse):
     p = parse('This is a text with a "QUOTED DEF(X=Y)"')
