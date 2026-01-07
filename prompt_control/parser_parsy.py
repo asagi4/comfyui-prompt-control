@@ -361,7 +361,6 @@ alternate = (lsq >> seq(prompt.sep_by(string("|"), min=1), (col >> number).optio
 sequence = (lsq >> string("SEQ") >> seq(col >> opt_prompt << col, number).at_least(1) << rsq).map(Sequence)
 bracketed = seq(lsq, prompt.at_least(0), rsq) | sequence | schedule | alternate
 lora = (string("<lora:") >> filename * 1 + lora_weights(number) << string(">")).combine(LoRA)
-# TODO: fix
 ctlweight = seq(number, (string("@") >> number).optional(0)).sep_by(comma, min=1)
 loractl = (string("<loractl:") >> filename * 1 + lora_weights(ctlweight) << string(">")).combine(LoRACTL)
 emb = (string("<emb:") >> filename << string(">")).map(lambda f: Text(f"embedding:{f}"))
