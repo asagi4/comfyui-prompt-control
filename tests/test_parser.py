@@ -40,8 +40,8 @@ def parse(request):
 
 @pytest.mark.parametrize("step", [0, 0.5, 1])
 def test_no_scheduling(step, parse):
-    p = parse("This is a (basic:0.6) (prompt) with [no scheduling] features")
-    expected = prompt(1.0, "This is a (basic:0.6) (prompt) with [no scheduling] features")
+    p = parse(r"This is a (basic:0.6) (prompt) with [no scheduling] features and \(escaped parens\)")
+    expected = prompt(1.0, r"This is a (basic:0.6) (prompt) with [no scheduling] features and \(escaped parens\)")
     assert prompts_match(p.at_step(step), expected)
 
 
