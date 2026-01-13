@@ -144,6 +144,20 @@ class TestPCTextEncode:
             cond_equal(avg, c3)
             cond_equal(avg, c4)
 
+    def test_avg(self, text_encoder_clips, pc_text_encode, node_class_objs):
+            comfy = node_class_objs["comfy"]
+            average = node_class_objs["average"]
+            for _k, clip in text_encoder_clips:
+                (c1,) = run(comfy, clip, "test1")
+                (c2,) = run(comfy, clip, "test2")
+                (c3,) = run(comfy, clip, "test3")
+                (c4,) = run(pc_text_encode, clip, "test1 AVG() test2 AVG() test3")
+                (c5,) = run(pc_text_encode, clip, "test1 AVG test2 AVG test3")
+                (avg1,) = run(average, c1, c2, 0.5)
+                (avg,) = run(average, avg1, c3, 0.5)
+                cond_equal(avg, c4)
+                cond_equal(avg, c5)
+
     @pytest.mark.xfail
     def test_failure(self, text_encoder_clips, pc_text_encode, node_class_objs):
         comfy = node_class_objs["comfy"]
