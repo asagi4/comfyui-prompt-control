@@ -215,7 +215,7 @@ def encode_regions(clip_regions, encode, tokenizer):
         region_emb *= region_masking
 
         region_embeddings.append(region_emb)
-    region_embeddings = torch.stack(region_embeddings).sum(axis=0)
+    region_embeddings = torch.stack(region_embeddings).sum(dim=0)
 
     embeddings_final_mask = torch.tensor(
         global_region_mask, dtype=base_embedding_full.dtype, device=base_embedding_full.device

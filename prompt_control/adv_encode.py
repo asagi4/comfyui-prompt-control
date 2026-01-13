@@ -197,6 +197,7 @@ class AdvancedEncoder:
     def add_encoder(cls, name, fn):
         cls.STYLES[name] = fn
 
+    @classmethod
     def add_normalization_op(cls, name, fn):
         cls.NORMALIZATION_OPS[name] = fn
 
@@ -296,7 +297,7 @@ class AdvancedEncoder:
         w_mix = np.diff([0] + w.tolist())
         w_mix = torch.tensor(w_mix, dtype=embs.dtype, device=embs.device).reshape((-1, 1, 1))
 
-        weighted_emb = (w_mix * embs).sum(axis=0, keepdim=True)
+        weighted_emb = (w_mix * embs).sum(dim=0, keepdim=True)
         pooled = pooled_base
         if pooled is not None and self.max_length:
             pooled = weighted_emb[0, self.max_length - 1 : self.max_length, :]
@@ -328,12 +329,13 @@ class AdvancedEncoder:
         masks = torch.cat(masks)
 
         embs = base_emb.expand(embs.shape) - embs
+        pooled = None
         if pooled_base is not None and self.max_length:
             pooled = embs[0, self.max_length - 1 : self.max_length, :]
             pooled_start = pooled_base.expand(len(ws), -1)
             ws = torch.tensor(ws).reshape(-1, 1).expand(pooled_start.shape)
             pooled = (pooled - pooled_start) * (ws - 1)
-            pooled = pooled.mean(axis=0, keepdim=True)
+            pooled = pooled.mean(dim=0, keepdim=True)
             pooled = pooled_base + pooled
 
         if embs.shape[0] != masks.shape[0]:

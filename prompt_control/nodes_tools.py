@@ -1,3 +1,4 @@
+# pyright: reportSelfClsParameterName=false
 import logging
 from .parser import parse_prompt_schedules, expand_macros
 from .nodes_lazy import NODE_CLASS_MAPPINGS as LAZY_NODES
