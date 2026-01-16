@@ -598,9 +598,10 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
         return c
 
     def couple_mask(args):
-        if args is None:
+        assert len(args) <= 1, "Argument parsing failure. This is a bug in Prompt Control"
+        if not args:
             return ""
-        return f"MASK({args})"
+        return f"MASK({args[0]})"
 
     for prompt in prompts:
         base_prompt, attn_couple_prompts = split_by_function(prompt, "COUPLE", defaults=None, require_args=False)
