@@ -20,6 +20,12 @@ def run(f, *args):
         return getattr(f, f.FUNCTION)(*args)
 
 
+def compare_hookgroup_mask(h1, h2):
+    assert len(h1.hooks) == len(h2.hooks)
+    for a, b in zip(h1.hooks, h2.hooks):
+        assert (a.mask == b.mask).all()
+
+
 @mock.patch("torch.cuda.current_device", lambda: "cpu")
 class TestEncode(unittest.TestCase):
     @classmethod
@@ -172,6 +178,16 @@ class TestEncode(unittest.TestCase):
                 (c2,) = run(pc, clip, "test COUPLE prompt1 COUPLE test2 COUPLE prompt2")
                 self.assertTrue(len(c) == 2)
                 self.assertTrue(len(c2) == 1)
+            with self.subTest(f"Testing {k} mask shortcut"):
+                (c,) = run(pc, clip, "test COUPLE() prompt1")
+                (c2,) = run(pc, clip, "test COUPLE MASK() prompt1")
+                self.condEqual(c, c2)
+                self.condEqual(c, c2, "hooks", compare_hookgroup_mask)
+            with self.subTest(f"Testing {k} mask shortcut 2"):
+                (c,) = run(pc, clip, "test COUPLE(0 0.2, 0.5) prompt1")
+                (c2,) = run(pc, clip, "test COUPLE MASK(0 0.2, 0.5) prompt1")
+                self.condEqual(c, c2)
+                self.condEqual(c, c2, "hooks", compare_hookgroup_mask)
 
     def test_styles(self):
         pc = PCTextEncode()
