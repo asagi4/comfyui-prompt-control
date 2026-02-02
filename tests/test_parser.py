@@ -53,6 +53,7 @@ def test_integer_steps(parse):
     assert prompts_match(p.at_step(0.51), prompt(1.0, "b"))
     assert prompts_match(p.at_step(30), prompt(1.0, "b"))
 
+
 def test_mixed_steps(parse):
     p = parse("[a:b:25] [c:d:0.25]", num_steps=50)
     assert prompts_match(p.at_step(0), prompt(0.25, "a c"))

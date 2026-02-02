@@ -9,6 +9,12 @@ def run(f, *args):
         return getattr(f, f.FUNCTION)(*args)
 
 
+def compare_hookgroup_mask(h1, h2):
+    assert len(h1.hooks) == len(h2.hooks)
+    for a, b in zip(h1.hooks, h2.hooks, strict=True):
+        assert (a.mask == b.mask).all()
+
+
 @pytest.fixture(scope="module")
 def text_encoder_clips():
     import os
@@ -145,18 +151,18 @@ class TestPCTextEncode:
             cond_equal(avg, c4)
 
     def test_avg(self, text_encoder_clips, pc_text_encode, node_class_objs):
-            comfy = node_class_objs["comfy"]
-            average = node_class_objs["average"]
-            for _k, clip in text_encoder_clips:
-                (c1,) = run(comfy, clip, "test1")
-                (c2,) = run(comfy, clip, "test2")
-                (c3,) = run(comfy, clip, "test3")
-                (c4,) = run(pc_text_encode, clip, "test1 AVG() test2 AVG() test3")
-                (c5,) = run(pc_text_encode, clip, "test1 AVG test2 AVG test3")
-                (avg1,) = run(average, c1, c2, 0.5)
-                (avg,) = run(average, avg1, c3, 0.5)
-                cond_equal(avg, c4)
-                cond_equal(avg, c5)
+        comfy = node_class_objs["comfy"]
+        average = node_class_objs["average"]
+        for _k, clip in text_encoder_clips:
+            (c1,) = run(comfy, clip, "test1")
+            (c2,) = run(comfy, clip, "test2")
+            (c3,) = run(comfy, clip, "test3")
+            (c4,) = run(pc_text_encode, clip, "test1 AVG() test2 AVG() test3")
+            (c5,) = run(pc_text_encode, clip, "test1 AVG test2 AVG test3")
+            (avg1,) = run(average, c1, c2, 0.5)
+            (avg,) = run(average, avg1, c3, 0.5)
+            cond_equal(avg, c4)
+            cond_equal(avg, c5)
 
     @pytest.mark.xfail
     def test_failure(self, text_encoder_clips, pc_text_encode, node_class_objs):
@@ -223,3 +229,15 @@ class TestPCTextEncode:
     def test_cutoff_nofail(self, text_encoder_clips, pc_text_encode, node_class_objs):
         for _k, clip in text_encoder_clips:
             (c1,) = run(pc_text_encode, clip, "test [CUT:a:b:0.5]")
+
+    def test_couple_mask_shortcut(self, text_encoder_clips, pc_text_encode, node_class_objs):
+        for _k, clip in text_encoder_clips:
+            (c,) = run(pc_text_encode, clip, "test COUPLE() prompt1")
+            (c2,) = run(pc_text_encode, clip, "test COUPLE MASK() prompt1")
+            cond_equal(c, c2)
+            cond_equal(c, c2, "hooks", compare_hookgroup_mask)
+
+            (c,) = run(pc_text_encode, clip, "test COUPLE(0 0.2, 0.5) prompt1")
+            (c2,) = run(pc_text_encode, clip, "test COUPLE MASK(0 0.2, 0.5) prompt1")
+            cond_equal(c, c2)
+            cond_equal(c, c2, "hooks", compare_hookgroup_mask)
