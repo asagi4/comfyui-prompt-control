@@ -12,8 +12,8 @@ from comfy_execution.graph_utils import GraphBuilder
 from .utils import consolidate_schedule, find_nonscheduled_loras, get_function
 
 log = logging.getLogger("comfyui-prompt-control")
-if os.environ.get("PC_USE_NEW_PARSER", "0") == "1":
-    log.info("Using new parsy parser")
+if os.environ.get("PC_USE_OLD_PARSER", "0") != "0":
+    log.info("Using new parser implementation. Set PC_USE_OLD_PARSER=1 to use old parser instead")
     from .parser_parsy import parse_prompt_schedules as parse_prompt_schedules
 else:
     from .parser import parse_prompt_schedules
