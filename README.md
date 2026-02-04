@@ -6,6 +6,12 @@ Prompt Control comes with `PCTextEncode`, which provides advanced text encoding 
 
 A `Basic Text to Image` template is included with the extension, and can be loaded from ComfyUI's template library.
 
+> [!NOTE]
+> v3.0.0 is backwards compatible with existing workflows, but requires at least ComfyUI v0.8.0
+> The parser was rewritten using parsy. It is intended to have the same behaviour as the old parser, but is **significantly** faster.
+> Please report any bugs or incompatibilities you find.
+
+
 ## What can it do?
 
 You can use text prompts to control the following:
@@ -34,16 +40,9 @@ If you encounter issues as a user or if you're a node developer and Prompt Contr
 
 ## Requirements
 
-For LoRA scheduling to work, you'll need at least version 0.3.7 of ComfyUI (0.3.36 of ComfyUI desktop).
+The v3 node schema uses features that require at least ComfyUI v0.8.0
 
-You need to have `lark` installed in your Python environment for parsing to work (If you reuse A1111's venv, it'll already be there).
-
-If you use the portable version of ComfyUI on Windows with its embedded Python, you must open a terminal in the ComfyUI installation directory and run the command:
-```
-.\python_embeded\python.exe -m pip install lark
-```
-
-Then restart ComfyUI afterwards.
+If you run into problems, update ComfyUI first.
 
 # Core nodes
 
