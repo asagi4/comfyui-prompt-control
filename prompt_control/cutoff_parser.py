@@ -1,58 +1,25 @@
-from typing import TypeAlias
+import re
 
-import lark
+from .utils import parse_args
 
-from .utils import flatten
-
-cut_parser = lark.Lark(
-    r"""
-!start: (cut | prompt | /[][:()]/+)*
-prompt: (PLAIN | WHITESPACE)+
-cut: "[CUT:" prompt ":" prompt [":" NUMBER  [ ":" NUMBER [":" NUMBER [ ":" PLAIN ] ] ] ]"]"
-WHITESPACE: /\s+/
-PLAIN: /([^\[\]:])+/
-%import common.SIGNED_NUMBER -> NUMBER
-"""
-)
+CUTOFF_RE = re.compile(r"\[CUT:((.*?):(.*?))\]")
 
 
-class CutTransform(lark.Transformer):
-    def __default__(self, data, children, meta):
-        return children
+def noop(x):
+    return x
 
-    def NUMBER(self, args):
-        return float(args)
 
-    def cut(self, args):
-        prompt, cutout, weight, strict_mask, start_from_masked, mask_token = args
-
-        # prompts and cutouts are always sequences of str
-        return (
-            "".join(prompt),
-            "".join(cutout),
-            weight,
-            strict_mask,
-            start_from_masked,
-            mask_token,
+def parse_cuts(string):
+    text = CUTOFF_RE.sub(r"\2", string)
+    cutoffs = CUTOFF_RE.findall(string)
+    cs = []
+    for x, *_ in cutoffs:
+        p = x.split(":")
+        args = parse_args(
+            p, [(str, ""), (str, ""), (float, 0), (float, None), (float, None), (noop, None)], strip=False
         )
-
-    def start(self, args):
-        prompt = []
-        cuts = []
-        for a in flatten(args):
-            if isinstance(a, str):
-                prompt.append(a)
-            else:
-                prompt.append(a[0])
-                cuts.append(a)
-        return "".join(prompt), cuts
-
-    def PLAIN(self, args: str) -> str:
-        return str(args)
-
-
-CutResult: TypeAlias = tuple[str, str, float, float, float, str]
-
-
-def parse_cuts(text: str) -> tuple[str, CutResult]:
-    return CutTransform().transform(cut_parser.parse(text))
+        args = tuple(args)
+        if not args[0] or not args[1] or (args[5] is not None and not args[5].strip()):
+            raise ValueError(f"Invalid CUT spec: [CUT:{x}]")
+        cs.append(args)
+    return text, cs
