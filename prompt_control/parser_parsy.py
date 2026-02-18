@@ -348,7 +348,7 @@ non_special = regex(r"[^:\[\]()|\\<>#]+").map(Text)
 filename = regex(r"[^:<>]+")
 
 comment = string("#") >> any_char.until(eof | char_from("\n")) >> success(empty)
-escape = (string("\\") >> char_from("\\[]:#") | string(r"\(") | string("\)")).map(Text)
+escape = (string("\\") >> char_from("\\[]:#") | string(r"\(") | string(r"\)")).map(Text)
 emphasis = seq(lpar, (prompt | col).at_least(0), rpar)
 number = (digit.at_least(1) + string(".") * 1 + digit.many() | digit.at_least(1)).concat().map(float)
 
