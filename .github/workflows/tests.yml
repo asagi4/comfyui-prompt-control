@@ -19,5 +19,5 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install pytest typing-extensions -r requirements.txt
+      - run: pip install pytest typing-extensions
       - run: PYTHONPATH=ComfyUI pytest tests/test_parser.py
