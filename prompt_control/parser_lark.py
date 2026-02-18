@@ -8,6 +8,7 @@ from math import ceil
 import lark
 
 from .macros import expand_macros
+from .utils import flatten
 
 logging.basicConfig()
 log = logging.getLogger("comfyui-prompt-control")
@@ -82,14 +83,6 @@ TAG: /[A-Z_]+/
 """,
     lexer="dynamic",
 )
-
-
-def flatten(x):
-    if type(x) in [str, tuple, int, type(None)] or isinstance(x, dict) and "type" in x:
-        yield x
-    else:
-        for g in x:
-            yield from flatten(g)
 
 
 def clamp(a, b, c):

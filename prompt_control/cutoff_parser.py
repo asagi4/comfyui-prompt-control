@@ -2,7 +2,7 @@ from typing import TypeAlias
 
 import lark
 
-from .parser import flatten
+from .utils import flatten
 
 cut_parser = lark.Lark(
     r"""

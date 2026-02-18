@@ -3,14 +3,12 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 
 from comfy_api.latest import io
 from comfy_execution.graph import ExecutionBlocker
 from comfy_execution.graph_utils import GraphBuilder
 
 from .parser import parse_prompt_schedules
-
 from .utils import consolidate_schedule, find_nonscheduled_loras, get_function
 
 log = logging.getLogger("comfyui-prompt-control")

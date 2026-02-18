@@ -35,6 +35,14 @@ except ImportError:
 log = logging.getLogger("comfyui-prompt-control")
 
 
+def flatten(x):
+    if type(x) in [str, tuple, int, type(None)] or isinstance(x, dict) and "type" in x:
+        yield x
+    else:
+        for g in x:
+            yield from flatten(g)
+
+
 def call_node(cls, *args, **kwargs):
     if hasattr(cls, "execute"):
         # v3 node
