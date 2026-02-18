@@ -12,7 +12,7 @@ format:
 	ruff format
 
 test:
-	PYTHONPATH=../../ pytest tests/test_parser.py $(ARGS)
+	PYTHONPATH=../../ pytest tests/test_parser.py tests/test_cutout.py $(ARGS)
 
 test_graph:
 	PYTHONPATH=../../  pytest tests/test_graph.py $(ARGS)
