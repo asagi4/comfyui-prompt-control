@@ -2,7 +2,8 @@ import logging
 
 from comfy_api.latest import io
 
-from .parser import expand_macros, parse_prompt_schedules
+from .macros import expand_macros
+from .parser import parse_prompt_schedules
 
 log = logging.getLogger("comfyui-prompt-control")
 

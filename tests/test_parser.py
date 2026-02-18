@@ -2,9 +2,7 @@ import os
 
 import pytest
 
-from prompt_control.parser import expand_macros
-from prompt_control.parser import parse_prompt_schedules as old_parse  # noqa
-from prompt_control.parser_parsy import parse_prompt_schedules as new_parse  # noqa
+from prompt_control.macros import expand_macros
 
 
 def lora_dict(*loras):
@@ -27,9 +25,13 @@ parsers_to_test = os.environ.get("PC_PARSERS_TO_TEST", "new").split()
 
 params = []
 if "old" in parsers_to_test:
+    from prompt_control.parser_lark import parse_prompt_schedules as old_parse  # noqa
+
     params.append(old_parse)
 
 if "new" in parsers_to_test:
+    from prompt_control.parser_parsy import parse_prompt_schedules as new_parse  # noqa
+
     params.append(new_parse)
 
 

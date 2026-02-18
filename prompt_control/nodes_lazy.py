@@ -9,14 +9,11 @@ from comfy_api.latest import io
 from comfy_execution.graph import ExecutionBlocker
 from comfy_execution.graph_utils import GraphBuilder
 
+from .parser import parse_prompt_schedules
+
 from .utils import consolidate_schedule, find_nonscheduled_loras, get_function
 
 log = logging.getLogger("comfyui-prompt-control")
-if os.environ.get("PC_USE_OLD_PARSER", "0") != "0":
-    log.info("Using new parser implementation. Set PC_USE_OLD_PARSER=1 to use old parser instead")
-    from .parser_parsy import parse_prompt_schedules as parse_prompt_schedules
-else:
-    from .parser import parse_prompt_schedules
 
 
 def create_lora_loader_nodes(graph, model, clip, loras):
