@@ -1,6 +1,6 @@
 [project]
 name = "comfyui-prompt-control"
-description = "Provides nodes for prompt editing and LoRA scheduling, advanced regional prompting (including attention masking) and more, all controlled through your text prompt"
+description = "Nodes for prompt editing and LoRA scheduling, advanced regional prompting (including attention masking) and advanced prompt encoding, all controlled through your text prompt. Feature keywords: comfyui-prompt-control, schedule, macros, attention couple, loractl, A1111"
 version = "3.0.0-beta.2"
 license = { file = "LICENSE" }
 
