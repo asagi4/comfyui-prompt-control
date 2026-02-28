@@ -10,7 +10,6 @@ import lark
 from .macros import expand_macros
 from .utils import flatten
 
-logging.basicConfig()
 log = logging.getLogger("comfyui-prompt-control")
 
 if lark.__version__ == "0.12.0":

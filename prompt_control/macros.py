@@ -6,7 +6,6 @@ import re
 
 from .utils import find_closing_paren, get_function
 
-logging.basicConfig()
 log = logging.getLogger("comfyui-prompt-control")
 
 
