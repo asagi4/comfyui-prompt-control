@@ -350,8 +350,9 @@ filename = regex(r"[^:<>]+")
 comment = string("#") >> any_char.until(eof | char_from("\n")) >> success(empty)
 escape = (string("\\") >> char_from("\\[]:#") | string(r"\(") | string(r"\)")).map(Text)
 emphasis = seq(lpar, (prompt | col).at_least(0), rpar)
-number = (digit.at_least(1) + string(".") * 1 + digit.many() | digit.at_least(1)).concat().map(float)
-
+number = (
+    (string("-").optional("") + (digit.at_least(1) + string(".") * 1 + digit.many() | digit.at_least(1)))
+).concat().map(float)
 opt_prompt = prompt.optional(empty)
 step_range = seq(number | tag, (comma >> number).optional())
 arglist = seq((opt_prompt << col).optional() * 3, step_range)
