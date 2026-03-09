@@ -351,6 +351,7 @@ comment = string("#") >> any_char.until(eof | char_from("\n")) >> success(empty)
 escape = (string("\\") >> char_from("\\[]:#") | string(r"\(") | string(r"\)")).map(Text)
 emphasis = seq(lpar, (prompt | col).at_least(0), rpar)
 number = regex(r"(-|\+)?\d+(\.\d+)?").map(float)
+
 opt_prompt = prompt.optional(empty)
 step_range = seq(number | tag, (comma >> number).optional())
 arglist = seq((opt_prompt << col).optional() * 3, step_range)
