@@ -113,9 +113,9 @@ def test_basic_ok(parse):
 
 @pytest.mark.parametrize("step", [0, 0.5, 1])
 def test_lora(step, parse):
-    p = parse("This is a (lora:0.6) (prompt) with [no scheduling] features <lora:foo:0.5> <lora:bar:0.5:1.0>")
+    p = parse("This is a (lora:0.6) (prompt) with [no scheduling] features <lora:foo:0.5> <lora:bar:0.5:-1.0>")
     expected = prompt(
-        1.0, "This is a (lora:0.6) (prompt) with [no scheduling] features  ", ("foo", 0.5, 0.5), ("bar", 0.5, 1.0)
+        1.0, "This is a (lora:0.6) (prompt) with [no scheduling] features  ", ("foo", 0.5, 0.5), ("bar", 0.5, -1.0)
     )
     assert prompts_match(p.at_step(step), expected)
 
