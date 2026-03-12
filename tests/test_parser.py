@@ -361,6 +361,12 @@ def test_cornercase_corrected(parse):
     assert p.parsed_prompt[1:] == p2.parsed_prompt
 
 
+def test_floats(parse):
+    p = parse("[a:b:0.5] [c:d:e:0.2,0.7] <lora:test:-0.3>")
+    p2 = parse("[a:b:.5] [c:d:e:.2,.7] <lora:test:-.3>")
+    assert p.parsed_prompt == p2.parsed_prompt
+
+
 def test_alternating_lora(parse):
     p4 = parse("[cat|[dog:wolf<lora:canine:1>:0.5]:0.2]")
     for i, (text, *_loras) in enumerate(

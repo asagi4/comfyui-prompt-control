@@ -352,7 +352,7 @@ escape = (string("\\") >> char_from("\\[]:#") | string(r"\(") | string(r"\)")).m
 emphasis = seq(lpar, (prompt | col).at_least(0), rpar)
 sign = string("+") | string("-")
 number = (
-    (sign.optional("") + (digit.at_least(1) + string(".") * 1 + digit.many() | digit.at_least(1)).concat())
+    (sign.optional("") + (digit.many() + string(".") * 1 + digit.many() | digit.at_least(1)).concat())
     .concat()
     .map(float)
 )
