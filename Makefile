@@ -20,6 +20,9 @@ test_graph:
 test_encode:
 	PYTHONPATH=../../  pytest tests/test_encode.py $(ARGS)
 
+test_workflow:
+	PYTHONPATH=../../  pytest tests/test_workflow.py $(ARGS)
+
 test_encode_both:
 	TEST_TE="clip_l t5" PYTHONPATH=../../  pytest tests/test_encode.py $(ARGS)
 
