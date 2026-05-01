@@ -128,7 +128,27 @@ class AttentionCoupleHook(TransformerOptionsHook):
             else:
                 self.kv["k"] = self.kv["v"] = self.conds[1:]
 
-        return super().on_apply_hooks(model, transformer_options)
+        result = super().on_apply_hooks(model, transformer_options)
+
+        # AttentionCouple's masked attention math must run AFTER any other
+        # attn2_patch / attn2_output_patch entries (e.g. NegPip from
+        # ComfyUI-ppm) so it operates on already-sliced k/v tensors.
+        # Pre Comfy-Org/ComfyUI@493b81e, merge_nested_dicts naturally produced
+        # [<existing>, couple]. After the arg-swap in 493b81e it produces
+        # [couple, <existing>], breaking the order. Restore the invariant
+        # explicitly here so the hook is robust to merge-order changes in core.
+        couple_patches = self.transformers_dict.get("patches", {})
+        patches = transformer_options.get("patches", {})
+        for patch_name in ("attn2_patch", "attn2_output_patch"):
+            patch_list = patches.get(patch_name)
+            if not patch_list:
+                continue
+            for proxy in couple_patches.get(patch_name, []):
+                if proxy in patch_list and patch_list[-1] is not proxy:
+                    patch_list.remove(proxy)
+                    patch_list.append(proxy)
+
+        return result
 
     def clone(self):
         c: AttentionCoupleHook = super().clone()
