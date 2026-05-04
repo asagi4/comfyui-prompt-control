@@ -63,12 +63,14 @@ class AttentionCoupleHook(TransformerOptionsHook):
     def __init__(self):
         super().__init__(hook_scope=EnumHookScope.HookedOnly)
 
-        self.transformers_dict = {
+        self.transformers_dict: dict[str, Any] = {
             "patches": {
                 "attn2_output_patch": [Proxy(self.attn2_output_patch)],
                 "attn2_patch": [Proxy(self.attn2_patch)],
-            }
+            },
+            "pc_couple": {},
         }
+
         self.has_negpip = False
         # The list will be calculated later. All clones must refer to the same kv dict
         self.kv: dict[str, list] = {"k": None, "v": None}  # type: ignore
@@ -77,6 +79,7 @@ class AttentionCoupleHook(TransformerOptionsHook):
         self.num_conds = len(conds) + 1
         self.base_strength = base_cond[1].get("strength", 1.0)
         self.strengths: list[float] = [cond[1].get("strength", 1.0) for cond in conds]
+        self.comfy_conds = [base_cond] + conds
         self.conds: list[torch.Tensor] = [base_cond[0]] + [cond[0] for cond in conds]
         base_mask = base_cond[1].get("mask", None)
         masks = [cond[1].get("mask") * cond[1].get("mask_strength") for cond in conds]
@@ -116,6 +119,11 @@ class AttentionCoupleHook(TransformerOptionsHook):
         self.mask = mask / mask.sum(dim=0, keepdim=True)
 
     def on_apply_hooks(self, model: ModelPatcher, transformer_options: dict[str, Any]):
+        self.transformers_dict["pc_couple"] = {
+            "conds": self.comfy_conds,
+            "num_conds": self.num_conds,
+            "mask": self.mask,
+        }
         if self.kv["k"] is None:
             self.has_negpip = model.model_options.get("ppm_negpip", False)
             log.debug("AttentionCouple has_negpip=%s", self.has_negpip)

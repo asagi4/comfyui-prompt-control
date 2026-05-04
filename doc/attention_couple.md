@@ -1,7 +1,5 @@
 # Attention Couple
 
-NOTE: This is still considered an experimental feature, so the syntax may change.
-
 Attention Couple is an attention-based implementation of regional prompting. it is faster and often more flexible than latent-based masking.
 
 The implementation is based on the one by [pamparamm](https://github.com/pamparamm/ComfyUI-ppm.git), modified to use ComfyUI's hook system. This enables it to work with prompt scheduling.
@@ -12,6 +10,11 @@ As a consequence of this, however, you can also use `COUPLE` in your negative pr
 
 To enable batching negative prompts, run your positive and negative prompt through the `PPCAttentionCoupleBatchNegative` node. This will make the outputs identical to pamparamm's implementation and will also improve performance. It will fall back to the default behaviour in cases where batching can't be done, so it should always be safe to use.
 
+## Anima
+
+There is a **very experimental** port of pamparamm's Anima support for Attention Couple in Prompt Control. Because ComfyUI lacks the built-in schedulable hooks required, you must first patch your model with `PC: Anima Attention Couple Model Patch` in addition to using `COUPLE` as usual.
+
+The code was hacked together with minimal thought, so expect bugs and misbehaviour. The port is also currently *not* compatible with NegPIP.
 
 ## Syntax
 

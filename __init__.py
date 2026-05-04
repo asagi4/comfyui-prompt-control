@@ -30,7 +30,7 @@ if "PYTEST_CURRENT_TEST" not in os.environ:
         h = logging.StreamHandler(sys.stdout)
         h.setFormatter(logging.Formatter("[PromptControl] %(levelname)s: %(message)s"))
         log.addHandler(h)
-    for node in ["base", "hooks", "tools", "lazy"]:
+    for node in ["base", "hooks", "tools", "lazy", "anima"]:
         mod = importlib.import_module(f".prompt_control.nodes_{node}", package=__name__)
         v3_modules.append(mod)
 
