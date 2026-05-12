@@ -1,4 +1,3 @@
-
 # Adapted from https://github.com/pamparamm/ComfyUI-ppm
 import itertools
 from collections.abc import Callable

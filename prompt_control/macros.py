@@ -18,6 +18,7 @@ def substitute_template(template, segments):
                 value = _substitute(value, segments, stack)
                 stack.remove(name)
             template = substitute_var(template, name, value)
+        template = expand_subs(template)
         return template
 
     return _substitute(template, segments, set())
@@ -31,6 +32,19 @@ def expand_segs(text):
     if new_text != text.strip():
         log.debug("Template expanded to: %s", new_text)
     return new_text
+
+
+def expand_subs(text):
+    text, subs = get_function(text, "SUB", defaults=None)
+    subs = [spec.strip() for f in subs for spec in f.args[0].split(";")]
+    for spec in subs:
+        if len(spec) <= 3 or spec[0] != "s":
+            log.warning("Invalid SUB spec ignored: '%s'", spec)
+            continue
+        splitchar = spec[1]
+        search, replace, *_ = spec[2:].split(splitchar)
+        text = re.sub(search, replace, text)
+    return text
 
 
 def parse_search(search):
