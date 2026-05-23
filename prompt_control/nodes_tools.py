@@ -134,7 +134,7 @@ class PCExtractScheduledPrompt(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="PCExtractScheduledPrompt",
-            display_name="PC: Extract Scheduled Prompt",
+            display_name="PC: Show Prompt",
             category="promptcontrol/tools",
             description="Parses the input prompt and returns the prompt scheduled at the specified point",
             inputs=[
@@ -146,6 +146,7 @@ class PCExtractScheduledPrompt(io.ComfyNode):
                 io.Boolean.Input("expand_macros", default=False, optional=True),
             ],
             outputs=[io.String.Output()],
+            search_aliases=["extract scheduled prompt"],
         )
 
     @classmethod
