@@ -9,7 +9,7 @@ from .utils import find_closing_paren, get_function, split_by_function
 log = logging.getLogger("comfyui-prompt-control")
 
 
-def substitute_template(template, segments):
+def substitute_template(template, segments, do_subs):
     def _substitute(template, segments, stack):
         for name, value in sorted(segments):
             value = substitute_var(value, name, "")
@@ -18,17 +18,18 @@ def substitute_template(template, segments):
                 value = _substitute(value, segments, stack)
                 stack.remove(name)
             template = substitute_var(template, name, value)
-        template = expand_subs(template)
+        if do_subs:
+            template = expand_subs(template)
         return template
 
     return _substitute(template, segments, set())
 
 
-def expand_segs(text):
+def expand_segs(text, do_subs=True):
     template, segments = split_by_function(text, "SEG", defaults=[""], require_args=True)
     named_segs = [(f.args[0].strip() or f"SEG{i + 1}", c.strip()) for i, (c, f) in enumerate(segments)]
 
-    new_text = substitute_template(template, named_segs).strip()
+    new_text = substitute_template(template, named_segs, do_subs).strip()
     if new_text != text.strip():
         log.debug("Template expanded to: %s", new_text)
     return new_text

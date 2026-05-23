@@ -2,7 +2,9 @@ import logging
 
 from comfy_api.latest import io
 
-from .macros import expand_macros
+from .macros import expand_macros as macroexpand
+from .macros import expand_segs as segexpand
+from .macros import expand_subs as subexpand
 from .parser import parse_prompt_schedules
 
 log = logging.getLogger("comfyui-prompt-control")
@@ -139,15 +141,24 @@ class PCExtractScheduledPrompt(io.ComfyNode):
                 io.String.Input("text", multiline=True),
                 io.Float.Input("at", min=0.0, max=1.0, default=1.0, step=0.01),
                 io.String.Input("tags", default="", optional=True),
+                io.Boolean.Input("expand_segs", default=False, optional=True),
+                io.Boolean.Input("expand_subs", default=False, optional=True),
+                io.Boolean.Input("expand_macros", default=False, optional=True),
             ],
             outputs=[io.String.Output()],
         )
 
     @classmethod
-    def execute(cls, text, at, tags="") -> io.NodeOutput:
+    def execute(cls, text, at, tags="", expand_segs=False, expand_subs=False, expand_macros=False) -> io.NodeOutput:
+        if expand_macros:
+            text = macroexpand(text)
         schedule = parse_prompt_schedules(text, filters=tags)
-        _, entry = schedule.at_step(at, total_steps=1)
+        _, entry = schedule.at_step(at)
         prompt_text = entry.get("prompt", "")
+        if expand_segs:
+            prompt_text = segexpand(prompt_text, do_subs=expand_subs)
+        if expand_subs:
+            prompt_text = subexpand(prompt_text)
         return io.NodeOutput(prompt_text)
 
 
@@ -167,7 +178,7 @@ class PCMacroExpand(io.ComfyNode):
 
     @classmethod
     def execute(cls, text) -> io.NodeOutput:
-        return io.NodeOutput(expand_macros(text))
+        return io.NodeOutput(macroexpand(text))
 
 
 NODES = [
