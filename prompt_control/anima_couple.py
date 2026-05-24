@@ -40,7 +40,7 @@ def anima_sample_wrapper(executor, *args, **kwargs):
             seed,
             latent_shapes=[latent_image.shape],
         )
-        return [c["model_conds"]["c_crossattn"].cond for c in conds["positive"]]
+        return [c["model_conds"]["c_crossattn"].cond * pc_conds[i][1].get("strength", 1.0) for i, c in enumerate(conds["positive"])]
 
     extra_options["model_options"]["transformer_options"]["pc_process_conds"] = pc_process_conds
     return executor(*args, **kwargs)
@@ -72,6 +72,8 @@ def cosmos_attention_forward_couple(_forward: Callable, x, context, rope_emb, tr
     if "pc_couple" not in transformer_options:
         return _forward(x, context, rope_emb, transformer_options)
     c: torch.Tensor = context
+    # FIXME: base cond weight
+    #c = args["processed_conds"][0]
 
     args = transformer_options["pc_couple"]
 
