@@ -1,6 +1,5 @@
 # Adapted from ComfyUI-ppm into hook form
 
-from functools import partial
 
 import comfy.model_management
 import comfy.patcher_extension
@@ -14,6 +13,16 @@ from .anima_couple import (
     anima_sample_wrapper,
     cosmos_attention_forward_couple,
 )
+
+
+class CoupleForward:
+    def __init__(self, fn, block):
+        self.fn = fn
+        self.block = block
+
+    def __call__(self, *args, **kwargs):
+        self.block.to("cuda")
+        return cosmos_attention_forward_couple(self.fn, *args, **kwargs)
 
 
 class PCAnimaAttnCouplePatch(io.ComfyNode):
@@ -50,13 +59,11 @@ class PCAnimaAttnCouplePatch(io.ComfyNode):
                 anima_sample_wrapper,
             )
 
-            for block_name, _ in (
+            for block_name, b in (
                 (n, b) for n, b in anima_model.named_modules() if "cross_attn" in n and isinstance(b, CosmosAttention)
             ):
                 attn_forward_prev = m.get_model_object(f"diffusion_model.{block_name}.forward")
-                m.add_object_patch(
-                    f"diffusion_model.{block_name}.forward", partial(cosmos_attention_forward_couple, attn_forward_prev)
-                )
+                m.add_object_patch(f"diffusion_model.{block_name}.forward", CoupleForward(attn_forward_prev, b))
 
         return io.NodeOutput(m)
 
