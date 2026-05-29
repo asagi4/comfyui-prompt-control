@@ -13,6 +13,10 @@ from comfy.samplers import process_conds
 COND = 0
 UNCOND = 1
 
+COND_NEGPIP_MASK_KEY = "c_ppm_negpip_mask"
+NEGPIP_MASKS_COUPLE_KEY = "ppm_couple_negpip_masks"
+NEGPIP_MASK_KEY = "ppm_negpip_mask"
+
 
 def reshape_mask(mask: torch.Tensor, size: tuple[int, int], bs: int, num_tokens: int) -> torch.Tensor:
     num_conds = mask.shape[0]
@@ -40,10 +44,17 @@ def anima_sample_wrapper(executor, *args, **kwargs):
             seed,
             latent_shapes=[latent_image.shape],
         )
-        return [
+        conds_p = [
             c["model_conds"]["c_crossattn"].cond * pc_conds[i][1].get("strength", 1.0)
             for i, c in enumerate(conds["positive"])
         ]
+        # TODO: weight?
+        negpip_masks_couple = []
+        if all(COND_NEGPIP_MASK_KEY in cond["model_conds"] for cond in conds["positive"]):
+            negpip_masks_couple = [
+                cond["model_conds"][COND_NEGPIP_MASK_KEY].cond.to(device) for cond in conds["positive"]
+            ]
+        return conds_p, negpip_masks_couple
 
     extra_options["model_options"]["transformer_options"]["pc_process_conds"] = pc_process_conds
     return executor(*args, **kwargs)
@@ -57,7 +68,9 @@ def anima_forward_wrapper(executor: WrapperExecutor, *args, **kwargs):
     transformer_options: dict = kwargs.get("transformer_options", {}).copy()
     pc = transformer_options.get("pc_couple")
     if pc and "processed_conds" not in pc:
-        pc["processed_conds"] = transformer_options["pc_process_conds"](pc["conds"])
+        conds, negpip_masks = transformer_options["pc_process_conds"](pc["conds"])
+        pc["processed_conds"] = conds
+        transformer_options[COND_NEGPIP_MASK_KEY] = negpip_masks if negpip_masks else None
     patch_spatial = anima_model.patch_spatial
 
     activations_shape = list(x.shape)
@@ -82,6 +95,7 @@ def cosmos_attention_forward_couple(_forward: Callable, x, context, rope_emb, tr
 
     mask = args["mask"]
     conds = args["processed_conds"][1:]
+
     num_conds = len(conds) + 1
     num_tokens_c: list[int] = [c.shape[1] for c in conds]
     cond_or_uncond = transformer_options["cond_or_uncond"]
@@ -90,6 +104,9 @@ def cosmos_attention_forward_couple(_forward: Callable, x, context, rope_emb, tr
     num_chunks = len(cond_or_uncond)
     bs = x.shape[0] // num_chunks
 
+    n = transformer_options.get(NEGPIP_MASK_KEY)
+    negpip_masks = transformer_options.get(NEGPIP_MASKS_COUPLE_KEY)
+    has_negpip = n is not None and negpip_masks is not None
     x_chunks = x.chunk(num_chunks, dim=0)
     c_chunks = c.chunk(num_chunks, dim=0)
     lcm_tokens_c = lcm(c.shape[1], *num_tokens_c)
@@ -98,7 +115,16 @@ def cosmos_attention_forward_couple(_forward: Callable, x, context, rope_emb, tr
         dim=0,
     )
 
-    xs, cs = [], []
+    if has_negpip:
+        n_chunks = n.chunk(num_chunks, dim=0)
+        num_tokens_n: list[int] = [mask.shape[1] for mask in negpip_masks]
+        lcm_tokens_n = lcm(*(num_tokens_n + [n.shape[1]]))
+        conds_n_tensor = torch.cat(
+            [mask.repeat(bs, lcm_tokens_n // num_tokens_n[i], 1) for i, mask in enumerate(negpip_masks)],
+            dim=0,
+        )
+
+    xs, cs, ns = [], [], []
     for i, cond_type in enumerate(cond_or_uncond):
         x_target = x_chunks[i]
         c_target = c_chunks[i].repeat(1, lcm_tokens_c // c.shape[1], 1)
@@ -111,8 +137,19 @@ def cosmos_attention_forward_couple(_forward: Callable, x, context, rope_emb, tr
             cs.append(torch.cat([c_target, conds_c_tensor], dim=0))
             cond_or_uncond_couple.extend(itertools.repeat(COND, num_conds))
 
+        if has_negpip:
+            n_target = n_chunks[i].repeat(1, lcm_tokens_n // n.shape[1], 1)
+            if cond_type == UNCOND:
+                ns.append(x_target)
+            else:
+                ns.append(torch.cat([n_target, conds_n_tensor], dim=0))
+
     xs = torch.cat(xs, dim=0)
     cs = torch.cat(cs, dim=0)
+
+    if has_negpip:
+        ns = torch.cat(ns, dim=0)
+        transformer_options[NEGPIP_MASK_KEY] = ns
 
     out = _forward(xs, cs, rope_emb, transformer_options)
 
