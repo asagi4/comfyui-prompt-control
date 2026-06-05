@@ -88,7 +88,6 @@ def expand_macros(text):
         iterations += 1
         if iterations > 10:
             raise ValueError("Unable to resolve DEFs, make sure there are no cycles!")
-            return text
         for search, replace in replacements:
             res = substitute_defcall(res, search, replace)
         if res == prevres:
@@ -96,7 +95,7 @@ def expand_macros(text):
         prevres = res
     if res.strip() != text.strip():
         res = res.strip()
-        log.info("DEFs expanded to: %s", res)
+        log.debug("DEFs expanded to: %s", res)
     return res
 
 
