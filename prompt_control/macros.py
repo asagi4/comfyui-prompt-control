@@ -101,7 +101,7 @@ def expand_macros(text):
 
 
 def substitute_var(text, name, replace, boundary=r"\b"):
-    if name not in text:
+    if f"${name}" not in text:
         return text
     name = re.escape(str(name))
     return re.sub(rf"\${name}{boundary}", replace, text)
