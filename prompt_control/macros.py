@@ -11,14 +11,16 @@ log = logging.getLogger("comfyui-prompt-control")
 
 def substitute_template(template, segments, do_subs):
     def _substitute(template, segments, stack):
-        for name, value in sorted(segments):
-            value = substitute_var(value, name, "")
-            if name not in stack:
-                stack.add(name)
-                value = _substitute(value, segments, stack)
-                stack.remove(name)
-            template = substitute_var(template, name, value)
-        if do_subs:
+        name = ""
+        if "$" in template:
+            for name, value in sorted(segments):
+                value = substitute_var(value, name, "")
+                if name not in stack:
+                    stack.add(name)
+                    value = _substitute(value, segments, stack)
+                    stack.remove(name)
+                template = substitute_var(template, name, value)
+        if do_subs and name not in stack:
             template = expand_subs(template)
         return template
 
@@ -99,6 +101,8 @@ def expand_macros(text):
 
 
 def substitute_var(text, name, replace, boundary=r"\b"):
+    if name not in text:
+        return text
     name = re.escape(str(name))
     return re.sub(rf"\${name}{boundary}", replace, text)
 
