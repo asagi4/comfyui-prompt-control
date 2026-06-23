@@ -6,6 +6,7 @@ import re
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
+from timeit import default_timer as timer
 from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar
 
 if TYPE_CHECKING:
@@ -33,6 +34,22 @@ except ImportError:
 
 
 log = logging.getLogger("comfyui-prompt-control")
+
+TIME_CONTEXT = []
+
+
+def push_timer(name):
+    TIME_CONTEXT.append((name, timer()))
+    name = ":".join(n[0] for n in TIME_CONTEXT)
+    log.info("START: %s", name)
+
+
+def pop_timer():
+    global TIME_CONTEXT
+    name = ":".join(n[0] for n in TIME_CONTEXT)
+    _, start = TIME_CONTEXT.pop()
+    end = timer()
+    log.info("%s: took %s seconds", name, round(end - start, 3))
 
 
 def flatten(x):
