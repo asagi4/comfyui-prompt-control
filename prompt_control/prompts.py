@@ -604,7 +604,7 @@ def encode_prompt(clip, text, start_pct, end_pct, defaults, masks):
         return f"MASK({args[0]})"
 
     for prompt in prompts:
-        text, noise_w, generator = get_noise(text)
+        prompt, noise_w, generator = get_noise(prompt)
         base_prompt, attn_couple_prompts = split_by_function(prompt, "COUPLE", defaults=None, require_args=False)
 
         prompts = [base_prompt] + [couple_mask(f.args) + chunk for (chunk, f) in attn_couple_prompts]

@@ -73,6 +73,16 @@ def tensors_equal(t1, t2):
     npt.assert_equal(t1.detach().numpy(), t2.detach().numpy())
 
 
+def cond_neq(c1, c2, key=None, key_assert=None):
+    ok = False
+    try:
+        cond_equal(c1, c2, key=key, key_assert=key_assert)
+    except AssertionError:
+        ok = True
+    if not ok:
+        raise ValueError("Tensors should not be equal")
+
+
 def cond_equal(c1, c2, key=None, key_assert=None):
     assert len(c1) == len(c2)
     for i in range(len(c1)):
@@ -241,3 +251,15 @@ class TestPCTextEncode:
             (c2,) = run(pc_text_encode, clip, "test COUPLE MASK(0 0.2, 0.5) prompt1")
             cond_equal(c, c2)
             cond_equal(c, c2, "hooks", compare_hookgroup_mask)
+
+    def test_noise_weight0(self, text_encoder_clips, pc_text_encode, node_class_objs):
+        for _k, clip in text_encoder_clips:
+            (c1,) = run(pc_text_encode, clip, "test")
+            (c2,) = run(pc_text_encode, clip, "test NOISE(0, 0)")
+            cond_equal(c1, c2)
+
+    def test_noise(self, text_encoder_clips, pc_text_encode, node_class_objs):
+        for _k, clip in text_encoder_clips:
+            (c1,) = run(pc_text_encode, clip, "test")
+            (c2,) = run(pc_text_encode, clip, "test NOISE(1, 0)")
+            cond_neq(c1, c2)
