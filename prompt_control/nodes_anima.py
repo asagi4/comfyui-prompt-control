@@ -50,7 +50,6 @@ class PCAnimaAttnCouplePatch(io.ComfyNode):
 
         if issubclass(model_type, Anima):
             m = model.clone()
-            anima_model = model.get_model_object("diffusion_model")
             m.add_wrapper_with_key(
                 comfy.patcher_extension.WrappersMP.DIFFUSION_MODEL,
                 cls.__name__,
@@ -61,12 +60,6 @@ class PCAnimaAttnCouplePatch(io.ComfyNode):
                 cls.__name__,
                 anima_sample_wrapper,
             )
-
-            for block_name, b in (
-                (n, b) for n, b in anima_model.named_modules() if "cross_attn" in n and isinstance(b, CosmosAttention)
-            ):
-                attn_forward_prev = m.get_model_object(f"diffusion_model.{block_name}.forward")
-                m.add_object_patch(f"diffusion_model.{block_name}.forward", CoupleForward(attn_forward_prev, b))
 
         return io.NodeOutput(m)
 
