@@ -21,7 +21,10 @@ class CoupleForward:
         self.block = block
 
     def __call__(self, *args, **kwargs):
-        self.block.to("cuda")
+        transformer_options = kwargs["transformer_options"]
+        pc = transformer_options.get("pc_couple")
+        if pc:
+            self.block.to("cuda")
         return cosmos_attention_forward_couple(self.fn, *args, **kwargs)
 
 
