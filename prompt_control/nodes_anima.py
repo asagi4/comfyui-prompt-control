@@ -3,7 +3,6 @@
 
 import comfy.model_management
 import comfy.patcher_extension
-from comfy.ldm.cosmos.predict2 import Attention as CosmosAttention
 from comfy.model_base import Anima
 from comfy.model_patcher import ModelPatcher
 from comfy_api.latest import io
@@ -11,18 +10,7 @@ from comfy_api.latest import io
 from .anima_couple import (
     anima_forward_wrapper,
     anima_sample_wrapper,
-    cosmos_attention_forward_couple,
 )
-
-
-class CoupleForward:
-    def __init__(self, fn, block):
-        self.fn = fn
-        self.block = block
-
-    def __call__(self, *args, **kwargs):
-        self.block.to("cuda")
-        return cosmos_attention_forward_couple(self.fn, *args, **kwargs)
 
 
 class PCAnimaAttnCouplePatch(io.ComfyNode):
@@ -47,7 +35,6 @@ class PCAnimaAttnCouplePatch(io.ComfyNode):
 
         if issubclass(model_type, Anima):
             m = model.clone()
-            anima_model = model.get_model_object("diffusion_model")
             m.add_wrapper_with_key(
                 comfy.patcher_extension.WrappersMP.DIFFUSION_MODEL,
                 cls.__name__,
@@ -58,12 +45,6 @@ class PCAnimaAttnCouplePatch(io.ComfyNode):
                 cls.__name__,
                 anima_sample_wrapper,
             )
-
-            for block_name, b in (
-                (n, b) for n, b in anima_model.named_modules() if "cross_attn" in n and isinstance(b, CosmosAttention)
-            ):
-                attn_forward_prev = m.get_model_object(f"diffusion_model.{block_name}.forward")
-                m.add_object_patch(f"diffusion_model.{block_name}.forward", CoupleForward(attn_forward_prev, b))
 
         return io.NodeOutput(m)
 

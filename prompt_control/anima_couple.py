@@ -1,11 +1,13 @@
 # Adapted from https://github.com/pamparamm/ComfyUI-ppm
 import itertools
 from collections.abc import Callable
+from functools import partial
 from math import lcm
 
 import torch
 import torch.nn.functional as F
 from comfy.ldm.anima.model import Anima as AnimaDIT
+from comfy.ldm.cosmos.predict2 import Attention as CosmosAttention
 from comfy.patcher_extension import WrapperExecutor
 from comfy.sampler_helpers import convert_cond
 from comfy.samplers import process_conds
@@ -21,6 +23,23 @@ def reshape_mask(mask: torch.Tensor, size: tuple[int, int], bs: int, num_tokens:
     mask_downsample_reshaped = mask_downsample.view(num_conds, num_tokens, 1).repeat_interleave(bs, dim=0)
 
     return mask_downsample_reshaped
+
+
+def wrap_forwards(anima_model):
+    backups = {}
+    for block_name, b in (
+        (n, b) for n, b in anima_model.named_modules() if "cross_attn" in n and isinstance(b, CosmosAttention)
+    ):
+        backups[block_name] = b.forward
+        b.forward = partial(cosmos_attention_forward_couple, b.forward)
+    return backups
+
+
+def unwrap_forwards(anima_model, backups):
+    for block_name, b in (
+        (n, b) for n, b in anima_model.named_modules() if "cross_attn" in n and isinstance(b, CosmosAttention)
+    ):
+        b.forward = backups[block_name]
 
 
 def anima_sample_wrapper(executor, *args, **kwargs):
@@ -67,7 +86,13 @@ def anima_forward_wrapper(executor: WrapperExecutor, *args, **kwargs):
     transformer_options["activations_shape"] = activations_shape
     kwargs["transformer_options"] = transformer_options
 
-    return executor(*args, **kwargs)
+    b = {}
+    if pc:
+        b = wrap_forwards(anima_model)
+    r = executor(*args, **kwargs)
+    if pc:
+        unwrap_forwards(anima_model, b)
+    return r
 
 
 def cosmos_attention_forward_couple(_forward: Callable, x, context, rope_emb, transformer_options):
