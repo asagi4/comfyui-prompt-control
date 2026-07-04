@@ -29,7 +29,7 @@ For example:
 dog FILL() COUPLE(0.5 1) cat
 ```
 
-The full syntax looks as follow (to use `IMASK` you need to attach a custom mask)
+The full syntax looks as follows (to use `IMASK` you need to attach a custom mask)
 
 `base_prompt COUPLE MASK(0 0.5) coupled prompt 1 with mask COUPLE IMASK(0) coupled prompt 2 with custom mask`
 
