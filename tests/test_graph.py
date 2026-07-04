@@ -582,3 +582,9 @@ def test_loraloader_adv_start():
 def test_loraloader_end_zero():
     result2 = loraloader("prompt [<lora:test:0.5>:0.5]", adv=True, end=0.5)["expand"]
     assert result2 == {}
+
+
+def test_loraloader_segs():
+    result = loraloader("prompt [<lora:test:0.5>:0.5]")["expand"]
+    result2 = loraloader("prompt [$lora:0.5]\nSEG(lora)<lora:test:0.5>\nSEG(lora2)<lora:ignored:1>")["expand"]
+    assert result == result2
