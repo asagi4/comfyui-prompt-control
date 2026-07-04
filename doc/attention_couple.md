@@ -24,6 +24,13 @@ See also the [regional prompting documentation](/doc/regional_prompts.md) for in
 
 You can use `COUPLE` to attach attention-coupled prompts to a base prompt:
 
+For example:
+```
+dog FILL() COUPLE(0.5 1) cat
+```
+
+The full syntax looks as follow (to use `IMASK` you need to attach a custom mask)
+
 `base_prompt COUPLE MASK(0 0.5) coupled prompt 1 with mask COUPLE IMASK(0) coupled prompt 2 with custom mask`
 
 as a shortcut, `COUPLE(maskparams)` is expanded to `COUPLE MASK(maskparams)`, so the above prompt can also be written as:
@@ -31,15 +38,17 @@ as a shortcut, `COUPLE(maskparams)` is expanded to `COUPLE MASK(maskparams)`, so
 `base_prompt COUPLE(0 0.5) coupled prompt 1 with mask COUPLE IMASK(0) coupled prompt 2 with custom mask`
 
 Behaviour:
-- If no mask is specified, an implicit `MASK()` is assumed.
+- If no mask is specified, an implicit `MASK()` is assumed, meaning that the prompt affects the entire image.
 
-- For the base prompt, you can also use `FILL()` to automatically mask all parts not masked by coupled prompts
+- For the base prompt, you can use `FILL()` to automatically mask all parts not masked by other coupled prompts
 
-- If the base prompt has weight set to zero (ie. ´:0` at the end), then the first coupled prompt with non-zero weight becomes the base prompt.
+- If the base prompt has weight set to zero (ie. ´:0` at the end), then the first coupled prompt with non-zero weight becomes the base prompt:
 
-For example:
 ```
-dog FILL() COUPLE(0.5 1) cat
+disabled prompt :0 COUPLE new base prompt COUPLE coupled prompt
 ```
 
-Note that because the generation still sees and diffuses the full latent, attention coupling is not guaranteed to perfectly limit the effect of your prompt to the masked area.
+You can also schedule the weight normally: `prompt :[1:0:0.35]`
+
+> ![NOTE]
+> Note that because the generation still sees and diffuses the full latent, attention coupling is not guaranteed to perfectly limit the effect of your prompt to the masked area.
