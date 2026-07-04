@@ -8,6 +8,7 @@ from comfy_api.latest import io
 from comfy_execution.graph import ExecutionBlocker
 from comfy_execution.graph_utils import GraphBuilder
 
+from .macros import expand_macros, expand_segs
 from .parser import parse_prompt_schedules
 from .utils import consolidate_schedule, find_nonscheduled_loras, get_function
 
@@ -158,6 +159,7 @@ class PCLazyLoraLoaderAdvanced(io.ComfyNode):
 
     @classmethod
     def execute(cls, model=None, clip=None, text="", apply_hooks=True, tags="", start=0.0, end=1.0, num_steps=0):
+        text = expand_segs(expand_macros(text))
         schedule = parse_prompt_schedules(text, filters=tags, start=start, end=end, num_steps=num_steps)
         graph = GraphBuilder()
         r = build_lora_schedule(graph, schedule, model, clip, apply_hooks=apply_hooks)

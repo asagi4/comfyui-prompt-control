@@ -86,7 +86,9 @@ Top panel: a sleeping cat. The cat has orange fur with white stripes
 Bottom panel: A dog chasing its
   tail in a living room.
 ```
-Unlike macros, SEG is processed *after* scheduling syntax.
+
+> [!NOTE]
+> Unlike macros, SEGs are processed *after* scheduling syntax has been expanded, except in the LoRA loader (this may change later, but requires a bit of refactoring)
 
 In this case, the first section before any `SEG` becomes the *template* and any text after a `SEG` call becomes part of that segment. Whitespace is stripped from the start and end of segments and the template.
 
