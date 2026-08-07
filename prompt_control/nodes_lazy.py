@@ -197,14 +197,20 @@ def build_scheduled_prompts(graph, schedules, clip):
     start_pct = 0.0
     for end_pct, c in schedules:
         p = c["prompt"]
-        p, classnames = get_function(p, "NODE", ["PCTextEncode", "text"])
+        p, classnames = get_function(p, "NODE", ["PCTextEncode", "text", ""])
         classname = "PCTextEncode"
         paramname = "text"
+        magic_spec = ""
         if classnames:
-            classname, paramname = classnames[0].args
-        node = graph.node(classname)
+            classname, paramname, magic_spec = classnames[0].args
+        node = graph.node(classname.strip())
         node.set_input("clip", clip)
-        node.set_input(paramname, p)
+        node.set_input(paramname.strip(), p)
+        extra_inputs = magic_spec.split(";")
+        for e in extra_inputs:
+            a, b, c = e.split()
+            name, node_id, out_slot = a.strip(), b.strip(), int(c.strip())
+            node.set_input(name, [node_id, out_slot])
         timestep = graph.node("ConditioningSetTimestepRange")
         timestep.set_input("conditioning", node.out(0))
         timestep.set_input("start", start_pct)
