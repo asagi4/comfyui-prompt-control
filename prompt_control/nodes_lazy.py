@@ -206,7 +206,7 @@ def build_scheduled_prompts(graph, schedules, clip):
         node = graph.node(classname.strip())
         node.set_input("clip", clip)
         node.set_input(paramname.strip(), p)
-        extra_inputs = magic_spec.split(";")
+        extra_inputs = magic_spec.split(";") if magic_spec.strip() else []
         for e in extra_inputs:
             a, b, c = e.split()
             name, node_id, out_slot = a.strip(), b.strip(), int(c.strip())
