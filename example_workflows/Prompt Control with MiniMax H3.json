@@ -1228,7 +1228,7 @@
         "$node\n$mainprompt\nSEG(mainprompt)\n"
       ],
       "widgets_values_named": {
-        "value": "$node\n$mainprompt\nSEG(mainprompt)\n"
+        "value": "# NOTE: You need https://github.com/silveroxides/ComfyUI-UtilsCollection for the concatenation node.\n$node\n$mainprompt\nSEG(mainprompt)\n"
       },
       "color": "#233",
       "bgcolor": "#355"
