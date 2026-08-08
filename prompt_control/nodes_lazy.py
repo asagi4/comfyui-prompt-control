@@ -197,20 +197,29 @@ def build_scheduled_prompts(graph, schedules, clip):
     start_pct = 0.0
     for end_pct, c in schedules:
         p = c["prompt"]
-        p, classnames = get_function(p, "NODE", ["PCTextEncode", "text", ""])
-        classname = "PCTextEncode"
-        paramname = "text"
-        magic_spec = ""
+        p, classnames = get_function(p, "NODE", defaults=None)
+        realargs = ["PCTextEncode", "text", ""]
         if classnames:
-            classname, paramname, magic_spec = classnames[0].args
+            args = classnames[0].args[0]
+            if not args.strip():
+                raise ValueError("NODE can't be empty!")
+            for i, v in enumerate(args.split(",", maxsplit=2)):
+                realargs[i] = v
+        classname, paramname, magic_spec = realargs
         node = graph.node(classname.strip())
         node.set_input("clip", clip)
         node.set_input(paramname.strip(), p)
+        magic_spec.replace(r"\;", "__ESCAPED_SEMICOLON__")
         extra_inputs = magic_spec.split(";") if magic_spec.strip() else []
         for e in extra_inputs:
-            a, b, c = e.split()
-            name, node_id, out_slot = a.strip(), b.strip(), int(c.strip())
-            node.set_input(name, [node_id, out_slot])
+            e = e.replace("__ESCAPED_SEMICOLON__", ";")
+            name, jsondata = e.split(maxsplit=1)
+            if not jsondata.strip():
+                continue
+            try:
+                node.set_input(name.strip(), json.loads(jsondata.strip()))
+            except ValueError as e:
+                raise ValueError(f"Invalid JSON input: '{jsondata}'") from e
         timestep = graph.node("ConditioningSetTimestepRange")
         timestep.set_input("conditioning", node.out(0))
         timestep.set_input("start", start_pct)

@@ -1,3 +1,4 @@
+import json
 import logging
 
 from comfy_api.latest import io
@@ -5,6 +6,7 @@ from comfy_api.latest import io
 from .macros import expand_macros as macroexpand
 from .macros import expand_segs as segexpand
 from .macros import expand_subs as subexpand
+from .macros import substitute_var
 from .parser import parse_prompt_schedules
 
 log = logging.getLogger("comfyui-prompt-control")
@@ -182,6 +184,29 @@ class PCMacroExpand(io.ComfyNode):
         return io.NodeOutput(macroexpand(text))
 
 
+class PCLinkHelper(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        inputs: list = [io.String.Input("text", multiline=True)]
+        for x in "abcdefghijklmn":
+            inputs.append(io.AnyType.Input(x, optional=True, lazy=True, extra_dict={"rawLink": True}))
+        return io.Schema(
+            node_id="PCNODELinkHelper",
+            display_name="PC: Extra argument helper for NODE",
+            category="promptcontrol/tools",
+            description="Takes in arbitrary inputs and renders them as NODE-compatible values, replacing $a -> $n with JSON link values",
+            is_experimental=True,
+            inputs=inputs,
+            outputs=[io.String.Output()],
+        )
+
+    @classmethod
+    def execute(cls, text, **vars) -> io.NodeOutput:
+        for k, v in vars.items():
+            text = substitute_var(text, k, json.dumps(v))
+        return io.NodeOutput(text)
+
+
 NODES = [
     PCSetPCTextEncodeSettings,
     PCAddMaskToCLIP,
@@ -189,4 +214,5 @@ NODES = [
     PCSetLogLevel,
     PCExtractScheduledPrompt,
     PCMacroExpand,
+    PCLinkHelper,
 ]
