@@ -1225,10 +1225,10 @@
         "Node name for S&R": "PrimitiveStringMultiline"
       },
       "widgets_values": [
-        "$node\n$mainprompt\nSEG(mainprompt)\n"
+        "# NOTE: You need https://github.com/silveroxides/ComfyUI-UtilsCollection for the concatenation and H3 nodes.\n$node\n$mainprompt\nSEG(mainprompt)\n"
       ],
       "widgets_values_named": {
-        "value": "# NOTE: You need https://github.com/silveroxides/ComfyUI-UtilsCollection for the concatenation node.\n$node\n$mainprompt\nSEG(mainprompt)\n"
+        "value": "# NOTE: You need https://github.com/silveroxides/ComfyUI-UtilsCollection for the concatenation and H3 nodes.\n$node\n$mainprompt\nSEG(mainprompt)\n"
       },
       "color": "#233",
       "bgcolor": "#355"
