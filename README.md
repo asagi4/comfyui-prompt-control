@@ -23,6 +23,7 @@ A `Basic Text to Image` template is included with the extension, and can be load
   - Different weight interpretation types (ComfyUI, A1111, compel, etc.)
   - Prompt masking with an implementation of [cutoff](https://github.com/BlenderNeko/ComfyUI_Cutoff).
 - Organize complicated prompts with [segments and prompt macros](/doc/macros.md).
+- [Schedule your own encoder nodes](/doc/node_function.md), allowing prompt control of eg. video or audio models with non-text inputs.
 
 All features are fully schedulable unless otherwise stated. See the [scheduling syntax documentation](doc/schedules.md) to get started.
 
@@ -51,10 +52,6 @@ If you run into problems, update ComfyUI first.
 `PCLazyTextEncode` uses ComfyUI's lazy graph execution mechanism to generate a graph of `PCTextEncode` and `SetConditioningTimestepRange` nodes from a prompt with schedules. This has the advantage that if a part of the schedule doesn't change, ComfyUI's caching mechanism allows you to avoid re-encoding the non-changed part.
 
 for example, if you first encode `[cat:dog:0.1]` and later change that to `[cat:dog:0.5]`, no re-encoding takes place.
-
-for added fun, put `NODE(NodeClassName, textinputname)` in a prompt to generate a graph using **any other node** that's compatible. The node can't have required parameters besides a single CLIP parameter (which must be named `clip`) and the text prompt, and it must return a `CONDITIONING` as its first return value. The "default" values are `PCTextEncode` and `text`.
-
-For example, if you for some reason do not want the advanced features of `PCTextEncode`, use `NODE(CLIPTextEncode)` in the prompt and you'll still get scheduling with ComfyUI's regular TE node.
 
 The advanced node enables filtering the prompt for multi-pass workflows.
 
