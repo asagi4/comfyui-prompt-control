@@ -11,27 +11,28 @@ Use `NODE(NodeClassName, textinputname)` in a prompt to generate a graph using a
 
 For example, if you for some reason do not want the advanced features of `PCTextEncode`, use `NODE(CLIPTextEncode)` in the prompt and you'll still get scheduling with ComfyUI's regular TE node.
 
+The default parameters are `PCTextEncode` and `text`.
 
 ## Advanced Usage with arbitrary parameters
 
 Advanced usage of `NODE` can be complicated. For an example, see [The H3 workflow](/example_workflows/Prompt%20Control%20with%20MiniMax%20H3.json?raw=1). You can also find it in the template library.
 
-The full synopsis of the function is `NODE(NodeClassName, textinputname, arg_spec)` wher e `arg_spec` is a semicolon-separated list of `parameter_name json_value` pairs. In raw form, it looks like:
+The full synopsis of the function is `NODE(NodeClassName, textinputname, arg_spec)` where `arg_spec` is a semicolon-separated list of `parameter_name json_value` pairs. In raw form, it looks like this:
 ```
 NODE(MiniMaxH3ImageToVideo, prompt, vae ["1", 0]; width 1024; height 1024; first_frame ["2", 0])
 ```
 
-The names and inputs must match the ComfyUI API format which may differ from frontend names. You can export your workflow in API format and inspect it to see how inputs are passed in to nodes.
+The names and inputs must match the ComfyUI API format which **may differ from frontend names**. You can export your workflow in API format and inspect it to see how inputs are passed in to nodes.
 
-The arrays are literal ComfyUI node links, meaning the VAE is taken from node ID "1" first output and the image from node ID "2" first slot.
+The arrays are literal ComfyUI node links, meaning the `vae` parameter is taken from node ID "1" first output and `first_frame` from node ID "2" first output.
 
-The values are JSON, so you can pass in arbitrary JSON literals. To pass in literal strings for example, you need to use quotes `"like this"`.
+The values are arbitrary JSON literals, meaning that you can also pass in constant values. To pass in literal strings for example, you need to use quotes `"like this"`.
 
-This is intended to be used with the helper node `PC: Extra argument helper for NODE`, which can be used to pass arbitrary parameters (named `$a` to `$n`) to the encoder. The recommended pattern is to put something like the following:
+This is intended to be used with the helper node `PC: NODE Input Helper`, which can be used to pass arbitrary parameters (named `$a` to `$n`) to the encoder. The recommended pattern is to put something like the following:
 ```
 SEG(node)
 NODE(MiniMaxH3ImageToVideo, prompt, vae $a; width $b; height $c; length $d; first_frame $e)
 ```
-to the helper and then concatenate it at the end of your prompt (use whitespace as a reparator). You can then trigger the node with `$node` in your prompt. (see [documentation](/doc/macros.md) for `SEG`)
+to the helper and then concatenate it at the end of your prompt (use whitespace as a separator). You can then trigger the node with `$node` in your prompt. (see [documentation](/doc/macros.md) for `SEG`)
 
-The helper will replace the parameters with the correct ComfyUI link value.
+The helper will replace the parameters with the correct ComfyUI link values.
