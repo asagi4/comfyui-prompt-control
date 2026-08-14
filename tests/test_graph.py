@@ -460,6 +460,108 @@ def test_textencode_lora_with_schedule():
     }
 
 
+def test_textencode_custom():
+    r = te("NODE(CLIPTextEncode)simple [test:0.1,0.5] prompt")
+    assert r == {
+        "result": (["UID.0.0.8", 0],),
+        "expand": {
+            "UID.0.0.1": {
+                "class_type": "CLIPTextEncode",
+                "inputs": {"clip": [0, 0], "text": "simple  prompt"},
+            },
+            "UID.0.0.2": {
+                "class_type": "ConditioningSetTimestepRange",
+                "inputs": {"conditioning": ["UID.0.0.1", 0], "start": 0.0, "end": 0.1},
+            },
+            "UID.0.0.3": {
+                "class_type": "CLIPTextEncode",
+                "inputs": {"clip": [0, 0], "text": "simple test prompt"},
+            },
+            "UID.0.0.4": {
+                "class_type": "ConditioningSetTimestepRange",
+                "inputs": {"conditioning": ["UID.0.0.3", 0], "start": 0.1, "end": 0.5},
+            },
+            "UID.0.0.5": {
+                "class_type": "CLIPTextEncode",
+                "inputs": {"clip": [0, 0], "text": "simple  prompt"},
+            },
+            "UID.0.0.6": {
+                "class_type": "ConditioningSetTimestepRange",
+                "inputs": {"conditioning": ["UID.0.0.5", 0], "start": 0.5, "end": 1.0},
+            },
+            "UID.0.0.7": {
+                "class_type": "ConditioningCombine",
+                "inputs": {"conditioning_1": ["UID.0.0.2", 0], "conditioning_2": ["UID.0.0.4", 0]},
+            },
+            "UID.0.0.8": {
+                "class_type": "ConditioningCombine",
+                "inputs": {"conditioning_1": ["UID.0.0.7", 0], "conditioning_2": ["UID.0.0.6", 0]},
+            },
+        },
+    }
+
+
+def test_textencode_custom_extra():
+    r = te(
+        'NODE(CustomTextEncode, prompt, image ["1", 0]; option "test"; float [10.0:5.0:0.5])simple [test:0.1,0.5] prompt'
+    )
+    assert r == {
+        "result": (["UID.0.0.8", 0],),
+        "expand": {
+            "UID.0.0.1": {
+                "class_type": "CustomTextEncode",
+                "inputs": {
+                    "clip": [0, 0],
+                    "prompt": "simple  prompt",
+                    "image": ["1", 0],
+                    "option": "test",
+                    "float": 10.0,
+                },
+            },
+            "UID.0.0.2": {
+                "class_type": "ConditioningSetTimestepRange",
+                "inputs": {"conditioning": ["UID.0.0.1", 0], "start": 0.0, "end": 0.1},
+            },
+            "UID.0.0.3": {
+                "class_type": "CustomTextEncode",
+                "inputs": {
+                    "clip": [0, 0],
+                    "prompt": "simple test prompt",
+                    "image": ["1", 0],
+                    "option": "test",
+                    "float": 10.0,
+                },
+            },
+            "UID.0.0.4": {
+                "class_type": "ConditioningSetTimestepRange",
+                "inputs": {"conditioning": ["UID.0.0.3", 0], "start": 0.1, "end": 0.5},
+            },
+            "UID.0.0.5": {
+                "class_type": "CustomTextEncode",
+                "inputs": {
+                    "clip": [0, 0],
+                    "prompt": "simple  prompt",
+                    "image": ["1", 0],
+                    "option": "test",
+                    "float": 5.0,
+                },
+            },
+            "UID.0.0.6": {
+                "class_type": "ConditioningSetTimestepRange",
+                "inputs": {"conditioning": ["UID.0.0.5", 0], "start": 0.5, "end": 1.0},
+            },
+            "UID.0.0.7": {
+                "class_type": "ConditioningCombine",
+                "inputs": {"conditioning_1": ["UID.0.0.2", 0], "conditioning_2": ["UID.0.0.4", 0]},
+            },
+            "UID.0.0.8": {
+                "class_type": "ConditioningCombine",
+                "inputs": {"conditioning_1": ["UID.0.0.7", 0], "conditioning_2": ["UID.0.0.6", 0]},
+            },
+        },
+    }
+
+
 def test_loraloader_empty(monkeypatch, caplog):
     result = loraloader("prompt here <lora:nonexistent:1.0:0.5>")["expand"]
     result_adv = loraloader("prompt here <lora:nonexistent:1.0:0.5>", adv=True)["expand"]
