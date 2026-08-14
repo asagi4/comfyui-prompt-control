@@ -202,8 +202,11 @@ class PCLinkHelper(io.ComfyNode):
 
     @classmethod
     def execute(cls, text, **vars) -> io.NodeOutput:
-        for k, v in vars.items():
-            text = substitute_var(text, k, json.dumps(v))
+        for k in "abcdefghijklmn":
+            v = "__EMPTY__"
+            if k in vars:
+                v = json.dumps(vars[k])
+            text = substitute_var(text, k, v)
         return io.NodeOutput(text)
 
 

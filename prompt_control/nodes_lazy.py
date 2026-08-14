@@ -212,9 +212,16 @@ def build_scheduled_prompts(graph, schedules, clip):
         magic_spec.replace(r"\;", "__ESCAPED_SEMICOLON__")
         extra_inputs = magic_spec.split(";") if magic_spec.strip() else []
         for e in extra_inputs:
+            e = e.strip()
+            if not e:
+                continue
             e = e.replace("__ESCAPED_SEMICOLON__", ";")
             name, jsondata = e.split(maxsplit=1)
+            jsondata = jsondata.strip()
             if not jsondata.strip():
+                continue
+            # From helper node:
+            if jsondata == "__EMPTY__":
                 continue
             try:
                 node.set_input(name.strip(), json.loads(jsondata.strip()))

@@ -503,7 +503,7 @@ def test_textencode_custom():
 
 def test_textencode_custom_extra():
     r = te(
-        'NODE(CustomTextEncode, prompt, image ["1", 0]; option "test"; float [10.0:5.0:0.5])simple [test:0.1,0.5] prompt'
+        'NODE(CustomTextEncode, prompt, image ["1", 0]; option "test"; float [10.0:__EMPTY__:0.5])simple [test:0.1,0.5] prompt'
     )
     assert r == {
         "result": (["UID.0.0.8", 0],),
@@ -542,8 +542,7 @@ def test_textencode_custom_extra():
                     "clip": [0, 0],
                     "prompt": "simple  prompt",
                     "image": ["1", 0],
-                    "option": "test",
-                    "float": 5.0,
+                    "option": "test"
                 },
             },
             "UID.0.0.6": {
