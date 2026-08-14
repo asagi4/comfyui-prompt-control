@@ -538,12 +538,7 @@ def test_textencode_custom_extra():
             },
             "UID.0.0.5": {
                 "class_type": "CustomTextEncode",
-                "inputs": {
-                    "clip": [0, 0],
-                    "prompt": "simple  prompt",
-                    "image": ["1", 0],
-                    "option": "test"
-                },
+                "inputs": {"clip": [0, 0], "prompt": "simple  prompt", "image": ["1", 0], "option": "test"},
             },
             "UID.0.0.6": {
                 "class_type": "ConditioningSetTimestepRange",
