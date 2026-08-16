@@ -342,6 +342,12 @@ def test_cornercase_corrected(parse):
     assert p.parsed_prompt[1:] == p2.parsed_prompt
 
 
+def test_ltgt_in_schedule(parse):
+    p = parse("This should [<parse> correctly:be <Picture 1>:0.1]<lora:test:1>")
+    assert_prompt(p, 0.1, 0.1, "This should <parse> correctly", ("test", 1.0, 1.0))
+    assert_prompt(p, 0.15, 1.0, "This should be <Picture 1>", ("test", 1.0, 1.0))
+
+
 def test_floats(parse):
     p = parse("[a:b:0.5] [c:d:e:0.2,0.7] <lora:test:-0.3>")
     p2 = parse("[a:b:.5] [c:d:e:.2,.7] <lora:test:-.3>")

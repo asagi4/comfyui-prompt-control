@@ -370,7 +370,17 @@ ctlweight = seq(number, (string("@") >> number).optional(0)).sep_by(comma, min=1
 loractl = (string("<loractl:") >> filename * 1 + lora_weights(ctlweight) << string(">")).combine(LoRACTL)
 emb = (string("<emb:") >> filename << string(">")).map(lambda f: Text(f"embedding:{f}"))
 
-expr = escape | comment | non_special | bracketed | emphasis.combine(combine_prompt) | lora | loractl | emb
+expr = (
+    escape
+    | comment
+    | non_special
+    | bracketed
+    | emphasis.combine(combine_prompt)
+    | lora
+    | loractl
+    | emb
+    | char_from("<>").map(Text)
+)
 prompt_ = expr.at_least(1).combine(combine_prompt)
 prompt.become(prompt_)
 # Treat any character that isn't valid prompt syntax as just text
