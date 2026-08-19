@@ -1,8 +1,8 @@
 {
   "id": "cf6ae619-b2ad-4f1a-a254-8e3827bebf96",
   "revision": 0,
-  "last_node_id": 159,
-  "last_link_id": 286,
+  "last_node_id": 160,
+  "last_link_id": 299,
   "nodes": [
     {
       "id": 92,
@@ -16,7 +16,7 @@
         106
       ],
       "flags": {},
-      "order": 35,
+      "order": 33,
       "mode": 0,
       "inputs": [
         {
@@ -39,11 +39,13 @@
       "widgets_values": [
         "video/MiniMax_H3",
         "auto",
+        "auto",
         "auto"
       ],
       "widgets_values_named": {
         "filename_prefix": "video/MiniMax_H3",
         "format": "auto",
+        "format.codec": "auto",
         "codec": "auto"
       }
     },
@@ -59,7 +61,7 @@
         630
       ],
       "flags": {},
-      "order": 8,
+      "order": 0,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -67,8 +69,8 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            276,
-            280
+            280,
+            291
           ]
         },
         {
@@ -112,16 +114,16 @@
           "name": "width",
           "type": "INT",
           "links": [
-            252,
-            257
+            257,
+            288
           ]
         },
         {
           "name": "height",
           "type": "INT",
           "links": [
-            253,
-            258
+            258,
+            289
           ]
         }
       ],
@@ -153,7 +155,7 @@
         70
       ],
       "flags": {},
-      "order": 4,
+      "order": 2,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -162,7 +164,7 @@
           "type": "VAE",
           "links": [
             230,
-            251
+            287
           ]
         }
       ],
@@ -197,7 +199,7 @@
         70
       ],
       "flags": {},
-      "order": 0,
+      "order": 3,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -242,7 +244,7 @@
       "flags": {
         "collapsed": false
       },
-      "order": 33,
+      "order": 31,
       "mode": 0,
       "inputs": [
         {
@@ -285,7 +287,7 @@
       "flags": {
         "collapsed": false
       },
-      "order": 32,
+      "order": 30,
       "mode": 0,
       "inputs": [
         {
@@ -326,7 +328,7 @@
         70
       ],
       "flags": {},
-      "order": 14,
+      "order": 4,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -362,7 +364,7 @@
         130
       ],
       "flags": {},
-      "order": 27,
+      "order": 24,
       "mode": 0,
       "inputs": [
         {
@@ -408,7 +410,7 @@
         140
       ],
       "flags": {},
-      "order": 31,
+      "order": 29,
       "mode": 0,
       "inputs": [
         {
@@ -470,7 +472,7 @@
         60
       ],
       "flags": {},
-      "order": 30,
+      "order": 28,
       "mode": 0,
       "inputs": [
         {
@@ -511,7 +513,7 @@
         90
       ],
       "flags": {},
-      "order": 2,
+      "order": 5,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -556,7 +558,7 @@
         120
       ],
       "flags": {},
-      "order": 3,
+      "order": 6,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -603,7 +605,7 @@
         90
       ],
       "flags": {},
-      "order": 13,
+      "order": 7,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -641,7 +643,7 @@
         110
       ],
       "flags": {},
-      "order": 34,
+      "order": 32,
       "mode": 0,
       "inputs": [
         {
@@ -703,7 +705,6 @@
           "link": 248
         },
         {
-          "label": "b",
           "name": "values.b",
           "shape": 7,
           "type": "FLOAT,INT,BOOLEAN",
@@ -720,8 +721,8 @@
           "name": "INT",
           "type": "INT",
           "links": [
-            254,
-            259
+            259,
+            290
           ]
         },
         {
@@ -754,7 +755,7 @@
         70
       ],
       "flags": {},
-      "order": 6,
+      "order": 8,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -780,129 +781,6 @@
       }
     },
     {
-      "id": 136,
-      "type": "PCNODELinkHelper",
-      "pos": [
-        -1057.9772543930171,
-        5572.402296968068
-      ],
-      "size": [
-        732.655393602934,
-        790.2511015252485
-      ],
-      "flags": {},
-      "order": 21,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "a",
-          "shape": 7,
-          "type": "*",
-          "link": 251
-        },
-        {
-          "name": "b",
-          "shape": 7,
-          "type": "*",
-          "link": 252
-        },
-        {
-          "name": "c",
-          "shape": 7,
-          "type": "*",
-          "link": 253
-        },
-        {
-          "name": "d",
-          "shape": 7,
-          "type": "*",
-          "link": 254
-        },
-        {
-          "name": "e",
-          "shape": 7,
-          "type": "*",
-          "link": 276
-        },
-        {
-          "name": "f",
-          "shape": 7,
-          "type": "*",
-          "link": 281
-        },
-        {
-          "name": "g",
-          "shape": 7,
-          "type": "*",
-          "link": null
-        },
-        {
-          "name": "h",
-          "shape": 7,
-          "type": "*",
-          "link": null
-        },
-        {
-          "name": "i",
-          "shape": 7,
-          "type": "*",
-          "link": null
-        },
-        {
-          "name": "j",
-          "shape": 7,
-          "type": "*",
-          "link": null
-        },
-        {
-          "name": "k",
-          "shape": 7,
-          "type": "*",
-          "link": null
-        },
-        {
-          "name": "l",
-          "shape": 7,
-          "type": "*",
-          "link": null
-        },
-        {
-          "name": "m",
-          "shape": 7,
-          "type": "*",
-          "link": null
-        },
-        {
-          "name": "n",
-          "shape": 7,
-          "type": "*",
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "name": "STRING",
-          "type": "STRING",
-          "links": [
-            265
-          ]
-        }
-      ],
-      "properties": {
-        "cnr_id": "comfyui-prompt-control",
-        "ver": "ea7a61a52bb7b631a59a28799344e5b7af2933c0",
-        "Node name for S&R": "PCNODELinkHelper"
-      },
-      "widgets_values": [
-        "\nSEG(node)\n# This gets put in a SEG so it can be concatenated to the main prompt neatly. Syntax: NODE(NodeID, prompt_input_name, extra_args...). You might need to look into the API-format JSON to find the real input names of the node.\nNODE(UC_AdvancedMiniMaxH3ImageToVideo, prompt,\nvae $a;\nwidth $b;\nheight $c;\nlength $d;\n# Omit first_frame entirely at first, giving t2v\n[first_frame [$e:$f:0.4];:0.2]\n# autogrow looks like this:\n# reference_images.reference_image_1 $f;\n# Syntax for literals is JSON.\nref_image_size \"none\";\nvlm_resolution 1024\n)\n"
-      ],
-      "widgets_values_named": {
-        "text": "\nSEG(node)\n# This gets put in a SEG so it can be concatenated to the main prompt neatly. Syntax: NODE(NodeID, prompt_input_name, extra_args...). You might need to look into the API-format JSON to find the real input names of the node.\nNODE(UC_AdvancedMiniMaxH3ImageToVideo, prompt,\nvae $a;\nwidth $b;\nheight $c;\nlength $d;\n# Omit first_frame entirely at first, giving t2v\n[first_frame [$e:$f:0.4];:0.2]\n# autogrow looks like this:\n# reference_images.reference_image_1 $f;\n# Syntax for literals is JSON.\nref_image_size \"none\";\nvlm_resolution 1024\n)\n"
-      },
-      "color": "#223",
-      "bgcolor": "#335"
-    },
-    {
       "id": 137,
       "type": "UC_AdvancedMiniMaxH3ImageToVideo",
       "pos": [
@@ -911,10 +789,10 @@
       ],
       "size": [
         400,
-        352
+        372
       ],
       "flags": {},
-      "order": 7,
+      "order": 9,
       "mode": 0,
       "inputs": [
         {
@@ -959,6 +837,12 @@
           "shape": 7,
           "type": "IMAGE",
           "link": null
+        },
+        {
+          "name": "media_config",
+          "shape": 7,
+          "type": "MINIMAX_H3_MEDIA_CONFIG",
+          "link": null
         }
       ],
       "outputs": [
@@ -1001,92 +885,27 @@
       "id": 138,
       "type": "Note",
       "pos": [
-        -1502.6551591843522,
-        5747.408769009704
+        -1785.3953634339618,
+        5753.348689267049
       ],
       "size": [
-        396.91593990510364,
+        690.3480006179341,
         88
       ],
       "flags": {},
-      "order": 5,
+      "order": 16,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
       "widgets_values": [
-        "For reference, not used directly"
+        "For reference, not used directly. You can get this node from github.com/silveroxides/ComfyUI-UtilsCollection"
       ],
       "widgets_values_named": {
-        "text": "For reference, not used directly"
+        "text": "For reference, not used directly. You can get this node from github.com/silveroxides/ComfyUI-UtilsCollection"
       },
       "color": "#432",
       "bgcolor": "#653"
-    },
-    {
-      "id": 139,
-      "type": "UC_TextConcatenateAutogrow",
-      "pos": [
-        -310.9332600972007,
-        5593.426694541398
-      ],
-      "size": [
-        248.5999984741211,
-        126
-      ],
-      "flags": {},
-      "order": 23,
-      "mode": 0,
-      "inputs": [
-        {
-          "label": "text_1",
-          "name": "text_inputs.text_1",
-          "type": "*",
-          "link": 264
-        },
-        {
-          "label": "text_2",
-          "name": "text_inputs.text_2",
-          "type": "*",
-          "link": 266
-        },
-        {
-          "label": "text_3",
-          "name": "text_inputs.text_3",
-          "shape": 7,
-          "type": "*",
-          "link": 265
-        },
-        {
-          "label": "text_4",
-          "name": "text_inputs.text_4",
-          "shape": 7,
-          "type": "*",
-          "link": null
-        },
-        {
-          "name": "delimiter",
-          "shape": 7,
-          "type": "*",
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "name": "concatenated_text",
-          "type": "STRING",
-          "links": [
-            268,
-            272,
-            283
-          ]
-        }
-      ],
-      "properties": {
-        "cnr_id": "ComfyUI-UtilsCollection",
-        "ver": "a6cf246fd08f60157d1d51b819abd1227b182620",
-        "Node name for S&R": "UC_TextConcatenateAutogrow"
-      }
     },
     {
       "id": 140,
@@ -1100,7 +919,7 @@
         479.9214246868778
       ],
       "flags": {},
-      "order": 17,
+      "order": 10,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -1108,7 +927,7 @@
           "name": "STRING",
           "type": "STRING",
           "links": [
-            266
+            294
           ]
         }
       ],
@@ -1195,59 +1014,20 @@
       }
     },
     {
-      "id": 143,
-      "type": "PrimitiveStringMultiline",
-      "pos": [
-        -282.89438659581,
-        5769.745786285918
-      ],
-      "size": [
-        400,
-        200
-      ],
-      "flags": {},
-      "order": 12,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "STRING",
-          "type": "STRING",
-          "links": [
-            264
-          ]
-        }
-      ],
-      "title": "Prompt Template",
-      "properties": {
-        "cnr_id": "comfy-core",
-        "ver": "0.30.0",
-        "Node name for S&R": "PrimitiveStringMultiline"
-      },
-      "widgets_values": [
-        "# NOTE: You need https://github.com/silveroxides/ComfyUI-UtilsCollection for the concatenation and H3 nodes.\n$node\n$mainprompt\nSEG(mainprompt)\n"
-      ],
-      "widgets_values_named": {
-        "value": "# NOTE: You need https://github.com/silveroxides/ComfyUI-UtilsCollection for the concatenation and H3 nodes.\n$node\n$mainprompt\nSEG(mainprompt)\n"
-      },
-      "color": "#233",
-      "bgcolor": "#355"
-    },
-    {
       "id": 145,
       "type": "PCExtractScheduledPrompt",
       "pos": [
-        8.731948665767291,
-        5622.094011964564
+        -356.6847739268232,
+        5575.052489937146
       ],
       "size": [
-        400,
+        210,
         208
       ],
       "flags": {
-        "collapsed": true
+        "collapsed": false
       },
-      "order": 24,
+      "order": 23,
       "mode": 0,
       "inputs": [
         {
@@ -1256,7 +1036,7 @@
           "widget": {
             "name": "text"
           },
-          "link": 268
+          "link": 299
         }
       ],
       "outputs": [
@@ -1294,15 +1074,15 @@
       "id": 146,
       "type": "PreviewAny",
       "pos": [
-        218.38381535828768,
-        5599.71365892825
+        -119.70304851425891,
+        5510.463501794197
       ],
       "size": [
         560.5506922027892,
         442.59857609685514
       ],
       "flags": {},
-      "order": 26,
+      "order": 27,
       "mode": 0,
       "inputs": [
         {
@@ -1318,7 +1098,7 @@
           "links": null
         }
       ],
-      "title": "Final Prompt at 1.00",
+      "title": "Final Prompt",
       "properties": {
         "cnr_id": "comfy-core",
         "ver": "0.30.0",
@@ -1341,7 +1121,7 @@
       "flags": {
         "collapsed": true
       },
-      "order": 25,
+      "order": 22,
       "mode": 0,
       "inputs": [
         {
@@ -1362,7 +1142,7 @@
           "widget": {
             "name": "text"
           },
-          "link": 272
+          "link": 295
         }
       ],
       "outputs": [
@@ -1406,7 +1186,7 @@
         480
       ],
       "flags": {},
-      "order": 28,
+      "order": 25,
       "mode": 0,
       "inputs": [
         {
@@ -1458,15 +1238,15 @@
       "id": 151,
       "type": "Note",
       "pos": [
-        -540.7269192252764,
-        4480.678821671782
+        -580.9758188890446,
+        4479.241360969505
       ],
       "size": [
         488.47999999999956,
         155.59000000000015
       ],
       "flags": {},
-      "order": 16,
+      "order": 14,
       "mode": 0,
       "inputs": [],
       "outputs": [],
@@ -1492,7 +1272,7 @@
         26
       ],
       "flags": {},
-      "order": 19,
+      "order": 17,
       "mode": 0,
       "inputs": [
         {
@@ -1506,8 +1286,8 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            281,
-            282
+            282,
+            292
           ]
         }
       ],
@@ -1529,7 +1309,7 @@
         246
       ],
       "flags": {},
-      "order": 22,
+      "order": 19,
       "mode": 0,
       "inputs": [
         {
@@ -1563,16 +1343,16 @@
         146.36363636363694
       ],
       "flags": {},
-      "order": 9,
+      "order": 15,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {},
       "widgets_values": [
-        "LoRA scheduling expands tothe model+clip loader internally. It might be a better to just use the regular model-only LoRA loader."
+        "LoRA scheduling expands to the model+clip loader internally. It might be a better to just use the regular model-only LoRA loader."
       ],
       "widgets_values_named": {
-        "text": "LoRA scheduling expands tothe model+clip loader internally. It might be a better to just use the regular model-only LoRA loader."
+        "text": "LoRA scheduling expands to the model+clip loader internally. It might be a better to just use the regular model-only LoRA loader."
       },
       "color": "#432",
       "bgcolor": "#653"
@@ -1589,7 +1369,7 @@
         221.69999999999982
       ],
       "flags": {},
-      "order": 10,
+      "order": 11,
       "mode": 0,
       "inputs": [],
       "outputs": [],
@@ -1615,7 +1395,7 @@
         229.10355000000072
       ],
       "flags": {},
-      "order": 11,
+      "order": 12,
       "mode": 0,
       "inputs": [],
       "outputs": [],
@@ -1633,15 +1413,15 @@
       "id": 158,
       "type": "PCLazyTextEncodeAdvanced",
       "pos": [
-        -1077.1610025170273,
-        5271.911175525965
+        -1076.1791975158133,
+        5262.093125513826
       ],
       "size": [
         261.31667175292966,
         184
       ],
       "flags": {},
-      "order": 29,
+      "order": 26,
       "mode": 0,
       "inputs": [
         {
@@ -1655,7 +1435,7 @@
           "widget": {
             "name": "text"
           },
-          "link": 283
+          "link": 296
         }
       ],
       "outputs": [
@@ -1691,15 +1471,15 @@
       "id": 159,
       "type": "Note",
       "pos": [
-        -806.2773525170284,
-        5266.360905525971
+        -807.2591575182423,
+        5260.470075518689
       ],
       "size": [
         210,
-        190.4380000000001
+        192.40161000242824
       ],
       "flags": {},
-      "order": 15,
+      "order": 13,
       "mode": 0,
       "inputs": [],
       "outputs": [],
@@ -1712,6 +1492,101 @@
       },
       "color": "#432",
       "bgcolor": "#653"
+    },
+    {
+      "id": 160,
+      "type": "PCNODELinkHelper",
+      "pos": [
+        -1049.9775708390077,
+        5571.703700806222
+      ],
+      "size": [
+        677.4299155395443,
+        772.7976061631462
+      ],
+      "flags": {},
+      "order": 21,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "links.a",
+          "shape": 7,
+          "type": "*",
+          "link": 287
+        },
+        {
+          "name": "links.b",
+          "shape": 7,
+          "type": "*",
+          "link": 288
+        },
+        {
+          "name": "links.c",
+          "shape": 7,
+          "type": "*",
+          "link": 289
+        },
+        {
+          "name": "links.d",
+          "shape": 7,
+          "type": "*",
+          "link": 290
+        },
+        {
+          "name": "links.e",
+          "shape": 7,
+          "type": "*",
+          "link": 291
+        },
+        {
+          "name": "links.f",
+          "shape": 7,
+          "type": "*",
+          "link": 292
+        },
+        {
+          "name": "links.g",
+          "shape": 7,
+          "type": "*",
+          "link": null
+        },
+        {
+          "name": "vars.var1",
+          "shape": 7,
+          "type": "*",
+          "link": 294
+        },
+        {
+          "name": "vars.var2",
+          "shape": 7,
+          "type": "*",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            295,
+            296,
+            299
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-prompt-control",
+        "ver": "be4c80c30cd0645455675d80bca5fec86509797e",
+        "Node name for S&R": "PCNODELinkHelper"
+      },
+      "widgets_values": [
+        "$node\n$mainprompt\nSEG(mainprompt)\n$var1\nSEG(node)\n# This gets put in a SEG so it can be concatenated to the main prompt neatly. Syntax: NODE(NodeID, prompt_input_name, extra_args...). You might need to look into the API-format JSON to find the real input names of the node.\nNODE(UC_AdvancedMiniMaxH3ImageToVideo, prompt,\nvae $a;\nwidth $b;\nheight $c;\nlength $d;\n# Omit first_frame entirely at first, giving t2v\n[first_frame [$e:$f:0.4];:0.2]\n# autogrow looks like this:\n# reference_images.reference_image_1 $f;\n# Syntax for literals is JSON.\nref_image_size \"none\";\nvlm_resolution 1024\n)"
+      ],
+      "widgets_values_named": {
+        "template": "$node\n$mainprompt\nSEG(mainprompt)\n$var1\nSEG(node)\n# This gets put in a SEG so it can be concatenated to the main prompt neatly. Syntax: NODE(NodeID, prompt_input_name, extra_args...). You might need to look into the API-format JSON to find the real input names of the node.\nNODE(UC_AdvancedMiniMaxH3ImageToVideo, prompt,\nvae $a;\nwidth $b;\nheight $c;\nlength $d;\n# Omit first_frame entirely at first, giving t2v\n[first_frame [$e:$f:0.4];:0.2]\n# autogrow looks like this:\n# reference_images.reference_image_1 $f;\n# Syntax for literals is JSON.\nref_image_size \"none\";\nvlm_resolution 1024\n)"
+      },
+      "color": "#223",
+      "bgcolor": "#335"
     }
   ],
   "links": [
@@ -1812,38 +1687,6 @@
       "LATENT"
     ],
     [
-      251,
-      121,
-      0,
-      136,
-      0,
-      "VAE"
-    ],
-    [
-      252,
-      115,
-      0,
-      136,
-      1,
-      "INT"
-    ],
-    [
-      253,
-      115,
-      1,
-      136,
-      2,
-      "INT"
-    ],
-    [
-      254,
-      134,
-      1,
-      136,
-      3,
-      "INT"
-    ],
-    [
       257,
       115,
       0,
@@ -1876,38 +1719,6 @@
       "LATENT"
     ],
     [
-      264,
-      143,
-      0,
-      139,
-      0,
-      "STRING"
-    ],
-    [
-      265,
-      136,
-      0,
-      139,
-      2,
-      "STRING"
-    ],
-    [
-      266,
-      140,
-      0,
-      139,
-      1,
-      "STRING"
-    ],
-    [
-      268,
-      139,
-      0,
-      145,
-      0,
-      "STRING"
-    ],
-    [
       269,
       145,
       0,
@@ -1932,28 +1743,12 @@
       "CLIP"
     ],
     [
-      272,
-      139,
-      0,
-      149,
-      2,
-      "STRING"
-    ],
-    [
       275,
       149,
       0,
       126,
       0,
       "MODEL"
-    ],
-    [
-      276,
-      114,
-      0,
-      136,
-      4,
-      "IMAGE"
     ],
     [
       277,
@@ -1980,28 +1775,12 @@
       "IMAGE"
     ],
     [
-      281,
-      153,
-      0,
-      136,
-      5,
-      "IMAGE"
-    ],
-    [
       282,
       153,
       0,
       154,
       0,
       "IMAGE"
-    ],
-    [
-      283,
-      139,
-      0,
-      158,
-      1,
-      "STRING"
     ],
     [
       285,
@@ -2018,6 +1797,86 @@
       158,
       0,
       "CLIP"
+    ],
+    [
+      287,
+      121,
+      0,
+      160,
+      0,
+      "VAE"
+    ],
+    [
+      288,
+      115,
+      0,
+      160,
+      1,
+      "INT"
+    ],
+    [
+      289,
+      115,
+      1,
+      160,
+      2,
+      "INT"
+    ],
+    [
+      290,
+      134,
+      1,
+      160,
+      3,
+      "INT"
+    ],
+    [
+      291,
+      114,
+      0,
+      160,
+      4,
+      "IMAGE"
+    ],
+    [
+      292,
+      153,
+      0,
+      160,
+      5,
+      "IMAGE"
+    ],
+    [
+      294,
+      140,
+      0,
+      160,
+      7,
+      "STRING"
+    ],
+    [
+      295,
+      160,
+      0,
+      149,
+      2,
+      "STRING"
+    ],
+    [
+      296,
+      160,
+      0,
+      158,
+      1,
+      "STRING"
+    ],
+    [
+      299,
+      160,
+      0,
+      145,
+      0,
+      "STRING"
     ]
   ],
   "groups": [
@@ -2072,12 +1931,12 @@
   ],
   "config": {},
   "extra": {
-    "frontendVersion": "1.50.3",
+    "frontendVersion": "1.52.3",
     "ds": {
-      "scale": 0.6830134553650711,
+      "scale": 0.5749348693027663,
       "offset": [
-        2174.268963460286,
-        -3925.5220183140837
+        1803.321283924853,
+        -4403.233642990049
       ]
     }
   },

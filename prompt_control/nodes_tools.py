@@ -185,28 +185,53 @@ class PCMacroExpand(io.ComfyNode):
 
 
 class PCLinkHelper(io.ComfyNode):
+    # a-z
+    NAMES = [chr(97 + i) for i in range(26)]
+
     @classmethod
     def define_schema(cls):
-        inputs: list = [io.String.Input("text", multiline=True)]
-        for x in "abcdefghijklmn":
-            inputs.append(io.AnyType.Input(x, optional=True, lazy=True, extra_dict={"rawLink": True}))
+        t1 = io.Autogrow.TemplateNames(io.AnyType.Input("link", raw_link=True), min=0, names=cls.NAMES)
+        t2 = io.Autogrow.TemplateNames(io.AnyType.Input("value"), min=0, names=[f"var{i + 1}" for i in range(50)])
         return io.Schema(
             node_id="PCNODELinkHelper",
             display_name="PC: Extra argument helper for NODE",
             category="promptcontrol/tools",
-            description="Takes in arbitrary inputs and renders them as NODE-compatible values, replacing $a -> $n with JSON link values",
+            description="Takes in arbitrary inputs and renders them as NODE-compatible values, replacing $a -> $z with JSON link values.",
             is_experimental=True,
-            inputs=inputs,
+            inputs=[
+                io.Autogrow.Input("links", template=t1),
+                io.Autogrow.Input(
+                    "vars",
+                    template=t2,
+                ),
+                io.String.Input(
+                    "template",
+                    tooltip="The variables $a to $z will be replaced in this text with their corresponding input's JSON link value",
+                    placeholder="In this text you can refer to the input links as $a, $b etc. and the var inputs as either $var1 or $json1 etc. (the latter will be rendered through Python's json.dumps function which will cause strings to be quoted)",
+                    multiline=True,
+                ),
+            ],
             outputs=[io.String.Output()],
         )
 
     @classmethod
-    def execute(cls, text, **vars) -> io.NodeOutput:
-        for k in "abcdefghijklmn":
+    def execute(cls, template, links, vars) -> io.NodeOutput:
+        text = template
+        for k in cls.NAMES:
             v = "__EMPTY__"
-            if k in vars:
-                v = json.dumps(vars[k])
+            if k in links:
+                v = json.dumps(links[k])
             text = substitute_var(text, k, v)
+        for i in range(50):
+            v = "__EMPTY__"
+            k = f"var{i + 1}"
+            if k in vars:
+                v = vars[k]
+            text = substitute_var(text, k, str(v))
+            if f"$json{i + 1}" in text:
+                v = v if v == "__EMPTY__" else json.dumps(v)
+                text = substitute_var(text, f"json{i + 1}", v)
+
         return io.NodeOutput(text)
 
 
