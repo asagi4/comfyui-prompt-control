@@ -200,6 +200,8 @@ def build_scheduled_prompts(graph, schedules, clip):
         p, classnames = get_function(p, "NODE", defaults=None)
         realargs = ["PCTextEncode", "text", ""]
         if classnames:
+            # Need to explicitly expand segs for custom node
+            p = expand_segs(p)
             args = classnames[0].args[0]
             if not args.strip():
                 raise ValueError("NODE can't be empty!")
