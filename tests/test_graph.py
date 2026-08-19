@@ -461,7 +461,7 @@ def test_textencode_lora_with_schedule():
 
 
 def test_textencode_custom():
-    r = te("NODE(CLIPTextEncode)simple [test:0.1,0.5] prompt")
+    r = te("NODE(CLIPTextEncode)simple [test:0.1,0.5] $p SEG(p) prompt")
     assert r == {
         "result": (["UID.0.0.8", 0],),
         "expand": {
