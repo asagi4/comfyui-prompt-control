@@ -197,11 +197,13 @@ def build_scheduled_prompts(graph, schedules, clip):
     start_pct = 0.0
     for end_pct, c in schedules:
         p = c["prompt"]
+        # Need to explicitly expand SEGs here *before* NODE is processed
+        p = expand_segs(p)
         p, classnames = get_function(p, "NODE", defaults=None)
         realargs = ["PCTextEncode", "text", ""]
+        if len(classnames) > 1:
+            log.warning("You have more than one NODE call in your prompt. Only the first one will be used")
         if classnames:
-            # Need to explicitly expand segs for custom node
-            p = expand_segs(p)
             args = classnames[0].args[0]
             if not args.strip():
                 raise ValueError("NODE can't be empty!")
