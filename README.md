@@ -11,6 +11,9 @@ A `Basic Text to Image` template is included with the extension, and can be load
 > The parser was rewritten using parsy. It is intended to have the same behaviour as the old parser, but is **significantly** faster.
 > Please report any bugs or incompatibilities you find.
 
+## Notable changes
+
+- `PC: Schedule Prompt` now strips surrounding whitespace by default, which may change some prompts. Add `NOSTRIP()` to your prompt to restore previous behaviour.
 
 ## What can it do?
 
