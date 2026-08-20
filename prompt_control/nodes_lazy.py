@@ -212,6 +212,8 @@ def build_scheduled_prompts(graph, schedules, clip):
         classname, paramname, magic_spec = realargs
         node = graph.node(classname.strip())
         node.set_input("clip", clip)
+        # We should strip extra whitespace so that people don't have to worry about functions.
+        p = p.replace("NOSTRIP()", "") if "NOSTRIP()" in p else p.strip()
         node.set_input(paramname.strip(), p)
         magic_spec.replace(r"\;", "__ESCAPED_SEMICOLON__")
         extra_inputs = magic_spec.split(";") if magic_spec.strip() else []

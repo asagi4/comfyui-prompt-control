@@ -14,6 +14,9 @@ Besides the syntax documented below, the [basic syntax](/doc/basic.md) and [prom
 a [large::0.1] [cat|dog:0.05] [<lora:somelora:0.5:0.6>::0.5]
 [in a park:in space:0.4]
 ```
+## Note on whitespace
+`PC: Schedule Prompt` will strip leading and following whitespace from the prompt automatically. If you really want whitespace in your prompt, include `NOSTRIP()` in your prompt.
+
 ## Comments and escaping
 
 In schedules, any text on a line following a `#` is considered a comment and removed, including the `#` character.
