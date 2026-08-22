@@ -10,7 +10,7 @@ from comfy_execution.graph_utils import GraphBuilder
 
 from .macros import expand_macros, expand_segs
 from .parser import parse_prompt_schedules
-from .utils import consolidate_schedule, find_nonscheduled_loras, get_function
+from .utils import consolidate_schedule, find_nonscheduled_loras, get_function, split_by_function
 
 log = logging.getLogger("comfyui-prompt-control")
 
@@ -192,53 +192,97 @@ class PCLazyLoraLoader(io.ComfyNode):
         return io.NodeOutput(*no.args[:2], expand=no.expand)
 
 
+def parse_extra_inputs(args, defaults):
+    params = {}
+    if not args.strip():
+        return defaults + [{}]
+    defaults = defaults[:]
+    defaults.append("")
+    for i, v in enumerate(args.split(",", maxsplit=len(defaults) - 1)):
+        defaults[i] = v
+        # We should strip extra whitespace so that people don't have to worry about functions.
+    magic_spec = defaults[-1]
+    magic_spec.replace(r"\;", "__ESCAPED_SEMICOLON__")
+    extra_inputs = magic_spec.split(";") if magic_spec.strip() else []
+    for e in extra_inputs:
+        e = e.strip()
+        if not e:
+            continue
+        e = e.replace("__ESCAPED_SEMICOLON__", ";")
+        name, jsondata = e.split(maxsplit=1)
+        jsondata = jsondata.strip()
+        if not jsondata.strip():
+            continue
+        # From helper node:
+        if jsondata == "__EMPTY__":
+            continue
+        try:
+            params[name.strip()] = json.loads(jsondata.strip())
+        except ValueError as e:
+            raise ValueError(f"Invalid JSON input: '{jsondata}'") from e
+    return [x.strip() for x in defaults[:-1]] + [params]
+
+
+def make_node(graph, p, clip, strip):
+    p, classnames = get_function(p, "NODE", defaults=None)
+    p, filters = get_function(p, "FILTER", defaults=None)
+    args = ""
+    if len(classnames) > 1:
+        log.warning("You have more than one NODE call in your prompt. Only the first one will be used")
+    if classnames:
+        args = classnames[0].args[0]
+        if not args.strip():
+            raise ValueError("NODE can't be empty!")
+    classname, paramname, extras = parse_extra_inputs(args, ["PCTextEncode", "text"])
+    # We should strip extra whitespace so that people don't have to worry about functions.
+    node = graph.node(classname.strip())
+    node.set_input("clip", clip)
+    node.set_input(paramname.strip(), p.strip() if strip else p)
+    for e, v in extras.items():
+        node.set_input(e, v)
+
+    for f in filters:
+        classname, paramname, extras = parse_extra_inputs(f.args[0], ["", "conditioning"])
+        if not classname:
+            raise ValueError("FILTER requires a Node class name")
+        extras[paramname] = node.out(0)
+        node = graph.node(classname)
+        for e, v in extras.items():
+            node.set_input(e, v)
+
+    return node
+
+
 def build_scheduled_prompts(graph, schedules, clip):
     nodes = []
     start_pct = 0.0
     for end_pct, c in schedules:
         p = c["prompt"]
+        strip = "NOSTRIP()" not in p
+        p = p.replace("NOSTRIP()", "")
         # Need to explicitly expand SEGs here *before* NODE is processed
         p = expand_segs(p)
-        p, classnames = get_function(p, "NODE", defaults=None)
-        realargs = ["PCTextEncode", "text", ""]
-        if len(classnames) > 1:
-            log.warning("You have more than one NODE call in your prompt. Only the first one will be used")
-        if classnames:
-            args = classnames[0].args[0]
-            if not args.strip():
-                raise ValueError("NODE can't be empty!")
-            for i, v in enumerate(args.split(",", maxsplit=2)):
-                realargs[i] = v
-        classname, paramname, magic_spec = realargs
-        node = graph.node(classname.strip())
-        node.set_input("clip", clip)
-        # We should strip extra whitespace so that people don't have to worry about functions.
-        p = p.replace("NOSTRIP()", "") if "NOSTRIP()" in p else p.strip()
-        node.set_input(paramname.strip(), p)
-        magic_spec.replace(r"\;", "__ESCAPED_SEMICOLON__")
-        extra_inputs = magic_spec.split(";") if magic_spec.strip() else []
-        for e in extra_inputs:
-            e = e.strip()
-            if not e:
-                continue
-            e = e.replace("__ESCAPED_SEMICOLON__", ";")
-            name, jsondata = e.split(maxsplit=1)
-            jsondata = jsondata.strip()
-            if not jsondata.strip():
-                continue
-            # From helper node:
-            if jsondata == "__EMPTY__":
-                continue
-            try:
-                node.set_input(name.strip(), json.loads(jsondata.strip()))
-            except ValueError as e:
-                raise ValueError(f"Invalid JSON input: '{jsondata}'") from e
+        p, combines = split_by_function(p, "COMBINE")
+        current_cond = make_node(graph, p, clip, strip)
+        for text, f in combines:
+            classname, param1, param2, extra = parse_extra_inputs(f.args[0], ["", "conditioning_1", "conditioning_2"])
+            if classname.strip() == "":
+                raise ValueError("Can't use COMBINE without a class name")
+            combiner = graph.node(classname.strip())
+            c2 = make_node(graph, text, clip, strip)
+            extra[param1] = current_cond.out(0)
+            extra[param2] = c2.out(0)
+            for e, v in extra.items():
+                combiner.set_input(e, v)
+            current_cond = combiner
+
         timestep = graph.node("ConditioningSetTimestepRange")
-        timestep.set_input("conditioning", node.out(0))
+        timestep.set_input("conditioning", current_cond.out(0))
         timestep.set_input("start", start_pct)
         timestep.set_input("end", end_pct)
         nodes.append(timestep)
         start_pct = end_pct
+
     node = nodes[0]
     for othernode in nodes[1:]:
         combiner = graph.node("ConditioningCombine")
