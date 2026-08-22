@@ -191,7 +191,9 @@ class PCLinkHelper(io.ComfyNode):
     @classmethod
     def define_schema(cls):
         t1 = io.Autogrow.TemplateNames(io.AnyType.Input("link", raw_link=True), min=0, names=cls.NAMES)
-        t2 = io.Autogrow.TemplateNames(io.AnyType.Input("value"), min=0, names=[f"var{i + 1}" for i in range(50)])
+        t2 = io.Autogrow.TemplateNames(
+            io.AnyType.Input("value", lazy=True), min=0, names=[f"var{i + 1}" for i in range(50)]
+        )
         return io.Schema(
             node_id="PCNODELinkHelper",
             display_name="PC: Extra argument helper for NODE",
@@ -213,6 +215,15 @@ class PCLinkHelper(io.ComfyNode):
             ],
             outputs=[io.String.Output()],
         )
+
+    # This requires https://github.com/Comfy-Org/ComfyUI/pull/15103 to work properly
+    @classmethod
+    def check_lazy_status(cls, template, links, vars):
+        r = []
+        for name, (v, input_name) in vars.items():
+            if v is None and f"${name}" in template or v is None and f"$json{name[3:]}" in template:
+                r.append(input_name)
+        return r
 
     @classmethod
     def execute(cls, template, links, vars) -> io.NodeOutput:
