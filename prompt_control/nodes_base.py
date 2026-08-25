@@ -3,7 +3,7 @@ import logging
 from comfy_api.latest import io
 
 from .macros import expand_segs
-from .prompts import encode_prompt
+from .prompts import encode_prompt, hook_te
 
 log = logging.getLogger("comfyui-prompt-control")
 
@@ -56,7 +56,31 @@ class PCTextEncode(io.ComfyNode):
         return PCTextEncodeWithRange.execute(clip, text, 0.0, 1.0)
 
 
-NODES = [
-    PCTextEncodeWithRange,
-    PCTextEncode,
-]
+class PCHookEncoderModsInternal(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="PCHookTextEncoderModsInternal",
+            display_name="PC: Apply Text Encoder Mods",
+            category="promptcontrol",
+            description="Apply TE modifications (internal)",
+            is_experimental=True,
+            is_dev_only=True,
+            inputs=[
+                io.Clip.Input("clip"),
+                io.String.Input("te_names"),
+                io.String.Input("style"),
+                io.String.Input("normalization"),
+                io.Custom("PC_EXTRA_DATA").Input("extra", optional=True),
+            ],
+            outputs=[io.Clip.Output()],
+        )
+
+    @classmethod
+    def execute(cls, clip, te_names, style, normalization, extra) -> io.NodeOutput:
+        te_names = [x.strip() for x in te_names.split(",")]
+        clip = hook_te(clip, te_names, style, normalization, extra)
+        return io.NodeOutput(clip)
+
+
+NODES = [PCTextEncodeWithRange, PCTextEncode, PCHookEncoderModsInternal]
