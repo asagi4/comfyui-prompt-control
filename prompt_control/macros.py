@@ -69,8 +69,12 @@ def parse_search(search):
     return name, args
 
 
-def expand_macros(text):
-    text, defs = get_function(text, "DEF", defaults=None)
+def expand_macros(text, defs=None):
+    silent = False
+    if defs is None:
+        text, defs = get_function(text, "DEF", defaults=None)
+    else:
+        silent = True
     res = text
     prevres = text
     replacements = []
@@ -95,7 +99,8 @@ def expand_macros(text):
         prevres = res
     if res.strip() != text.strip():
         res = res.strip()
-        log.debug("DEFs expanded to: %s", res)
+        if not silent:
+            log.debug("DEFs expanded to: %s", res)
     return res
 
 
