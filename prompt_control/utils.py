@@ -3,7 +3,7 @@ from __future__ import annotations
 import copy
 import logging
 import re
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar
@@ -20,7 +20,6 @@ class FunctionSpec:
     name: str
     args: FunctionArgs
     position: int
-    placeholder: str | None
 
 
 # Allow testing
@@ -155,7 +154,11 @@ def find_function_spans(
 
 
 def get_function(
-    text: str, func: str, defaults: list[str] | None, placeholder: str = "", require_args: bool = True
+    text: str,
+    func: str,
+    defaults: list[str] | None,
+    processor: Callable[..., str] | None = None,
+    require_args: bool = True,
 ) -> tuple[str, list[FunctionSpec]]:
     spans = [x.span() for x in re.finditer(r'".+?"', text)]
     instances = []
@@ -164,14 +167,13 @@ def get_function(
     current = 0
     skipped = 0
     for start, end, funcname, args in find_function_spans(text, func, require_args, defaults):
-        ph = None
         if spans_include(spans, start, end):
             continue
-        if placeholder:
-            ph = f"\0{placeholder}{count}\0"
-        instances.append(FunctionSpec(funcname, args, start - skipped, ph))
+        instances.append(FunctionSpec(funcname, args, start - skipped))
         skipped += end - start
-        chunks.append(text[current:start] + (ph or ""))
+        chunks.append(text[current:start])
+        if processor:
+            chunks.append(processor(*args))
         current = end
         count += 1
     chunks.append(text[current:])

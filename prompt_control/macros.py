@@ -113,11 +113,8 @@ def substitute_var(text, name, replace, boundary=r"\b"):
 
 def substitute_defcall(text, search, replace):
     name, default_args = search
-    text, defns = get_function(text, name, defaults=None, placeholder=f"DEFNCALL{name}", require_args=False)
-    for i, d in enumerate(defns):
-        ph = d.placeholder
-        assert ph is not None, "This is a bug"
-        parameters = d.args
+
+    def run_macro(*parameters):
         paramvals = []
         if parameters:
             paramvals = [x.strip() for x in parameters[0].split(";")]
@@ -128,6 +125,7 @@ def substitute_defcall(text, search, replace):
 
         for i, v in enumerate(default_args):
             r = substitute_var(r, i + 1, v, boundary=end_re)
+        return r
 
-        text = text.replace(ph, r)
+    text, _ = get_function(text, name, defaults=None, processor=run_macro, require_args=False)
     return text
