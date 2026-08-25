@@ -355,9 +355,49 @@ class PCLazyTextEncode(io.ComfyNode):
         return PCLazyTextEncodeAdvanced.execute(clip, text)
 
 
+predefined_macros = get_function(
+    """
+DEF(AND=COMBINE(ConditioningCombine, conditioning_1, conditioning_2))
+DEF(CAT=COMBINE(ConditioningConcat, conditioning_to, conditioning_from))
+DEF(AVG(0.5)=COMBINE(ConditioningAverage, conditioning_from, conditioning_to, conditioning_to_strength $1))
+""",
+    "DEF",
+    defaults=None,
+)
+
+
+class PCLazyTextEncodeSingle(io.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return io.Schema(
+            node_id="PCLazyTextEncodeSingle",
+            display_name="PC: Prompt (without scheduling)",
+            is_experimental=True,
+            is_dev_only=True,
+            enable_expand=True,
+            category="promptcontrol",
+            inputs=[
+                io.Clip.Input("clip", raw_link=True),
+                io.String.Input("text", multiline=True, default=""),
+            ],
+            outputs=[
+                io.Conditioning.Output("conditioning"),
+            ],
+        )
+
+    @classmethod
+    def execute(cls, clip, text):
+        graph = GraphBuilder()
+        text = expand_macros(text, predefined_macros)
+        node = build_prompt(graph, text, clip)
+        g = graph.finalize()
+        return io.NodeOutput(node.out(0), expand=g)
+
+
 NODES = [
     PCLazyTextEncode,
     PCLazyTextEncodeAdvanced,
+    PCLazyTextEncodeSingle,
     PCLazyLoraLoader,
     PCLazyLoraLoaderAdvanced,
 ]
