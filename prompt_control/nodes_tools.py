@@ -231,7 +231,8 @@ class PCLinkHelper(io.ComfyNode):
         for k in cls.NAMES:
             v = "__EMPTY__"
             if k in links:
-                v = json.dumps(links[k])
+                # Replace : with \: to avoid breaking scheduling syntax when linking subgraphs. Any function that consumes this should replace \: with :
+                v = json.dumps(links[k]).replace(":", r"\:")
             text = substitute_var(text, k, v)
         for i in range(50):
             v = "__EMPTY__"
