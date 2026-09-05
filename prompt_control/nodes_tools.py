@@ -217,6 +217,7 @@ class PCLinkHelper(io.ComfyNode):
         )
 
     # This requires https://github.com/Comfy-Org/ComfyUI/pull/15103 to work properly
+    # Without that PR, all inputs will be evaluated non-lazily
     @classmethod
     def check_lazy_status(cls, template, links, vars):
         r = []
