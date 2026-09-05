@@ -141,6 +141,10 @@ def find_function_spans(
         if text[at_paren:after_first_paren] == "(":
             end = find_closing_paren(text, after_first_paren)
             if end < 0:
+                # Unclosed paren: skip past this match so the loop terminates
+                idx += match.end()
+                text = text[match.end() :]
+                match = rex.search(text)
                 continue
             args = parse_strings(text[after_first_paren:end], defaults)
             end += 1

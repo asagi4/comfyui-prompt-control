@@ -30,6 +30,11 @@ def test_macro_recursion():
     assert "Unable to resolve DEFs" in str(c.value)
 
 
+def test_parsing_cornercase():
+    r = expand_macros("This should not get stuck DEF(")
+    assert r == "This should not get stuck DEF("
+
+
 @pytest.mark.parametrize(
     "input, output",
     [
