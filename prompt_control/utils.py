@@ -275,6 +275,10 @@ def lora_name_to_file(name: str) -> str | None:
     search = [f for f in filenames if all(p in f for p in parts)]
     if len(search) == 1:
         return search[0]
+    elif len(search) > 1:
+        if len(search) > 4:
+            search[4] = "..."
+        log.warning("Ignored LoRA search 's%'; matched more than one file: %s", name, ", ".join(search[:5]))
 
     return None
 
