@@ -52,7 +52,7 @@ class Proxy:
         return self
 
     def __call__(self, *args, **kwargs):
-        return self.function(*args, *kwargs)
+        return self.function(*args, **kwargs)
 
 
 class AttentionCoupleHook(TransformerOptionsHook):
