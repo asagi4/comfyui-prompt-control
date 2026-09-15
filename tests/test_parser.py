@@ -361,3 +361,9 @@ def test_alternating_nested(parse):
     for i, x in enumerate(catdogtigers):
         step = round((i * 0.1) + 0.1, 2)
         assert_prompt(p3, step, step, x)
+
+
+def test_alternating_with_tags(parse):
+    p1 = parse("[[a|b]:HR]", filters="HR")
+    p2 = parse("[a|b]")
+    assert p1.parsed_prompt == p2.parsed_prompt
