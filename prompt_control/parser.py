@@ -129,8 +129,6 @@ class Schedule(Expression):
     @override
     def required_steps(self, max_steps: float):
         r = set()
-        if self.tag is not None:
-            return r
         if self.start < max_steps:
             r.add(self.start)
         if self.end < max_steps:
