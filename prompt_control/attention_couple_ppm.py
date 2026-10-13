@@ -10,6 +10,7 @@ from typing import Any
 import torch
 import torch.nn.functional as F
 from comfy.hooks import EnumHookScope, HookGroup, TransformerOptionsHook, set_hooks_for_conditioning
+from comfy.model_base import Anima
 from comfy.model_patcher import ModelPatcher
 
 log = logging.getLogger("comfyui-prompt-control")
@@ -57,6 +58,7 @@ class Proxy:
 
 class AttentionCoupleHook(TransformerOptionsHook):
     COND_UNCOND_COUPLE_OPTION = "cond_or_uncond_hook_couple"
+    ANIMA_COND_UNCOND_COUPLE_OPTION = "anima_cond_or_uncond_hook_couple"
     COND = 0
     UNCOND = 1
 
@@ -74,6 +76,26 @@ class AttentionCoupleHook(TransformerOptionsHook):
         self.has_negpip = False
         # The list will be calculated later. All clones must refer to the same kv dict
         self.kv: dict[str, list] = {"k": None, "v": None}  # type: ignore
+
+    def add_hook_patches(
+        self,
+        model: ModelPatcher,
+        model_options: dict,
+        target_dict: dict[str, Any],
+        registered: HookGroup,
+    ):
+        if isinstance(model.model, Anima):
+            self.transformers_dict["patches"] = {
+                "attn2_patch": [Proxy(self.anima_attn2_patch)],
+            }
+            self.transformers_dict["optimized_attention_override"] = Proxy(self.anima_optimized_attention)
+        else:
+            self.transformers_dict["patches"] = {
+                "attn2_output_patch": [Proxy(self.attn2_output_patch)],
+                "attn2_patch": [Proxy(self.attn2_patch)],
+            }
+            self.transformers_dict.pop("optimized_attention_override", None)
+        return super().add_hook_patches(model, model_options, target_dict, registered)
 
     def initialize_regions(self, base_cond, conds, fill):
         self.num_conds = len(conds) + 1
@@ -124,7 +146,11 @@ class AttentionCoupleHook(TransformerOptionsHook):
             "num_conds": self.num_conds,
             "mask": self.mask,
         }
-        if self.kv["k"] is None:
+        is_anima = isinstance(model.model, Anima)
+        if is_anima:
+            anima_patch = self.transformers_dict["patches"]["attn2_patch"][0]
+
+        if not is_anima and self.kv["k"] is None:
             self.has_negpip = model.model_options.get("ppm_negpip", False)
             log.debug("AttentionCouple has_negpip=%s", self.has_negpip)
 
@@ -135,7 +161,12 @@ class AttentionCoupleHook(TransformerOptionsHook):
             else:
                 self.kv["k"] = self.kv["v"] = self.conds[1:]
 
-        return super().on_apply_hooks(model, transformer_options)
+        result = super().on_apply_hooks(model, transformer_options)
+        if is_anima:
+            patches = transformer_options["patches"]["attn2_patch"]
+            patches.remove(anima_patch)
+            patches.insert(0, anima_patch)
+        return result
 
     def clone(self):
         c: AttentionCoupleHook = super().clone()
@@ -253,3 +284,64 @@ class AttentionCoupleHook(TransformerOptionsHook):
             outputs.append(cond_output)
 
         return torch.cat(outputs, dim=0)
+
+    def anima_attn2_patch(self, q, k, v, pe=None, attn_mask=None, extra_options=None):
+        """Attention Couple using the dict contract of Anima's Cosmos attention."""
+        pc = extra_options["pc_couple"]
+        conds = pc["processed_conds"][1:]
+        cond_or_uncond = extra_options["cond_or_uncond"]
+        num_chunks = len(cond_or_uncond)
+        bs = q.shape[0] // num_chunks
+
+        lcm_tokens_k = math.lcm(k.shape[1], *(cond.shape[1] for cond in conds))
+        lcm_tokens_v = math.lcm(v.shape[1], *(cond.shape[1] for cond in conds))
+        conds_k = torch.cat(
+            [cond.repeat(bs, lcm_tokens_k // cond.shape[1], 1) for cond in conds],
+            dim=0,
+        )
+        conds_v = torch.cat(
+            [cond.repeat(bs, lcm_tokens_v // cond.shape[1], 1) for cond in conds],
+            dim=0,
+        )
+
+        qs, ks, vs = [], [], []
+        cond_or_uncond_couple = []
+        q_chunks = q.chunk(num_chunks, dim=0)
+        k_chunks = k.chunk(num_chunks, dim=0)
+        v_chunks = v.chunk(num_chunks, dim=0)
+        for i, cond_type in enumerate(cond_or_uncond):
+            q_target = q_chunks[i]
+            k_target = k_chunks[i].repeat(1, lcm_tokens_k // k.shape[1], 1)
+            v_target = v_chunks[i].repeat(1, lcm_tokens_v // v.shape[1], 1)
+            if cond_type == self.UNCOND:
+                qs.append(q_target)
+                ks.append(k_target)
+                vs.append(v_target)
+                cond_or_uncond_couple.append(self.UNCOND)
+            else:
+                qs.append(q_target.repeat(self.num_conds, 1, 1))
+                ks.append(torch.cat([k_target * self.base_strength, conds_k], dim=0))
+                vs.append(torch.cat([v_target * self.base_strength, conds_v], dim=0))
+                cond_or_uncond_couple.extend(itertools.repeat(self.COND, self.num_conds))
+
+        pc[self.ANIMA_COND_UNCOND_COUPLE_OPTION] = cond_or_uncond_couple
+        return {
+            "q": torch.cat(qs, dim=0),
+            "k": torch.cat(ks, dim=0),
+            "v": torch.cat(vs, dim=0),
+            "pe": pe,
+            "attn_mask": attn_mask,
+        }
+
+    def anima_optimized_attention(self, attention, q, k, v, *args, **kwargs):
+        """Run Anima attention, then collapse its coupled batches through the masks."""
+        transformer_options = kwargs.get("transformer_options", {})
+        pc = transformer_options.get("pc_couple", {})
+        cond_or_uncond = pc.pop(self.ANIMA_COND_UNCOND_COUPLE_OPTION, None)
+        out = attention(q, k, v, *args, **kwargs)
+        if cond_or_uncond is None:
+            return out
+
+        extra_options = transformer_options.copy()
+        extra_options[self.COND_UNCOND_COUPLE_OPTION] = cond_or_uncond
+        return self.attn2_output_patch(out, extra_options)
