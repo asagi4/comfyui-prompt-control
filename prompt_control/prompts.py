@@ -489,6 +489,8 @@ def get_mask(text, size, input_masks):
 
         if len(input_masks) < idx + 1:
             log.warning("IMASK index %s not found, ignoring...", idx)
+            # Keep FEATHER slots aligned with their IMASK expressions.
+            i += 1
             continue
         nextmask = input_masks[idx] * w
         if i < len(feathers):
@@ -498,6 +500,9 @@ def get_mask(text, size, input_masks):
 
     # apply leftover FEATHER() specs to the whole
     for f in feathers[i:]:
+        if mask is None:
+            log.warning("FEATHER() has no mask to apply to, ignoring...")
+            break
         mask = feather(f.args, mask)
 
     return text, mask, totalweight
