@@ -7,6 +7,7 @@ from comfy.model_base import Anima
 from comfy.model_patcher import ModelPatcher
 from comfy_api.latest import io
 
+from . import anima_mix
 from .anima_couple import (
     anima_forward_wrapper,
     anima_sample_wrapper,
@@ -48,5 +49,8 @@ class PCAnimaAttnCouplePatch(io.ComfyNode):
 
         return io.NodeOutput(m)
 
+
+# AVG/CAT on Anima need every piece's T5 ids at sampling time; no node to wire.
+anima_mix.install()
 
 NODES = [PCAnimaAttnCouplePatch]

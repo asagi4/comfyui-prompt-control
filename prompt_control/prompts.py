@@ -11,6 +11,7 @@ import torch
 from comfy_extras.nodes_mask import FeatherMask, MaskComposite
 from nodes import ConditioningAverage
 
+from . import anima_mix
 from .adv_encode import advanced_encode_from_tokens
 from .attention_couple_ppm import set_cond_attnmask
 from .cutoff import process_cuts
@@ -256,12 +257,15 @@ def encode_prompt_segment(
     prompts_to_avg.append((text, 1.0))
 
     conds_to_avg = []
+    anima_entries = []
     for prompt, weight in prompts_to_avg:
         conds_to_cat = []
         for c in split_quotable(prompt, r"\bCAT\b"):
             tokens = tokenize(clip, c, can_break, empty)
             conds_to_cat.append(clip.encode_from_tokens_scheduled(tokens, add_dict=settings))
 
+        # The concat below rewrites conds_to_cat[0] in place; Anima needs the pieces as they were.
+        anima_entries.append((anima_mix.cat_parts(conds_to_cat), weight))
         base = conds_to_cat[0]
         for cond in conds_to_cat[1:]:
             assert len(cond) == len(base), "Conditioning length mismatch"
@@ -283,6 +287,8 @@ def encode_prompt_segment(
             base[i] = cond[0]
         w = next_w
 
+    # Anima: the tensor mixes above cannot carry each piece's T5 ids; keep them for extra_conds.
+    anima_mix.attach(base, anima_entries)
     return base
 
 
